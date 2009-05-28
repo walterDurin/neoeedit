@@ -94,7 +94,7 @@ public class Editor extends JComponent implements MouseMotionListener,
 		return -1;
 	}
 
-	private void changePage(int p) {
+	public void changePage(int p) {
 		this.pageNo = p;
 		changeTitle();
 	}
@@ -183,15 +183,27 @@ public class Editor extends JComponent implements MouseMotionListener,
 
 	}
 
-	public void newFile() {
-		pages.add(new PageInfo(null, 0));
+	public void newFile()  {
+		PageInfo pi;
+		pages.add(pi=new PageInfo(null, 0));
+		try {
+			pi.page = new PlainPage(this, pi);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(this, ""+e);
+			return;
+		}
 		changePage(pages.size()-1);
+		
 	}
 
 	public void changeTitle() {
 		String fn = pages.get(pageNo).fn;
 		if (fn != null) {
 			frame.setTitle(new File(fn).getName()+" "+new File(fn).getParent() + " - neoeedit");
+		}else{
+			frame.setTitle("neoeedit");
 		}
 	}
 

@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Vector;
 
 import javax.swing.JFileChooser;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 
 public class PlainPage implements Page {
@@ -404,7 +405,7 @@ public class PlainPage implements Page {
 		int kc = env.getKeyCode();
 		if (kc == KeyEvent.VK_F1) {
 			help();
-		}else if (kc == KeyEvent.VK_F3) {
+		} else if (kc == KeyEvent.VK_F3) {
 			findNext();
 		}
 		if (env.isControlDown()) {
@@ -443,6 +444,8 @@ public class PlainPage implements Page {
 				undo();
 			} else if (kc == KeyEvent.VK_F) {
 				find();
+			} else if (kc == KeyEvent.VK_TAB) {
+				changePage();
 			}
 		} else {
 			boolean cmoved = false;
@@ -510,53 +513,69 @@ public class PlainPage implements Page {
 		}
 		edit.repaint();
 	}
+
+	private void changePage() {
+		Object[] possibilities = edit.pages.toArray();
+		PageInfo p = (PageInfo) JOptionPane.showInputDialog(edit,
+				"Select Document:", "Select Document",
+				JOptionPane.QUESTION_MESSAGE, null, possibilities, null);
+
+		if (p != null) {
+			int i = edit.pages.indexOf(p);
+			if (i >= 0) {
+				edit.changePage(i);
+			}
+		}
+	}
+
 	private void findNext() {
-		if (text2find!=null && text2find.length() > 0) {
+		if (text2find != null && text2find.length() > 0) {
 			Point p = find(text2find, cx, cy);
 			if (p == null) {
 				message("string not found");
 			} else {
 				cx = p.x;
 				cy = p.y;
-				selectstartx=cx;
-				selectstarty=cy;
-				selectstopx=cx+text2find.length();
-				selectstopy=cy;
+				selectstartx = cx;
+				selectstarty = cy;
+				selectstopx = cx + text2find.length();
+				selectstopy = cy;
 				focusCursor();
 			}
 		}
 	}
+
 	private void find() {
-		String t=getSelected();
-		int p1=t.indexOf("\n");
-		if (p1>=0){
-			t=t.substring(0,p1);
+		String t = getSelected();
+		int p1 = t.indexOf("\n");
+		if (p1 >= 0) {
+			t = t.substring(0, p1);
 		}
-		if (t.length()==0 && text2find!=null){
-			t=text2find;
+		if (t.length() == 0 && text2find != null) {
+			t = text2find;
 		}
-		String s=JOptionPane.showInputDialog(edit, "To Find:",t);
-		if (s==null){
+		String s = JOptionPane.showInputDialog(edit, "To Find:", t);
+		if (s == null) {
 			return;
 		}
-		text2find=s;
+		text2find = s;
 		findNext();
 	}
 
 	private Point find(String s, int x, int y) {
 		int p1 = getline(y).toString().indexOf(s, x + 1);
-		if (p1>=0){
-			return new Point(p1,y);
+		if (p1 >= 0) {
+			return new Point(p1, y);
 		}
-		int fy=y;
-		for (int i=0;i<lines.size();i++){
-			fy+=1;
-			if (fy>=lines.size()){
-				fy=0;
+		int fy = y;
+		for (int i = 0; i < lines.size(); i++) {
+			fy += 1;
+			if (fy >= lines.size()) {
+				fy = 0;
 			}
 			p1 = getline(fy).toString().indexOf(s);
-			if (p1>=0){
-				return new Point(p1,fy);
+			if (p1 >= 0) {
+				return new Point(p1, fy);
 			}
 		}
 		return null;
@@ -584,8 +603,7 @@ public class PlainPage implements Page {
 	}
 
 	private void newFile() {
-		// TODO Auto-generated method stub
-
+		edit.newFile();
 	}
 
 	private void saveFile() {
