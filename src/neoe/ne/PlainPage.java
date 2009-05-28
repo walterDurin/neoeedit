@@ -450,6 +450,8 @@ public class PlainPage implements Page {
 				changePage();
 			} else if (kc == KeyEvent.VK_Y) {
 				redo();
+			}else if (kc == KeyEvent.VK_W) {
+				closePage();
 			}
 		} else {
 			boolean cmoved = false;
@@ -518,6 +520,24 @@ public class PlainPage implements Page {
 		edit.repaint();
 	}
 
+	private void closePage() {
+		if (history.size()!=0){
+			if (JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(
+					edit, "Are you sure to close?","Changes made",JOptionPane.YES_NO_OPTION)) {
+				return;
+			}
+		}
+		edit.pages.remove(edit.pageNo);
+		if (edit.pageNo>=edit.pages.size()){
+			edit.pageNo=edit.pages.size()-1;
+		}
+		if (edit.pages.size()==0){
+			edit.newFile();
+			return;
+		}		
+		edit.changePage(edit.pageNo);
+	}
+
 	private void saveAs() {
 		JFileChooser chooser = new JFileChooser();
 		int returnVal = chooser.showSaveDialog(edit);
@@ -525,7 +545,7 @@ public class PlainPage implements Page {
 			String fn = chooser.getSelectedFile().getAbsolutePath();
 			if (new File(fn).exists()) {
 				if (JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(
-						edit, "save as...","file exists, are you sure to overwrite?",JOptionPane.YES_NO_OPTION)) {
+						edit, "file exists, are you sure to overwrite?","save as...",JOptionPane.YES_NO_OPTION)) {
 					message("not renamed");
 					return;
 				}
