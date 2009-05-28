@@ -5,6 +5,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
@@ -57,6 +58,7 @@ public class PlainPage implements Page {
 	private long msgtime;
 	private String msg;
 	private Dimension size;
+	private String text2find;
 
 	public PlainPage(Editor editor, PageInfo pi) throws Exception {
 		this.edit = editor;
@@ -402,6 +404,8 @@ public class PlainPage implements Page {
 		int kc = env.getKeyCode();
 		if (kc == KeyEvent.VK_F1) {
 			help();
+		}else if (kc == KeyEvent.VK_F3) {
+			findNext();
 		}
 		if (env.isControlDown()) {
 			if (kc == KeyEvent.VK_C) {
@@ -437,6 +441,8 @@ public class PlainPage implements Page {
 				gotoLine();
 			} else if (kc == KeyEvent.VK_Z) {
 				undo();
+			} else if (kc == KeyEvent.VK_F) {
+				find();
 			}
 		} else {
 			boolean cmoved = false;
@@ -503,6 +509,57 @@ public class PlainPage implements Page {
 			}
 		}
 		edit.repaint();
+	}
+	private void findNext() {
+		if (text2find!=null && text2find.length() > 0) {
+			Point p = find(text2find, cx, cy);
+			if (p == null) {
+				message("string not found");
+			} else {
+				cx = p.x;
+				cy = p.y;
+				selectstartx=cx;
+				selectstarty=cy;
+				selectstopx=cx+text2find.length();
+				selectstopy=cy;
+				focusCursor();
+			}
+		}
+	}
+	private void find() {
+		String t=getSelected();
+		int p1=t.indexOf("\n");
+		if (p1>=0){
+			t=t.substring(0,p1);
+		}
+		if (t.length()==0 && text2find!=null){
+			t=text2find;
+		}
+		String s=JOptionPane.showInputDialog(edit, "To Find:",t);
+		if (s==null){
+			return;
+		}
+		text2find=s;
+		findNext();
+	}
+
+	private Point find(String s, int x, int y) {
+		int p1 = getline(y).toString().indexOf(s, x + 1);
+		if (p1>=0){
+			return new Point(p1,y);
+		}
+		int fy=y;
+		for (int i=0;i<lines.size();i++){
+			fy+=1;
+			if (fy>=lines.size()){
+				fy=0;
+			}
+			p1 = getline(fy).toString().indexOf(s);
+			if (p1>=0){
+				return new Point(p1,fy);
+			}
+		}
+		return null;
 	}
 
 	private void gotoLine() {
