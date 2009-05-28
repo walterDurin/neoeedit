@@ -11,13 +11,20 @@ public class History {
 
 	private PlainPage page;
 	private LinkedList<HistoryInfo> data;
+	private int p;
 
 	public History(PlainPage page) {
 		// this.page=page;
 		data = new LinkedList<HistoryInfo>();
+		p=0;
 	}
 
 	public void add(HistoryInfo o) {
+		if (p<data.size() && p>=0){
+			for(int i=0;i<data.size()-p;i++){
+				data.removeLast();
+			}
+		}
 		//stem.out.println("o   =" + o);
 		HistoryInfo last = data.peekLast();
 		//stem.out.println("last=" + last);
@@ -46,19 +53,37 @@ public class History {
 		data.add(o);
 		if (data.size() > MAXSIZE) {
 			data.removeFirst();
+		}else{
+			p+=1;
 		}
 	}
 
 	public HistoryInfo get() {
-		return data.removeLast();
+		if (p<=0){
+			return null;
+		}
+		p-=1;
+		return data.get(p);
+	}
+	
+	public HistoryInfo getRedo() {
+		if (p<data.size()){
+			p+=1;
+			return data.get(p-1);
+		}else{
+			return null;
+		}
 	}
 
 	public void clear() {
 		data.clear();
+		p=0;
 	}
 
 	public int size() {
-		return data.size();
+		return p;
 	}
+	
+	
 
 }
