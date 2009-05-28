@@ -405,6 +405,8 @@ public class PlainPage implements Page {
 		int kc = env.getKeyCode();
 		if (kc == KeyEvent.VK_F1) {
 			help();
+		} else if (kc == KeyEvent.VK_F2) {
+			saveAs();
 		} else if (kc == KeyEvent.VK_F3) {
 			findNext();
 		}
@@ -446,6 +448,8 @@ public class PlainPage implements Page {
 				find();
 			} else if (kc == KeyEvent.VK_TAB) {
 				changePage();
+			} else if (kc == KeyEvent.VK_Y) {
+				redo();
 			}
 		} else {
 			boolean cmoved = false;
@@ -512,6 +516,42 @@ public class PlainPage implements Page {
 			}
 		}
 		edit.repaint();
+	}
+
+	private void saveAs() {
+		JFileChooser chooser = new JFileChooser();
+		int returnVal = chooser.showSaveDialog(edit);
+		if (returnVal == JFileChooser.APPROVE_OPTION) {
+			String fn = chooser.getSelectedFile().getAbsolutePath();
+			if (new File(fn).exists()) {
+				if (JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(
+						edit, "save as...","file exists, are you sure to overwrite?",JOptionPane.YES_NO_OPTION)) {
+					message("not renamed");
+					return;
+				}
+			}
+			info.fn = fn;
+			edit.changeTitle();
+			message("file renamed");
+			savePageToFile();
+		}
+	}
+
+	private void redo() {
+
+		HistoryInfo o = history.getRedo();
+		if (o == null) {
+			return;
+		}
+		// tem.out.println(o);
+		if (o.type == History.INSERT) {
+			doPaste(o.s, o.x1, o.y1, false);
+		} else if (o.type == History.DELETE) {
+			deleteRect(new Rectangle(o.x1, o.y1, o.x2, o.y2), false);
+		} else {
+			System.out.println("not supported " + o);
+		}
+
 	}
 
 	private void changePage() {
@@ -612,12 +652,24 @@ public class PlainPage implements Page {
 			int returnVal = chooser.showSaveDialog(edit);
 			if (returnVal == JFileChooser.APPROVE_OPTION) {
 				String fn = chooser.getSelectedFile().getAbsolutePath();
+				if (new File(fn).exists()) {
+					if (JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(
+							edit, "Are you sure to overwrite?","File exists",JOptionPane.YES_NO_OPTION)) {
+						message("not saved");
+						return;
+					}
+				}
 				info.fn = fn;
 				edit.changeTitle();
 			} else {
 				return;
 			}
 		}
+		savePageToFile();
+
+	}
+
+	private void savePageToFile() {
 		try {
 			BufferedWriter out = new BufferedWriter(new OutputStreamWriter(
 					new FileOutputStream(info.fn), encoding));
@@ -723,7 +775,10 @@ public class PlainPage implements Page {
 
 	}
 
-	private void doPaste(String s, int cx, int cy, boolean record) {
+	private Rectangle doPaste(String s, int cx, int cy, boolean record) {
+		Rectangle r = new Rectangle();
+		r.x = cx;
+		r.y = cy;
 		int p1 = 0;
 		int ocx = cx;
 		int ocy = cy;
@@ -751,8 +806,11 @@ public class PlainPage implements Page {
 		}
 		this.cx = cx;
 		this.cy = cy;
+		r.width = cx;
+		r.height = cy;
 		cancelSelect();
 		focusCursor();
+		return r;
 
 	}
 
@@ -763,8 +821,7 @@ public class PlainPage implements Page {
 		System.out.println("copied " + s.length());
 	}
 
-	private String getSelected() {
-		Rectangle r = getSelectRect();
+	private String getTextInRect(Rectangle r) {
 		int x1 = r.x;
 		int y1 = r.y;
 		int x2 = r.width;
@@ -784,6 +841,10 @@ public class PlainPage implements Page {
 
 		}
 		return sb.toString();
+	}
+
+	private String getSelected() {
+		return getTextInRect(getSelectRect());
 	}
 
 	private void insert(char ch) {
@@ -1013,15 +1074,19 @@ public class PlainPage implements Page {
 	}
 
 	public void undo() {
-		if (history.size() <= 0) {
+		HistoryInfo o = history.get();
+		if (o == null) {
 			return;
 		}
-		HistoryInfo o = history.get();
 		// tem.out.println(o);
 		if (o.type == History.INSERT) {
-			deleteRect(new Rectangle(o.x1, o.y1, o.x2, o.y2), false);
+			Rectangle r = new Rectangle(o.x1, o.y1, o.x2, o.y2);
+			o.s = getTextInRect(r);
+			deleteRect(r, false);
 		} else if (o.type == History.DELETE) {
-			doPaste(o.s, o.x1, o.y1, false);
+			Rectangle r = doPaste(o.s, o.x1, o.y1, false);
+			o.x2 = r.width;
+			o.y2 = r.height;
 		} else {
 			System.out.println("not supported " + o);
 		}
