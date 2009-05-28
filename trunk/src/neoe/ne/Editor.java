@@ -63,7 +63,7 @@ public class Editor extends JComponent implements MouseMotionListener,
 	}
 
 	List<PageInfo> pages;
-	private int pageNo;
+	int pageNo;
 	JFrame frame;
 
 	public void openFile(String fn) {
