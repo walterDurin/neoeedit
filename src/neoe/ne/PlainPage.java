@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Vector;
 
 import javax.swing.JFileChooser;
-import javax.swing.JList;
 import javax.swing.JOptionPane;
 
 public class PlainPage implements Page {
@@ -78,7 +77,7 @@ public class PlainPage implements Page {
 		history = new History(this);
 	}
 
-	private List<StringBuffer> readFile(String fn) throws Exception {
+	private List<StringBuffer> readFile(String fn) {
 
 		List<StringBuffer> lines = new ArrayList<StringBuffer>();
 		if (fn == null) {
@@ -409,6 +408,8 @@ public class PlainPage implements Page {
 			saveAs();
 		} else if (kc == KeyEvent.VK_F3) {
 			findNext();
+		}else if (kc == KeyEvent.VK_F5) {
+			reloadWithEncoding();
 		}
 		if (env.isControlDown()) {
 			if (kc == KeyEvent.VK_C) {
@@ -450,8 +451,10 @@ public class PlainPage implements Page {
 				changePage();
 			} else if (kc == KeyEvent.VK_Y) {
 				redo();
-			}else if (kc == KeyEvent.VK_W) {
+			} else if (kc == KeyEvent.VK_W) {
 				closePage();
+			} else if (kc == KeyEvent.VK_E) {
+				changeEncoding();
 			}
 		} else {
 			boolean cmoved = false;
@@ -520,21 +523,57 @@ public class PlainPage implements Page {
 		edit.repaint();
 	}
 
+	private void changeEncoding() {
+		String s = JOptionPane.showInputDialog(edit, "Encoding:", encoding);
+		if (s==null){
+			return;
+		}
+		try {
+			"a".getBytes(s);
+		} catch (Exception e) {
+			message("bad encoding:" + s);
+			return;
+		}
+		encoding = s;
+	}
+
+	private void reloadWithEncoding() {
+		if (info.fn == null) {
+			message("use change encoding for new text.");
+			changeEncoding();
+			return;
+		}
+		String s = JOptionPane.showInputDialog(edit, "Reload with Encoding:",
+				encoding);
+		if (s==null){
+			return;
+		}
+		try {
+			"a".getBytes(s);
+		} catch (Exception e) {
+			message("bad encoding:" + s);
+			return;
+		}
+		encoding = s;
+		lines = readFile(info.fn);
+	}
+
 	private void closePage() {
-		if (history.size()!=0){
-			if (JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(
-					edit, "Are you sure to close?","Changes made",JOptionPane.YES_NO_OPTION)) {
+		if (history.size() != 0) {
+			if (JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(edit,
+					"Are you sure to close?", "Changes made",
+					JOptionPane.YES_NO_OPTION)) {
 				return;
 			}
 		}
 		edit.pages.remove(edit.pageNo);
-		if (edit.pageNo>=edit.pages.size()){
-			edit.pageNo=edit.pages.size()-1;
+		if (edit.pageNo >= edit.pages.size()) {
+			edit.pageNo = edit.pages.size() - 1;
 		}
-		if (edit.pages.size()==0){
+		if (edit.pages.size() == 0) {
 			edit.newFile();
 			return;
-		}		
+		}
 		edit.changePage(edit.pageNo);
 	}
 
@@ -545,7 +584,8 @@ public class PlainPage implements Page {
 			String fn = chooser.getSelectedFile().getAbsolutePath();
 			if (new File(fn).exists()) {
 				if (JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(
-						edit, "file exists, are you sure to overwrite?","save as...",JOptionPane.YES_NO_OPTION)) {
+						edit, "file exists, are you sure to overwrite?",
+						"save as...", JOptionPane.YES_NO_OPTION)) {
 					message("not renamed");
 					return;
 				}
@@ -673,8 +713,10 @@ public class PlainPage implements Page {
 			if (returnVal == JFileChooser.APPROVE_OPTION) {
 				String fn = chooser.getSelectedFile().getAbsolutePath();
 				if (new File(fn).exists()) {
-					if (JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(
-							edit, "Are you sure to overwrite?","File exists",JOptionPane.YES_NO_OPTION)) {
+					if (JOptionPane.YES_OPTION != JOptionPane
+							.showConfirmDialog(edit,
+									"Are you sure to overwrite?",
+									"File exists", JOptionPane.YES_NO_OPTION)) {
 						message("not saved");
 						return;
 					}
