@@ -12,6 +12,7 @@ public class PageInfo {
 
 	public String fn;
 	public Page page;
+	public String defaultPath;
 
 	public String toString() {
 		String s;
