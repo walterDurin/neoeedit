@@ -115,9 +115,9 @@ public class PlainPage implements Page {
 		if (cx < sx) {
 			sx = cx;
 		}
-		while (strWidth(g2, subs(getline(cy), sx, cx)) > size.width
+		if (strWidth(g2, subs(getline(cy), sx, cx)) > size.width
 				- lineHeight * 3) {
-			sx += 1;
+			sx = Math.max(0, cx-1);
 		}
 
 		// apply mouse click position
@@ -408,9 +408,11 @@ public class PlainPage implements Page {
 			saveAs();
 		} else if (kc == KeyEvent.VK_F3) {
 			findNext();
-		}else if (kc == KeyEvent.VK_F5) {
+		} else if (kc == KeyEvent.VK_F5) {
 			reloadWithEncoding();
 		}
+		boolean cmoved = false;
+
 		if (env.isControlDown()) {
 			if (kc == KeyEvent.VK_C) {
 				copySelected();
@@ -455,9 +457,19 @@ public class PlainPage implements Page {
 				closePage();
 			} else if (kc == KeyEvent.VK_E) {
 				changeEncoding();
+			} else if (kc == KeyEvent.VK_PAGE_UP) {
+				cy = 0;
+				cx = 0;
+				focusCursor();
+				cmoved = true;
+			} else if (kc == KeyEvent.VK_PAGE_DOWN) {
+				cy = getLinesize() - 1;
+				cx = 0;
+				focusCursor();
+				cmoved = true;
 			}
 		} else {
-			boolean cmoved = false;
+
 			if (kc == KeyEvent.VK_LEFT) {
 				cx -= 1;
 				if (cx < 0) {
@@ -510,14 +522,14 @@ public class PlainPage implements Page {
 				return;
 			}
 
-			if (cmoved) {
-				if (env.isShiftDown()) {
-					selectstopx = cx;
-					selectstopy = cy;
-				} else {
-					cancelSelect();
+		}
+		if (cmoved) {
+			if (env.isShiftDown()) {
+				selectstopx = cx;
+				selectstopy = cy;
+			} else {
+				cancelSelect();
 
-				}
 			}
 		}
 		edit.repaint();
@@ -525,7 +537,7 @@ public class PlainPage implements Page {
 
 	private void changeEncoding() {
 		String s = JOptionPane.showInputDialog(edit, "Encoding:", encoding);
-		if (s==null){
+		if (s == null) {
 			return;
 		}
 		try {
@@ -545,7 +557,7 @@ public class PlainPage implements Page {
 		}
 		String s = JOptionPane.showInputDialog(edit, "Reload with Encoding:",
 				encoding);
-		if (s==null){
+		if (s == null) {
 			return;
 		}
 		try {
@@ -571,14 +583,14 @@ public class PlainPage implements Page {
 			edit.pageNo = edit.pages.size() - 1;
 		}
 		if (edit.pages.size() == 0) {
-			edit.newFile();
+			edit.frame.dispose();
 			return;
 		}
 		edit.changePage(edit.pageNo);
 	}
 
 	private void saveAs() {
-		JFileChooser chooser = new JFileChooser();
+		JFileChooser chooser = new JFileChooser(info.fn);
 		int returnVal = chooser.showSaveDialog(edit);
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			String fn = chooser.getSelectedFile().getAbsolutePath();
@@ -663,12 +675,14 @@ public class PlainPage implements Page {
 	}
 
 	private Point find(String s, int x, int y) {
+		// first half row
 		int p1 = getline(y).toString().indexOf(s, x + 1);
 		if (p1 >= 0) {
 			return new Point(p1, y);
 		}
+		// middle rows
 		int fy = y;
-		for (int i = 0; i < lines.size(); i++) {
+		for (int i = 0; i < lines.size() - 1; i++) {
 			fy += 1;
 			if (fy >= lines.size()) {
 				fy = 0;
@@ -677,6 +691,15 @@ public class PlainPage implements Page {
 			if (p1 >= 0) {
 				return new Point(p1, fy);
 			}
+		}
+		// last half row
+		fy += 1;
+		if (fy >= lines.size()) {
+			fy = 0;
+		}
+		p1 = getline(fy).substring(0, x).indexOf(s);
+		if (p1 >= 0) {
+			return new Point(p1, fy);
 		}
 		return null;
 	}
@@ -708,7 +731,7 @@ public class PlainPage implements Page {
 
 	private void saveFile() {
 		if (info.fn == null) {
-			JFileChooser chooser = new JFileChooser();
+			JFileChooser chooser = new JFileChooser(info.defaultPath);
 			int returnVal = chooser.showSaveDialog(edit);
 			if (returnVal == JFileChooser.APPROVE_OPTION) {
 				String fn = chooser.getSelectedFile().getAbsolutePath();
@@ -880,7 +903,7 @@ public class PlainPage implements Page {
 		String s = getSelected();
 		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(
 				new StringSelection(s), null);
-		System.out.println("copied " + s.length());
+		message("copied " + s.length());
 	}
 
 	private String getTextInRect(Rectangle r) {

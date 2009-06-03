@@ -183,12 +183,13 @@ public class Editor extends JComponent implements MouseMotionListener,
 
 	}
 
-	public void newFile()  {
+	public void newFile()  {		
+		String fn=(pages.size()==0)?null:pages.get(pageNo).fn;		
 		PageInfo pi;
 		pages.add(pi=new PageInfo(null, 0));
 		try {
 			pi.page = new PlainPage(this, pi);
-			
+			if (fn!=null){pi.defaultPath=new File(fn).getParent();}
 		} catch (Exception e) {
 			e.printStackTrace();
 			JOptionPane.showMessageDialog(this, ""+e);
