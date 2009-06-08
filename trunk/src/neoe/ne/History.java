@@ -6,6 +6,7 @@ public class History {
 
 	public static final char INSERT = 'I';
 	public static final char DELETE = 'D';
+	public static final char REPLACEALL = 'R';
 
 	public static int MAXSIZE = 200;
 
@@ -48,7 +49,6 @@ public class History {
 				last.s = last.s + o.s;
 				return;
 			}
-
 		}
 		data.add(o);
 		if (data.size() > MAXSIZE) {

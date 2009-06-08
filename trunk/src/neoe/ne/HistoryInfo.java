@@ -7,6 +7,7 @@ public class HistoryInfo {
 	public int x1;
 	public int x2;
 	public String s;
+	public String s2;
 
 	public HistoryInfo(char type, int y1, int x1, int x2, String s, int y2) {
 		this.type = type;
@@ -15,6 +16,17 @@ public class HistoryInfo {
 		this.y1 = y1;
 		this.y2 = y2;
 		this.s = s;
+	}
+
+	public HistoryInfo(char type, int y1, int x1, int x2, String s, int y2,
+			String text2) {
+		this.type = type;
+		this.x1 = x1;
+		this.x2 = x2;
+		this.y1 = y1;
+		this.y2 = y2;
+		this.s = s;
+		this.s2 = text2;
 	}
 
 	public String toString() {
