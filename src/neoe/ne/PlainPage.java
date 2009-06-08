@@ -59,6 +59,7 @@ public class PlainPage implements Page {
 	private String msg;
 	private Dimension size;
 	private String text2find;
+	private FindReplaceWindow findWindow;
 
 	public PlainPage(Editor editor, PageInfo pi) throws Exception {
 		this.edit = editor;
@@ -75,6 +76,7 @@ public class PlainPage implements Page {
 		this.encoding = "utf8";
 		this.lines = readFile(pi.fn);
 		history = new History(this);
+		this.findWindow = new FindReplaceWindow(editor.frame, this);
 	}
 
 	private List<StringBuffer> readFile(String fn) {
@@ -115,9 +117,9 @@ public class PlainPage implements Page {
 		if (cx < sx) {
 			sx = cx;
 		}
-		if (strWidth(g2, subs(getline(cy), sx, cx)) > size.width
-				- lineHeight * 3) {
-			sx = Math.max(0, cx-1);
+		if (strWidth(g2, subs(getline(cy), sx, cx)) > size.width - lineHeight
+				* 3) {
+			sx = Math.max(0, cx - 1);
 		}
 
 		// apply mouse click position
@@ -620,6 +622,10 @@ public class PlainPage implements Page {
 			doPaste(o.s, o.x1, o.y1, false);
 		} else if (o.type == History.DELETE) {
 			deleteRect(new Rectangle(o.x1, o.y1, o.x2, o.y2), false);
+		} else if (o.type == History.REPLACEALL) {
+			cx = o.x1;
+			cy = o.y1;
+			doReplaceAll(o.s, true, false, o.s2,false);// bug expected!
 		} else {
 			System.out.println("not supported " + o);
 		}
@@ -666,12 +672,11 @@ public class PlainPage implements Page {
 		if (t.length() == 0 && text2find != null) {
 			t = text2find;
 		}
-		String s = JOptionPane.showInputDialog(edit, "To Find:", t);
-		if (s == null) {
-			return;
+
+		if (findWindow.jta1.getText().length() == 0) {
+			findWindow.jta1.setText(t);
 		}
-		text2find = s;
-		findNext();
+		findWindow.show();
 	}
 
 	private Point find(String s, int x, int y) {
@@ -1160,6 +1165,7 @@ public class PlainPage implements Page {
 
 	public void undo() {
 		HistoryInfo o = history.get();
+		System.out.println(o);
 		if (o == null) {
 			return;
 		}
@@ -1172,9 +1178,130 @@ public class PlainPage implements Page {
 			Rectangle r = doPaste(o.s, o.x1, o.y1, false);
 			o.x2 = r.width;
 			o.y2 = r.height;
+		} else if (o.type == History.REPLACEALL) {
+			doReplaceAll(o.s2, true, false, o.s, false);// bug expected!
 		} else {
 			System.out.println("not supported " + o);
 		}
+
+	}
+
+	public void doFind(String text, boolean selected, boolean selected2) {
+		text2find = text;
+		findNext();
+		edit.repaint();
+	}
+
+	public void doReplace(String text, boolean ignoreCase, boolean selected2,
+			String text2, boolean record) {
+		_doReplace(text, ignoreCase, selected2, text2, false, record);
+
+	}
+
+	private void _doReplace(String text, boolean ignoreCase, boolean selected2,
+			String text2, boolean all, boolean record) {
+		text2find = text;
+		if (text2find != null && text2find.length() > 0) {
+			Point p = replace(text2find, cx, cy, text2, all, ignoreCase);
+			if (p == null) {
+				message("string not found");
+			} else {
+				cx = p.x;
+				cy = p.y;
+				selectstartx = cx;
+				selectstarty = cy;
+				selectstopx = cx + text2.length();
+				selectstopy = cy;
+				focusCursor();
+				if (record) {
+					if (!all) {
+						history.add(new HistoryInfo(History.DELETE, cy, cx, cx
+								+ text.length(), text, cy));
+						history.add(new HistoryInfo(History.INSERT, cy, cx, cx
+								+ text2.length(), text2, cy));
+					} else {
+						history.add(new HistoryInfo(History.REPLACEALL, cy, cx,
+								cx, text, cy, text2));
+					}
+				}
+			}
+		}
+		edit.repaint();
+	}
+
+	private Point replace(String s, int x, int y, String s2, boolean all,
+			boolean ignoreCase) {
+		if (ignoreCase) {
+			s = s.toLowerCase();
+		}
+		// first half row
+		boolean found = false;
+		int p1 = x + 1;
+		while (true) {
+			p1 = getline(y).toString(ignoreCase).indexOf(s, p1);
+			if (p1 >= 0) {
+				found = true;
+				getline(y).sb().replace(p1, p1 + s.length(), s2);
+				if (!all) {
+					return new Point(p1, y);
+				}
+				p1 = p1 + 1;
+			} else {
+				break;
+			}
+		}
+		// middle rows
+		int fy = y;
+		for (int i = 0; i < lines.size() - 1; i++) {
+			fy += 1;
+			if (fy >= lines.size()) {
+				fy = 0;
+			}
+			p1 = 0;
+			while (true) {
+				p1 = getline(fy).toString(ignoreCase).indexOf(s, p1);
+				if (p1 >= 0) {
+					found = true;
+					getline(fy).sb().replace(p1, p1 + s.length(), s2);
+					if (!all) {
+						return new Point(p1, fy);
+					}
+					p1 = p1 + 1;
+				} else {
+					break;
+				}
+			}
+		}
+		// last half row
+		fy += 1;
+		if (fy >= lines.size()) {
+			fy = 0;
+		}
+		p1 = 0;
+		while (true) {
+			p1 = getline(fy).toString(ignoreCase).substring(0, x)
+					.indexOf(s, p1);
+			if (p1 >= 0) {
+				found = true;
+				getline(fy).sb().replace(p1, p1 + s.length(), s2);
+				if (!all) {
+					return new Point(p1, fy);
+				}
+				p1 = p1 + 1;
+			} else {
+				break;
+			}
+		}
+		if (found) {
+			return new Point(x, y);
+		} else {
+			return null;
+		}
+	}
+
+	public void doReplaceAll(String text, boolean ignoreCase,
+			boolean selected2, String text2, boolean record) {
+		_doReplace(text, ignoreCase, selected2, text2, true, record);
 
 	}
 }
