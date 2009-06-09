@@ -60,6 +60,7 @@ public class PlainPage implements Page {
 	private Dimension size;
 	private String text2find;
 	private FindReplaceWindow findWindow;
+	private boolean ignoreCase = true;
 
 	public PlainPage(Editor editor, PageInfo pi) throws Exception {
 		this.edit = editor;
@@ -625,7 +626,7 @@ public class PlainPage implements Page {
 		} else if (o.type == History.REPLACEALL) {
 			cx = o.x1;
 			cy = o.y1;
-			doReplaceAll(o.s, true, false, o.s2,false);// bug expected!
+			doReplaceAll(o.s, true, false, o.s2, false);// bug expected!
 		} else {
 			System.out.println("not supported " + o);
 		}
@@ -680,8 +681,11 @@ public class PlainPage implements Page {
 	}
 
 	private Point find(String s, int x, int y) {
+		if (ignoreCase) {
+			s = s.toLowerCase();
+		}
 		// first half row
-		int p1 = getline(y).toString().indexOf(s, x + 1);
+		int p1 = getline(y).toString(ignoreCase).indexOf(s, x + 1);
 		if (p1 >= 0) {
 			return new Point(p1, y);
 		}
@@ -692,7 +696,7 @@ public class PlainPage implements Page {
 			if (fy >= lines.size()) {
 				fy = 0;
 			}
-			p1 = getline(fy).toString().indexOf(s);
+			p1 = getline(fy).toString(ignoreCase).indexOf(s);
 			if (p1 >= 0) {
 				return new Point(p1, fy);
 			}
@@ -702,7 +706,7 @@ public class PlainPage implements Page {
 		if (fy >= lines.size()) {
 			fy = 0;
 		}
-		p1 = getline(fy).substring(0, x).indexOf(s);
+		p1 = getline(fy).toString(ignoreCase).substring(0, x).indexOf(s);
 		if (p1 >= 0) {
 			return new Point(p1, fy);
 		}
@@ -1186,8 +1190,9 @@ public class PlainPage implements Page {
 
 	}
 
-	public void doFind(String text, boolean selected, boolean selected2) {
+	public void doFind(String text, boolean ignoreCase, boolean selected2) {
 		text2find = text;
+		this.ignoreCase = ignoreCase;
 		findNext();
 		edit.repaint();
 	}
