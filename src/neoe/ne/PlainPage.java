@@ -947,13 +947,14 @@ public class PlainPage implements Page {
 				deleteSelection();
 			}
 			RoSb sb = getline(cy);
+			String indent=getIndent(sb.toString());
 			String s = sb.substring(cx, sb.length());
-			lines.add(cy + 1, new StringBuffer(s));
+			lines.add(cy + 1, new StringBuffer(indent+s));
 			deleteInLine(cy, cx, Integer.MAX_VALUE, false);
 			int ocy = cy;
 			int ocx = cx;
 			cy += 1;
-			cx = 0;
+			cx = indent.length();
 			history
 					.add(new HistoryInfo(History.INSERT, ocy, ocx, cx, null, cy));
 		} else if (ch == KeyEvent.VK_BACK_SPACE) {
@@ -998,6 +999,14 @@ public class PlainPage implements Page {
 		focusCursor();
 		cancelSelect();
 		edit.repaint();
+	}
+
+	private String getIndent(String s) {
+		int p=0;
+		while(p<s.length()&&(s.charAt(p)==' '||s.charAt(p)=='\t')){
+			p+=1;
+		}		
+		return s.substring(0,p);		
 	}
 
 	private void u_insertInLine(int cy, int cx, char ch) {
