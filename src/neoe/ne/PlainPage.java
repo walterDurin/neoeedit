@@ -415,8 +415,26 @@ public class PlainPage implements Page {
 			reloadWithEncoding();
 		}
 		boolean cmoved = false;
-
-		if (env.isControlDown()) {
+		if (env.isAltDown()) {
+			if (kc == KeyEvent.VK_LEFT) {
+				String s = getline(cy).toString();
+				if (s.length() > 0
+						&& (s.charAt(0) == '\t' || s.charAt(0) == ' ')) {
+					getline(cy).sb().deleteCharAt(0);
+				}
+				cx -= 1;
+				if (cx < 0) {
+					cx = 0;
+				}
+				focusCursor();
+				cmoved = true;
+			} else if (kc == KeyEvent.VK_RIGHT) {
+				getline(cy).sb().insert(0, '\t');
+				cx += 1;
+				focusCursor();
+				cmoved = true;
+			}
+		} else if (env.isControlDown()) {
 			if (kc == KeyEvent.VK_C) {
 				copySelected();
 			} else if (kc == KeyEvent.VK_V) {
@@ -947,9 +965,9 @@ public class PlainPage implements Page {
 				deleteSelection();
 			}
 			RoSb sb = getline(cy);
-			String indent=getIndent(sb.toString());
+			String indent = getIndent(sb.toString());
 			String s = sb.substring(cx, sb.length());
-			lines.add(cy + 1, new StringBuffer(indent+s));
+			lines.add(cy + 1, new StringBuffer(indent + s));
 			deleteInLine(cy, cx, Integer.MAX_VALUE, false);
 			int ocy = cy;
 			int ocx = cx;
@@ -1002,11 +1020,11 @@ public class PlainPage implements Page {
 	}
 
 	private String getIndent(String s) {
-		int p=0;
-		while(p<s.length()&&(s.charAt(p)==' '||s.charAt(p)=='\t')){
-			p+=1;
-		}		
-		return s.substring(0,p);		
+		int p = 0;
+		while (p < s.length() && (s.charAt(p) == ' ' || s.charAt(p) == '\t')) {
+			p += 1;
+		}
+		return s.substring(0, p);
 	}
 
 	private void u_insertInLine(int cy, int cx, char ch) {
