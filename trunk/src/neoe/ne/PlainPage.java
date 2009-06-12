@@ -423,8 +423,8 @@ public class PlainPage implements Page {
 					getline(cy).sb().deleteCharAt(0);
 				}
 				cx -= 1;
-				if (cx < 0) {
-					cx = 0;
+				if (cx < 0) {					
+					cx = 0;					
 				}
 				focusCursor();
 				cmoved = true;
@@ -494,12 +494,21 @@ public class PlainPage implements Page {
 			if (kc == KeyEvent.VK_LEFT) {
 				cx -= 1;
 				if (cx < 0) {
-					cx = 0;
+					if (cy > 0) {
+						cy -= 1;
+						cx = getline(cy).length();
+					} else {
+						cx = 0;
+					}
 				}
 				focusCursor();
 				cmoved = true;
 			} else if (kc == KeyEvent.VK_RIGHT) {
 				cx += 1;
+				if (cx>getline(cy).length()&& cy<lines.size()-1){
+					cy+=1;
+					cx=0;
+				}
 				focusCursor();
 				cmoved = true;
 			} else if (kc == KeyEvent.VK_UP) {
