@@ -27,6 +27,8 @@ import java.util.Vector;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 
+import com.sun.org.apache.bcel.internal.generic.FNEG;
+
 public class PlainPage implements Page {
 
 	private static final long VANISHTIME = 3000;
@@ -63,8 +65,101 @@ public class PlainPage implements Page {
 	private FindReplaceWindow findWindow;
 	private boolean ignoreCase = true;
 	private boolean highlight = true;
-	
-	final static String[] kws={ "ArithmeticError", "AssertionError", "AttributeError", "BufferType", "BuiltinFunctionType", "BuiltinMethodType", "ClassType", "CodeType", "ComplexType", "DeprecationWarning", "DictProxyType", "DictType", "DictionaryType", "EOFError", "EllipsisType", "EnvironmentError", "Err", "Exception", "False", "FileType", "FloatType", "FloatingPointError", "FrameType", "FunctionType", "GeneratorType", "IOError", "ImportError", "IndentationError", "IndexError", "InstanceType", "IntType", "KeyError", "KeyboardInterrupt", "LambdaType", "ListType", "LongType", "LookupError", "MemoryError", "MethodType", "ModuleType", "NameError", "None", "NoneType", "NotImplemented", "NotImplementedError", "OSError", "ObjectType", "OverflowError", "OverflowWarning", "ReferenceError", "RuntimeError", "RuntimeWarning", "SliceType", "StandardError", "StopIteration", "StringType", "StringTypes", "SyntaxError", "SyntaxWarning", "SystemError", "SystemExit", "TabError", "TracebackType", "True", "TupleType", "TypeError", "TypeType", "UnboundLocalError", "UnboundMethodType", "UnicodeError", "UnicodeType", "UserWarning", "ValueError", "Warning", "WindowsError", "XRangeType", "ZeroDivisionError", "__abs__", "__add__", "__all__", "__author__", "__bases__", "__builtins__", "__call__", "__class__", "__cmp__", "__coerce__", "__contains__", "__debug__", "__del__", "__delattr__", "__delitem__", "__delslice__", "__dict__", "__div__", "__divmod__", "__doc__", "__docformat__", "__eq__", "__file__", "__float__", "__floordiv__", "__future__", "__ge__", "__getattr__", "__getattribute__", "__getitem__", "__getslice__", "__gt__", "__hash__", "__hex__", "__iadd__", "__import__", "__imul__", "__init__", "__int__", "__invert__", "__iter__", "__le__", "__len__", "__long__", "__lshift__", "__lt__", "__members__", "__metaclass__", "__mod__", "__mro__", "__mul__", "__name__", "__ne__", "__neg__", "__new__", "__nonzero__", "__oct__", "__or__", "__path__", "__pos__", "__pow__", "__radd__", "__rdiv__", "__rdivmod__", "__reduce__", "__repr__", "__rfloordiv__", "__rlshift__", "__rmod__", "__rmul__", "__ror__", "__rpow__", "__rrshift__", "__rsub__", "__rtruediv__", "__rxor__", "__self__", "__setattr__", "__setitem__", "__setslice__", "__slots__", "__str__", "__sub__", "__truediv__", "__version__", "__xor__", "abs", "abstract", "all", "and", "any", "apply", "array", "as", "asc", "ascb", "ascw", "asm", "assert", "atn", "auto", "bool", "boolean", "break", "buffer", "byref", "byte", "byval", "call", "callable", "case", "catch", "cbool", "cbyte", "ccur", "cdate", "cdbl", "char", "chr", "chrb", "chrw", "cint", "class", "classmethod", "clng", "cmp", "coerce", "compile", "complex", "const", "continue", "cos", "createobject", "csng", "cstr", "date", "dateadd", "datediff", "datepart", "dateserial", "datevalue", "day", "def", "default", "del", "delattr", "dict", "dim", "dir", "divmod", "do", "double", "each", "elif", "else", "elseif", "empty", "end", "enum", "enumerate", "erase", "error", "eval", "except", "exec", "execfile", "execute", "exit", "exp", "explicit", "extends", "extern", "false", "file", "filter", "final", "finally", "fix", "float", "for", "formatcurrency", "formatdatetime", "formatnumber", "formatpercent", "from", "frozenset", "function", "get", "getattr", "getobject", "getref", "global", "globals", "goto", "hasattr", "hash", "hex", "hour", "id", "if", "imp", "implements", "import", "in", "inline", "input", "inputbox", "instanceof", "instr", "instrb", "instrrev", "int", "interface", "intern", "is", "isarray", "isdate", "isempty", "isinstance", "isnull", "isnumeric", "isobject", "issubclass", "iter", "join", "lambda", "lbound", "lcase", "left", "leftb", "len", "lenb", "let", "list", "loadpicture", "locals", "log", "long", "loop", "ltrim", "map", "max", "mid", "midb", "min", "minute", "mod", "month", "monthname", "msgbox", "native", "new", "next", "not", "nothing", "now", "null", "object", "oct", "on", "open", "option", "or", "ord", "package", "pass", "pow", "preserve", "print", "private", "property", "protected", "public", "raise", "randomize", "range", "raw_input", "redim", "reduce", "register", "reload", "rem", "replace", "repr", "resume", "return", "reversed", "rgb", "right", "rightb", "rnd", "round", "rtrim", "scriptengine", "scriptenginebuildversion", "scriptenginemajorversion", "scriptengineminorversion", "second", "select", "self", "set", "setattr", "sgn", "short", "signed", "sin", "sizeof", "slice", "sorted", "space", "split", "sqr", "static", "staticmethod", "step", "str", "strcomp", "strictfp", "string", "strreverse", "struct", "sub", "sum", "super", "switch", "synchronized", "tan", "then", "this", "throw", "throws", "time", "timeserial", "timevalue", "to", "transient", "trim", "true", "try", "tuple", "type", "typedef", "typename", "ubound", "ucase", "unichr", "unicode", "union", "unsigned", "until", "vars", "vartype", "vbAbort", "vbAbortRetryIgnore", "vbApplicationModal", "vbCancel", "vbCritical", "vbDefaultButton1", "vbDefaultButton2", "vbDefaultButton3", "vbDefaultButton4", "vbExclamation", "vbFalse", "vbGeneralDate", "vbIgnore", "vbInformation", "vbLongDate", "vbLongTime", "vbNo", "vbOK", "vbOKCancel", "vbOKOnly", "vbObjectError", "vbQuestion", "vbRetry", "vbRetryCancel", "vbShortDate", "vbShortTime", "vbSystemModal", "vbTrue", "vbUseDefault", "vbYes", "vbYesNo", "vbYesNoCancel", "vbarray", "vbblack", "vbblue", "vbboolean", "vbbyte", "vbcr", "vbcrlf", "vbcurrency", "vbcyan", "vbdataobject", "vbdate", "vbdecimal", "vbdouble", "vbempty", "vberror", "vbformfeed", "vbgreen", "vbinteger", "vblf", "vblong", "vbmagenta", "vbnewline", "vbnull", "vbnullchar", "vbnullstring", "vbobject", "vbred", "vbsingle", "vbstring", "vbtab", "vbvariant", "vbverticaltab", "vbwhite", "vbyellow", "void", "volatile", "weekday", "weekdayname", "wend", "while", "with", "xor", "xrange", "year", "yield", "zip"};
+
+	final static String[] kws = { "ArithmeticError", "AssertionError",
+			"AttributeError", "BufferType", "BuiltinFunctionType",
+			"BuiltinMethodType", "ClassType", "CodeType", "ComplexType",
+			"DeprecationWarning", "DictProxyType", "DictType",
+			"DictionaryType", "EOFError", "EllipsisType", "EnvironmentError",
+			"Err", "Exception", "False", "FileType", "FloatType",
+			"FloatingPointError", "FrameType", "FunctionType", "GeneratorType",
+			"IOError", "ImportError", "IndentationError", "IndexError",
+			"InstanceType", "IntType", "KeyError", "KeyboardInterrupt",
+			"LambdaType", "ListType", "LongType", "LookupError", "MemoryError",
+			"MethodType", "ModuleType", "NameError", "None", "NoneType",
+			"NotImplemented", "NotImplementedError", "OSError", "ObjectType",
+			"OverflowError", "OverflowWarning", "ReferenceError",
+			"RuntimeError", "RuntimeWarning", "SliceType", "StandardError",
+			"StopIteration", "StringType", "StringTypes", "SyntaxError",
+			"SyntaxWarning", "SystemError", "SystemExit", "TabError",
+			"TracebackType", "True", "TupleType", "TypeError", "TypeType",
+			"UnboundLocalError", "UnboundMethodType", "UnicodeError",
+			"UnicodeType", "UserWarning", "ValueError", "Warning",
+			"WindowsError", "XRangeType", "ZeroDivisionError", "__abs__",
+			"__add__", "__all__", "__author__", "__bases__", "__builtins__",
+			"__call__", "__class__", "__cmp__", "__coerce__", "__contains__",
+			"__debug__", "__del__", "__delattr__", "__delitem__",
+			"__delslice__", "__dict__", "__div__", "__divmod__", "__doc__",
+			"__docformat__", "__eq__", "__file__", "__float__", "__floordiv__",
+			"__future__", "__ge__", "__getattr__", "__getattribute__",
+			"__getitem__", "__getslice__", "__gt__", "__hash__", "__hex__",
+			"__iadd__", "__import__", "__imul__", "__init__", "__int__",
+			"__invert__", "__iter__", "__le__", "__len__", "__long__",
+			"__lshift__", "__lt__", "__members__", "__metaclass__", "__mod__",
+			"__mro__", "__mul__", "__name__", "__ne__", "__neg__", "__new__",
+			"__nonzero__", "__oct__", "__or__", "__path__", "__pos__",
+			"__pow__", "__radd__", "__rdiv__", "__rdivmod__", "__reduce__",
+			"__repr__", "__rfloordiv__", "__rlshift__", "__rmod__", "__rmul__",
+			"__ror__", "__rpow__", "__rrshift__", "__rsub__", "__rtruediv__",
+			"__rxor__", "__self__", "__setattr__", "__setitem__",
+			"__setslice__", "__slots__", "__str__", "__sub__", "__truediv__",
+			"__version__", "__xor__", "abs", "abstract", "all", "and", "any",
+			"apply", "array", "as", "asc", "ascb", "ascw", "asm", "assert",
+			"atn", "auto", "bool", "boolean", "break", "buffer", "byref",
+			"byte", "byval", "call", "callable", "case", "catch", "cbool",
+			"cbyte", "ccur", "cdate", "cdbl", "char", "chr", "chrb", "chrw",
+			"cint", "class", "classmethod", "clng", "cmp", "coerce", "compile",
+			"complex", "const", "continue", "cos", "createobject", "csng",
+			"cstr", "date", "dateadd", "datediff", "datepart", "dateserial",
+			"datevalue", "day", "def", "default", "del", "delattr", "dict",
+			"dim", "dir", "divmod", "do", "double", "each", "elif", "else",
+			"elseif", "empty", "end", "enum", "enumerate", "erase", "error",
+			"eval", "except", "exec", "execfile", "execute", "exit", "exp",
+			"explicit", "extends", "extern", "false", "file", "filter",
+			"final", "finally", "fix", "float", "for", "formatcurrency",
+			"formatdatetime", "formatnumber", "formatpercent", "from",
+			"frozenset", "function", "get", "getattr", "getobject", "getref",
+			"global", "globals", "goto", "hasattr", "hash", "hex", "hour",
+			"id", "if", "imp", "implements", "import", "in", "inline", "input",
+			"inputbox", "instanceof", "instr", "instrb", "instrrev", "int",
+			"interface", "intern", "is", "isarray", "isdate", "isempty",
+			"isinstance", "isnull", "isnumeric", "isobject", "issubclass",
+			"iter", "join", "lambda", "lbound", "lcase", "left", "leftb",
+			"len", "lenb", "let", "list", "loadpicture", "locals", "log",
+			"long", "loop", "ltrim", "map", "max", "mid", "midb", "min",
+			"minute", "mod", "month", "monthname", "msgbox", "native", "new",
+			"next", "not", "nothing", "now", "null", "object", "oct", "on",
+			"open", "option", "or", "ord", "package", "pass", "pow",
+			"preserve", "print", "private", "property", "protected", "public",
+			"raise", "randomize", "range", "raw_input", "redim", "reduce",
+			"register", "reload", "rem", "replace", "repr", "resume", "return",
+			"reversed", "rgb", "right", "rightb", "rnd", "round", "rtrim",
+			"scriptengine", "scriptenginebuildversion",
+			"scriptenginemajorversion", "scriptengineminorversion", "second",
+			"select", "self", "set", "setattr", "sgn", "short", "signed",
+			"sin", "sizeof", "slice", "sorted", "space", "split", "sqr",
+			"static", "staticmethod", "step", "str", "strcomp", "strictfp",
+			"string", "strreverse", "struct", "sub", "sum", "super", "switch",
+			"synchronized", "tan", "then", "this", "throw", "throws", "time",
+			"timeserial", "timevalue", "to", "transient", "trim", "true",
+			"try", "tuple", "type", "typedef", "typename", "ubound", "ucase",
+			"unichr", "unicode", "union", "unsigned", "until", "vars",
+			"vartype", "vbAbort", "vbAbortRetryIgnore", "vbApplicationModal",
+			"vbCancel", "vbCritical", "vbDefaultButton1", "vbDefaultButton2",
+			"vbDefaultButton3", "vbDefaultButton4", "vbExclamation", "vbFalse",
+			"vbGeneralDate", "vbIgnore", "vbInformation", "vbLongDate",
+			"vbLongTime", "vbNo", "vbOK", "vbOKCancel", "vbOKOnly",
+			"vbObjectError", "vbQuestion", "vbRetry", "vbRetryCancel",
+			"vbShortDate", "vbShortTime", "vbSystemModal", "vbTrue",
+			"vbUseDefault", "vbYes", "vbYesNo", "vbYesNoCancel", "vbarray",
+			"vbblack", "vbblue", "vbboolean", "vbbyte", "vbcr", "vbcrlf",
+			"vbcurrency", "vbcyan", "vbdataobject", "vbdate", "vbdecimal",
+			"vbdouble", "vbempty", "vberror", "vbformfeed", "vbgreen",
+			"vbinteger", "vblf", "vblong", "vbmagenta", "vbnewline", "vbnull",
+			"vbnullchar", "vbnullstring", "vbobject", "vbred", "vbsingle",
+			"vbstring", "vbtab", "vbvariant", "vbverticaltab", "vbwhite",
+			"vbyellow", "void", "volatile", "weekday", "weekdayname", "wend",
+			"while", "with", "xor", "xrange", "year", "yield", "zip" };
 
 	public PlainPage(Editor editor, PageInfo pi) throws Exception {
 		this.edit = editor;
@@ -112,142 +207,276 @@ public class PlainPage implements Page {
 	}
 
 	public void xpaint(Graphics g, Dimension size) {
-		this.size = size;
+		try {
+			this.size = size;
 
-		Graphics2D g2 = (Graphics2D) g;
-		g2.setFont(font);
+			Graphics2D g2 = (Graphics2D) g;
+			g2.setFont(font);
 
-		showLineCnt = (size.height - toolbarHeight) / (lineHeight + lineGap);
-		int charCntInLine = (size.width - gutterWidth) / (lineHeight) * 2;
+			showLineCnt = (size.height - toolbarHeight)
+					/ (lineHeight + lineGap);
+			int charCntInLine = (size.width - gutterWidth) / (lineHeight) * 2;
 
-		// change sx if needed
-		cx = Math.min(getline(cy).length(), cx);
-		if (cx < sx) {
-			sx = cx;
-		}
-		if (strWidth(g2, subs(getline(cy), sx, cx)) > size.width - lineHeight
-				* 3) {
-			sx = Math.max(0, cx - 1);
-		}
-
-		// apply mouse click position
-		if (mx >= gutterWidth && my >= toolbarHeight) {
-			mx -= gutterWidth;
-			my -= toolbarHeight;
-			cy = sy + my / (lineHeight + lineGap);
-			if (cy >= getLinesize()) {
-				cy = getLinesize() - 1;
+			// change sx if needed
+			cx = Math.min(getline(cy).length(), cx);
+			if (cx < sx) {
+				sx = cx;
 			}
-			RoSb sb = getline(cy);
-			int i = sx;
-			for (; i < sb.length(); i++) {
-				String s1 = subs(sb, sx, i);
-				int w = strWidth(g2, s1);
-				if (mx < w) {
-					i -= 1;
-					break;
-				}
+			if (strWidth(g2, subs(getline(cy), sx, cx)) > size.width
+					- lineHeight * 3) {
+				sx = Math.max(0, cx - 1);
 			}
-			cx = i;
-			if (cx > sb.length()) {
-				cx = sb.length();
-			}
-			mx = -1;
-			my = -1;
-			sb = getline(cy);
-			if (mcount == 2) {
-				int x1 = cx;
-				int x2 = cx;
-				while (x1 > 0
-						&& Character.isJavaIdentifierPart(sb.charAt(x1 - 1))) {
-					x1 -= 1;
+
+			// apply mouse click position
+			if (my > 0 && my < toolbarHeight) {
+				if (info.fn != null) {
+					Toolkit.getDefaultToolkit().getSystemClipboard()
+							.setContents(new StringSelection(info.fn), null);
+					message("filename copied");
+					System.out.println("filename copied");
+					my = 0;
 				}
-				while (x2 < sb.length() - 1
-						&& Character.isJavaIdentifierPart(sb.charAt(x2 + 1))) {
-					x2 += 1;
+			} else if (my > 0 && mx >= gutterWidth && my >= toolbarHeight) {
+				mx -= gutterWidth;
+				my -= toolbarHeight;
+				cy = sy + my / (lineHeight + lineGap);
+				if (cy >= getLinesize()) {
+					cy = getLinesize() - 1;
 				}
-				selectstartx = x1;
-				selectstarty = cy;
-				selectstopx = x2 + 1;
-				selectstopy = cy;
-			} else if (mcount == 3) {
-				selectstartx = 0;
-				selectstarty = cy;
-				selectstopx = sb.length();
-				selectstopy = cy;
-			} else {
-				if (mshift) {
-					selectstopx = cx;
+				RoSb sb = getline(cy);
+				int i = sx;
+				for (; i < sb.length(); i++) {
+					String s1 = subs(sb, sx, i);
+					int w = strWidth(g2, s1);
+					if (mx < w) {
+						i -= 1;
+						break;
+					}
+				}
+				cx = i;
+				if (cx > sb.length()) {
+					cx = sb.length();
+				}
+				mx = -1;
+				my = -1;
+				sb = getline(cy);
+				if (mcount == 2) {
+					int x1 = cx;
+					int x2 = cx;
+					while (x1 > 0
+							&& Character
+									.isJavaIdentifierPart(sb.charAt(x1 - 1))) {
+						x1 -= 1;
+					}
+					while (x2 < sb.length() - 1
+							&& Character
+									.isJavaIdentifierPart(sb.charAt(x2 + 1))) {
+						x2 += 1;
+					}
+					selectstartx = x1;
+					selectstarty = cy;
+					selectstopx = x2 + 1;
+					selectstopy = cy;
+				} else if (mcount == 3) {
+					selectstartx = 0;
+					selectstarty = cy;
+					selectstopx = sb.length();
 					selectstopy = cy;
 				} else {
-					cancelSelect();
+					if (mshift) {
+						selectstopx = cx;
+						selectstopy = cy;
+					} else {
+						cancelSelect();
+					}
+				}
+				my = 0;
+			}
+			// draw toolbar
+			drawToolbar(g2);
+			// draw gutter
+			g2.translate(0, toolbarHeight);
+			drawGutter(g2);
+			// draw text
+			g2.translate(gutterWidth, 0);
+			g2.setColor(bkColor);
+			g2.fillRect(0, 0, size.width, size.height);
+			g2.setColor(color);
+
+			// g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+			// RenderingHints.VALUE_ANTIALIAS_ON);
+			int y = sy;
+			int py = lineHeight;
+			for (int i = 0; i < showLineCnt; i++) {
+
+				if (y >= getLinesize()) {
+					break;
+				}
+				RoSb sb = getline(y);
+				if (sx < sb.length()) {
+					int chari2 = Math.min(charCntInLine + sx, sb.length());
+					String s = subs(sb, sx, chari2);
+					g2.setColor(color);
+					drawString(g2, s, 0, py);
+					int w = strWidth(g2, s);
+					g2.setColor(Color.red);
+					g2.drawLine(w, py - lineHeight + font.getSize(), w + 3, py
+							- lineHeight + font.getSize());
+				} else {
+					int w = 0;
+					g2.drawLine(w, py - lineHeight + font.getSize(), w + 3, py
+							- lineHeight + font.getSize());
+				}
+				y += 1;
+				py += lineHeight + lineGap;
+			}
+			
+			if (true) {// select mode
+				Rectangle r = getSelectRect();
+				int x1 = r.x;
+				int y1 = r.y;
+				int x2 = r.width;
+				int y2 = r.height;
+
+				if (y1 == y2 && x1 < x2) {
+					g2.setColor(Color.BLUE);
+					g2.setXORMode(new Color(0xf0f030));
+					drawSelect(g2, y1, x1, x2);
+				} else if (y1 < y2) {
+					g2.setColor(Color.BLUE);
+					g2.setXORMode(new Color(0xf0f030));
+					drawSelect(g2, y1, x1, Integer.MAX_VALUE);
+					for (int i = y1 + 1; i < y2; i++) {
+						drawSelect(g2, i, 0, Integer.MAX_VALUE);
+					}
+					drawSelect(g2, y2, 0, x2);
 				}
 			}
-		}
-		// draw toolbar
-		drawToolbar(g2);
-		// draw gutter
-		g2.translate(0, toolbarHeight);
-		drawGutter(g2);
-		// draw text
-		g2.translate(gutterWidth, 0);
-		g2.setColor(bkColor);
-		g2.fillRect(0, 0, size.width, size.height);
-		g2.setColor(color);
+			if (true) {// (){}[]<> pair marking
+				if (cx - 1 < getline(cy).length() && cx - 1 >= 0) {
+					char c = getline(cy).charAt(cx - 1);
+					String pair = "(){}[]<>";
+					int p1 = pair.indexOf(c);
+					if (p1 >= 0) {
+						if (p1 % 2 == 0) {
+							pairMark(g2, cx-1, cy, pair.charAt(p1 + 1), c, 1);
+						} else {
+							pairMark(g2, cx-1, cy, pair.charAt(p1 - 1), c, -1);
+						}
+					}
+				}
 
-		// g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-		// RenderingHints.VALUE_ANTIALIAS_ON);
-		int y = sy;
-		int py = lineHeight;
-		for (int i = 0; i < showLineCnt; i++) {
-
-			if (y >= getLinesize()) {
-				break;
 			}
-			RoSb sb = getline(y);
-			if (sx < sb.length()) {
-				int chari2 = Math.min(charCntInLine + sx, sb.length());
-				String s = subs(sb, sx, chari2);
-				g2.setColor(color);
-				drawString(g2, s, 0, py);
+			
+			// draw cursor
+			if (cy >= sy && cy <= sy + showLineCnt) {
+				g2.setXORMode(new Color(0x30f0f0));
+				String s = subs(getline(cy), sx, cx);
 				int w = strWidth(g2, s);
-				g2.setColor(Color.red);
-				g2.drawLine(w, py - lineHeight + font.getSize(), w + 3, py
-						- lineHeight + font.getSize());
-			} else {
-				int w = 0;
-				g2.drawLine(w, py - lineHeight + font.getSize(), w + 3, py
-						- lineHeight + font.getSize());
+				g2.fillRect(w, (cy - sy) * (lineHeight + lineGap), 2,
+						lineHeight);
 			}
-			y += 1;
-			py += lineHeight + lineGap;
+		} catch (Throwable th) {
+			th.printStackTrace();
+			message("Bug:" + th);
 		}
-		// draw cursor
-		if (cy >= sy && cy <= sy + showLineCnt) {
-			g2.setXORMode(new Color(0x30f0f0));
-			String s = subs(getline(cy), sx, cx);
-			int w = strWidth(g2, s);
-			g2.fillRect(w, (cy - sy) * (lineHeight + lineGap), 2, lineHeight);
-		}
-		if (true) {// select mode
-			Rectangle r = getSelectRect();
-			int x1 = r.x;
-			int y1 = r.y;
-			int x2 = r.width;
-			int y2 = r.height;
+	}
 
-			if (y1 == y2 && x1 < x2) {
-				g2.setColor(Color.BLUE);
-				g2.setXORMode(new Color(0xf0f030));
-				drawSelect(g2, y1, x1, x2);
-			} else if (y1 < y2) {
-				g2.setColor(Color.BLUE);
-				g2.setXORMode(new Color(0xf0f030));
-				drawSelect(g2, y1, x1, Integer.MAX_VALUE);
-				for (int i = y1 + 1; i < y2; i++) {
-					drawSelect(g2, i, 0, Integer.MAX_VALUE);
+	private void pairMark(Graphics2D g2, int cx2, int cy2, char ch, char ch2,
+			int inc) {
+		int[] c1 = new int[] { cx2, cy2 };
+		findchar(ch, inc, c1, ch2);
+		if (c1[0] >= 0) {// found
+			markBox(g2, cx2, cy2);
+			markBox(g2, c1[0], c1[1]);
+			if (cy2 != c1[1]) {
+				markGutLine(g2, cy2, c1[1]);
+			}
+		}
+
+	}
+
+	private void markGutLine(Graphics2D g2, int y1, int y2) {
+		if (y1>y2){
+			int t=y1;y1=y2;y2=t;
+		}
+		y1=Math.min(Math.max(y1, sy),sy+showLineCnt);
+		y2=Math.min(Math.max(y2, sy),sy+showLineCnt);
+		g2.setColor(Color.BLUE);
+		g2.drawLine(-5, 5+(y1-sy)*(lineHeight + lineGap), -5, -8+(y2+1-sy)*(lineHeight + lineGap));
+	}
+
+	private void markBox(Graphics2D g2, int x, int y) {
+		if (y >= sy && y <= sy + showLineCnt) {
+			RoSb sb = getline(y);
+			int w1 = x > 0 ? strWidth(g2, sb.substring(0, x)) : 0;
+			g2.setColor(Color.WHITE);
+			g2.drawRect(w1 + 1,  -2+(y - sy) * (lineHeight + lineGap), 8, 16);
+			g2.setColor(Color.BLACK);
+			g2.drawRect(w1, -3 + (y - sy) * (lineHeight + lineGap), 8, 16);
+		}
+	}
+
+	private void findchar(char ch, int inc, int[] c1, char chx) {
+		int cx1 = c1[0];
+		int cy1 = c1[1];
+		RoSb csb = getline(cy1);
+		int lv = 1;
+		while (true) {
+			if (inc == -1) {
+				cx1--;
+				if (cx1 < 0) {
+					cy1--;
+					if (cy1 < 0) {
+						c1[0] = -1;
+						c1[1] = -1;
+						return;
+					} else {
+						csb = getline(cy1);
+						cx1 = csb.length() - 1;
+						if (cx1 < 0) {
+							continue;
+						}
+					}
 				}
-				drawSelect(g2, y2, 0, x2);
+				char ch2 = csb.charAt(cx1);
+				if (ch2 == chx) {
+					lv++;
+				} else if (ch2 == ch) {
+					lv--;
+					if (lv == 0) {
+						c1[0] = cx1;
+						c1[1] = cy1;
+						return;
+					}
+				}
+			} else {
+				cx1++;
+				if (cx1 >= csb.length()) {
+					cy1++;
+					if (cy1 >= getLinesize()) {
+						c1[0] = -1;
+						c1[1] = -1;
+						return;
+					} else {
+						csb = getline(cy1);
+						cx1 = 0;
+						if (cx1 >= csb.length()) {
+							continue;
+						}
+					}
+				}
+				char ch2 = csb.charAt(cx1);
+				if (ch2 == chx) {
+					lv++;
+				} else if (ch2 == ch) {
+					lv--;
+					if (lv == 0) {
+						c1[0] = cx1;
+						c1[1] = cy1;
+						return;
+					}
+				}
 			}
 		}
 	}
@@ -314,13 +543,24 @@ public class PlainPage implements Page {
 	}
 
 	private int getHighLightID(String s, Graphics2D g2) {
-		System.out.println("hi:" + s);
-		if (Arrays.binarySearch(kws,s)>=0||Arrays.binarySearch(kws,s.toLowerCase())>=0) {
+		if (Arrays.binarySearch(kws, s) >= 0
+				|| Arrays.binarySearch(kws, s.toLowerCase()) >= 0) {
 			g2.setColor(Color.BLUE);
+		} else if (isDigital(s)) {
+			g2.setColor(Color.RED);
 		} else {
 			g2.setColor(color);
 		}
 		return 0;
+	}
+
+	private boolean isDigital(String s) {
+		for (char c : s.toCharArray()) {
+			if (!Character.isDigit(c)) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private void drawGutter(Graphics2D g2) {
@@ -461,7 +701,7 @@ public class PlainPage implements Page {
 
 	@Override
 	public void keyPressed(KeyEvent env) {
-		System.out.println("press " + env.getKeyChar());
+		//System.out.println("press " + env.getKeyChar());
 
 		int kc = env.getKeyCode();
 		if (kc == KeyEvent.VK_F1) {
@@ -925,7 +1165,7 @@ public class PlainPage implements Page {
 	@Override
 	public void keyTyped(KeyEvent env) {
 		char kc = env.getKeyChar();
-		System.out.println("type " + kc);
+		//System.out.println("type " + kc);
 		if (kc == KeyEvent.VK_TAB && env.isShiftDown()) {
 			for (int i = selectstarty; i <= selectstopy; i++) {
 				if (getline(i).length() > 0) {
@@ -1270,7 +1510,7 @@ public class PlainPage implements Page {
 		mshift = env.isShiftDown();
 		mcount = env.getClickCount();
 		edit.repaint();
-
+		System.out.println("m press");
 	}
 
 	@Override
