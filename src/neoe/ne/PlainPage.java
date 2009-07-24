@@ -330,7 +330,7 @@ public class PlainPage implements Page {
 				y += 1;
 				py += lineHeight + lineGap;
 			}
-			
+
 			if (true) {// select mode
 				Rectangle r = getSelectRect();
 				int x1 = r.x;
@@ -359,15 +359,15 @@ public class PlainPage implements Page {
 					int p1 = pair.indexOf(c);
 					if (p1 >= 0) {
 						if (p1 % 2 == 0) {
-							pairMark(g2, cx-1, cy, pair.charAt(p1 + 1), c, 1);
+							pairMark(g2, cx - 1, cy, pair.charAt(p1 + 1), c, 1);
 						} else {
-							pairMark(g2, cx-1, cy, pair.charAt(p1 - 1), c, -1);
+							pairMark(g2, cx - 1, cy, pair.charAt(p1 - 1), c, -1);
 						}
 					}
 				}
 
 			}
-			
+
 			// draw cursor
 			if (cy >= sy && cy <= sy + showLineCnt) {
 				g2.setXORMode(new Color(0x30f0f0));
@@ -397,19 +397,36 @@ public class PlainPage implements Page {
 	}
 
 	private void markGutLine(Graphics2D g2, int y1, int y2) {
-		if (y1>y2){
-			int t=y1;y1=y2;y2=t;
+		if (y1 > y2) {
+			int t = y1;
+			y1 = y2;
+			y2 = t;
 		}
-		int o1=y1,o2=y2;
-		y1=Math.min(Math.max(y1, sy),sy+showLineCnt);
-		y2=Math.min(Math.max(y2, sy),sy+showLineCnt);
+		int o1 = y1, o2 = y2;
+		y1 = Math.min(Math.max(y1, sy), sy + showLineCnt);
+		y2 = Math.min(Math.max(y2, sy), sy + showLineCnt);
+
+		int scy1 = 5 + (y1 - sy) * (lineHeight + lineGap);
+		int scy2 = -8 + (y2 + 1 - sy) * (lineHeight + lineGap);
+		
+		g2.setColor(Color.WHITE);
+		g2.drawLine(-6, scy1 - 1, -6, scy2 - 1);
+		if (o1 == y1) {
+			g2.setColor(Color.WHITE);
+			g2.drawLine(-6, scy1 - 1, -1, scy1 - 1);
+		}
+		if (o2 == y2) {
+			g2.setColor(Color.WHITE);
+			g2.drawLine(-6, scy2 - 1, -1, scy2 - 1);
+		}
 		g2.setColor(Color.BLUE);
-		int scy1=5+(y1-sy)*(lineHeight + lineGap);
-		int scy2=-8+(y2+1-sy)*(lineHeight + lineGap);
 		g2.drawLine(-5, scy1, -5, scy2);
-		if (o1==y1){
+		if (o1 == y1) {
+			g2.setColor(Color.BLUE);
 			g2.drawLine(-5, scy1, 0, scy1);
-		}if (o2==y2){
+		}
+		if (o2 == y2) {
+			g2.setColor(Color.BLUE);
 			g2.drawLine(-5, scy2, 0, scy2);
 		}
 	}
@@ -418,10 +435,16 @@ public class PlainPage implements Page {
 		if (y >= sy && y <= sy + showLineCnt) {
 			RoSb sb = getline(y);
 			int w1 = x > 0 ? strWidth(g2, sb.substring(0, x)) : 0;
+			String c = sb.substring(x, x + 1);
+			int w2 = strWidth(g2, c);
 			g2.setColor(Color.WHITE);
-			g2.drawRect(w1 + 1,  -2+(y - sy) * (lineHeight + lineGap), 8, 16);
-			g2.setColor(Color.BLACK);
-			g2.drawRect(w1, -3 + (y - sy) * (lineHeight + lineGap), 8, 16);
+			g2.drawRect(w1 - 1, (y - sy) * (lineHeight + lineGap) - 4, w2, 16);
+			g2.setColor(color);
+			g2.drawRect(w1, (y - sy) * (lineHeight + lineGap) - 3, w2, 16);
+
+			g2
+					.drawString(c, w1, lineHeight + (y - sy)
+							* (lineHeight + lineGap));
 		}
 	}
 
@@ -709,7 +732,7 @@ public class PlainPage implements Page {
 
 	@Override
 	public void keyPressed(KeyEvent env) {
-		//System.out.println("press " + env.getKeyChar());
+		// System.out.println("press " + env.getKeyChar());
 
 		int kc = env.getKeyCode();
 		if (kc == KeyEvent.VK_F1) {
@@ -1173,7 +1196,7 @@ public class PlainPage implements Page {
 	@Override
 	public void keyTyped(KeyEvent env) {
 		char kc = env.getKeyChar();
-		//System.out.println("type " + kc);
+		// System.out.println("type " + kc);
 		if (kc == KeyEvent.VK_TAB && env.isShiftDown()) {
 			for (int i = selectstarty; i <= selectstopy; i++) {
 				if (getline(i).length() > 0) {
