@@ -17,6 +17,9 @@ import java.util.Vector;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
+
+import sun.swing.SwingUtilities2;
 
 public class Editor extends JComponent implements MouseMotionListener,
 		MouseListener, MouseWheelListener, KeyListener {
@@ -52,12 +55,10 @@ public class Editor extends JComponent implements MouseMotionListener,
 					}
 				}
 
-				pi.page.xpaint(g, this.getSize());
-
+				pi.page.xpaint(g, this.getSize());				
 			}
 		} catch (Throwable e) {
 			e.printStackTrace();
-			JOptionPane.showMessageDialog(frame, "" + e);
 		}
 
 	}
@@ -65,7 +66,7 @@ public class Editor extends JComponent implements MouseMotionListener,
 	List<PageInfo> pages;
 	int pageNo;
 	JFrame frame;
-
+	
 	public void openFile(String fn) {
 		File f = new File(fn);
 		if (f.exists() && f.isFile()) {
@@ -86,8 +87,8 @@ public class Editor extends JComponent implements MouseMotionListener,
 
 	private int find(List<PageInfo> l, String fn) {
 		for (int i = 0; i < l.size(); i++) {
-			PageInfo pi = l.get(i);			
-			if (pi.fn!=null && pi.fn.equals(fn)) {
+			PageInfo pi = l.get(i);
+			if (pi.fn != null && pi.fn.equals(fn)) {
 				return i;
 			}
 		}
@@ -183,27 +184,30 @@ public class Editor extends JComponent implements MouseMotionListener,
 
 	}
 
-	public void newFile()  {		
-		String fn=(pages.size()==0)?null:pages.get(pageNo).fn;		
+	public void newFile() {
+		String fn = (pages.size() == 0) ? null : pages.get(pageNo).fn;
 		PageInfo pi;
-		pages.add(pi=new PageInfo(null, 0));
+		pages.add(pi = new PageInfo(null, 0));
 		try {
 			pi.page = new PlainPage(this, pi);
-			if (fn!=null){pi.defaultPath=new File(fn).getParent();}
+			if (fn != null) {
+				pi.defaultPath = new File(fn).getParent();
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			JOptionPane.showMessageDialog(this, ""+e);
+			JOptionPane.showMessageDialog(this, "" + e);
 			return;
 		}
-		changePage(pages.size()-1);
-		
+		changePage(pages.size() - 1);
+
 	}
 
 	public void changeTitle() {
 		String fn = pages.get(pageNo).fn;
 		if (fn != null) {
-			frame.setTitle(new File(fn).getName()+" "+new File(fn).getParent() + " - neoeedit");
-		}else{
+			frame.setTitle(new File(fn).getName() + " "
+					+ new File(fn).getParent() + " - neoeedit");
+		} else {
 			frame.setTitle("neoeedit");
 		}
 	}
