@@ -400,10 +400,18 @@ public class PlainPage implements Page {
 		if (y1>y2){
 			int t=y1;y1=y2;y2=t;
 		}
+		int o1=y1,o2=y2;
 		y1=Math.min(Math.max(y1, sy),sy+showLineCnt);
 		y2=Math.min(Math.max(y2, sy),sy+showLineCnt);
 		g2.setColor(Color.BLUE);
-		g2.drawLine(-5, 5+(y1-sy)*(lineHeight + lineGap), -5, -8+(y2+1-sy)*(lineHeight + lineGap));
+		int scy1=5+(y1-sy)*(lineHeight + lineGap);
+		int scy2=-8+(y2+1-sy)*(lineHeight + lineGap);
+		g2.drawLine(-5, scy1, -5, scy2);
+		if (o1==y1){
+			g2.drawLine(-5, scy1, 0, scy1);
+		}if (o2==y2){
+			g2.drawLine(-5, scy2, 0, scy2);
+		}
 	}
 
 	private void markBox(Graphics2D g2, int x, int y) {
