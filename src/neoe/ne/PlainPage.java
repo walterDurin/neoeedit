@@ -27,10 +27,9 @@ import java.util.Vector;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 
-import com.sun.org.apache.bcel.internal.generic.FNEG;
-
 public class PlainPage implements Page {
 
+	private static final String UTF8 = "utf8";
 	private static final long VANISHTIME = 3000;
 	private Editor edit;
 	private PageInfo info;
@@ -173,7 +172,7 @@ public class PlainPage implements Page {
 		this.lineGap = 5;
 		this.color = Color.BLACK;
 		this.bkColor = new Color(0xe0e0f0);
-		this.encoding = "utf8";
+		this.encoding = null;
 		this.lines = readFile(pi.fn);
 		history = new History(this);
 		this.findWindow = new FindReplaceWindow(editor.frame, this);
@@ -185,6 +184,14 @@ public class PlainPage implements Page {
 		if (fn == null) {
 			lines.add(new StringBuffer("edit here..."));
 			return lines;
+		}
+		if (encoding == null) {
+			try {
+				encoding = guessEncoding(fn);
+			} catch (Exception e) {
+				e.printStackTrace();
+				encoding = UTF8;
+			}
 		}
 		try {
 			BufferedReader in = new BufferedReader(new InputStreamReader(
@@ -204,6 +211,33 @@ public class PlainPage implements Page {
 			lines.add(new StringBuffer());
 		}
 		return lines;
+	}
+
+	private String guessEncoding(String fn) throws Exception {
+		System.out.println("guessing encoding");
+		String[] encodings = { UTF8,  "sjis" ,"gbk",};
+		
+		FileInputStream in = new FileInputStream(fn);
+		final int defsize=4096;
+		int len= Math.min(defsize, (int) new File(fn).length());
+		try {
+			byte[] buf = new byte[len];
+			len=in.read(buf);
+			if (len != defsize) {
+				byte[] b2 = new byte[len];
+				System.arraycopy(buf, 0, b2, 0, len);
+				buf = b2;
+			}
+			for (String enc : encodings) {
+				if (Arrays.equals(buf, new String(buf, enc).getBytes(enc))) {
+					return enc;
+				}
+			}
+		} finally {
+			in.close();
+		}
+
+		return UTF8;
 	}
 
 	public void xpaint(Graphics g, Dimension size) {
@@ -408,7 +442,7 @@ public class PlainPage implements Page {
 
 		int scy1 = 5 + (y1 - sy) * (lineHeight + lineGap);
 		int scy2 = -8 + (y2 + 1 - sy) * (lineHeight + lineGap);
-		
+
 		g2.setColor(Color.WHITE);
 		g2.drawLine(-6, scy1 - 1, -6, scy2 - 1);
 		if (o1 == y1) {
@@ -606,9 +640,10 @@ public class PlainPage implements Page {
 	}
 
 	private void drawToolbar(Graphics2D g2) {
-		String s1 = "<F1>:Help, Line:" + lines.size() + ", Doc:" + edit.pages.size() + ", byte:"
-				+ info.size + ", " + encoding + ", X:" + (cx + 1) + ", his:"
-				+ history.size() + ", " + info.fn;
+		String s1 = "<F1>:Help, Line:" + lines.size() + ", Doc:"
+				+ edit.pages.size() + ", byte:" + info.size + ", " + encoding
+				+ ", X:" + (cx + 1) + ", his:" + history.size() + ", "
+				+ info.fn;
 		g2.setColor(Color.WHITE);
 		g2.drawString(s1, 2, lineHeight + 2);
 		g2.setColor(Color.BLACK);
@@ -907,7 +942,7 @@ public class PlainPage implements Page {
 		encoding = s;
 	}
 
-	private void reloadWithEncoding() {
+	private void reloadWithEncoding()  {
 		if (info.fn == null) {
 			message("use change encoding for new text.");
 			changeEncoding();
@@ -1163,10 +1198,10 @@ public class PlainPage implements Page {
 		// editor.openFile(args[0]);
 		// editor.show(true);
 		// editor.repaint();
-		String url="http://code.google.com/p/neoeedit/";
-		Toolkit.getDefaultToolkit().getSystemClipboard()
-		.setContents(new StringSelection(url), null);
-		message("visit "+url+" for more info.(url copied)");
+		String url = "http://code.google.com/p/neoeedit/";
+		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(
+				new StringSelection(url), null);
+		message("visit " + url + " for more info.(url copied)");
 	}
 
 	private void cancelSelect() {
