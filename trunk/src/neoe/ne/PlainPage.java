@@ -606,9 +606,9 @@ public class PlainPage implements Page {
 	}
 
 	private void drawToolbar(Graphics2D g2) {
-		String s1 = "<F1>:Help," + lines.size() + "," + edit.pages.size() + ","
-				+ info.size + "," + encoding + "," + (cx + 1) + ","
-				+ history.size() + "," + info.fn;
+		String s1 = "<F1>:Help, Line:" + lines.size() + ", Doc:" + edit.pages.size() + ", byte:"
+				+ info.size + ", " + encoding + ", X:" + (cx + 1) + ", his:"
+				+ history.size() + ", " + info.fn;
 		g2.setColor(Color.WHITE);
 		g2.drawString(s1, 2, lineHeight + 2);
 		g2.setColor(Color.BLACK);
@@ -1163,7 +1163,10 @@ public class PlainPage implements Page {
 		// editor.openFile(args[0]);
 		// editor.show(true);
 		// editor.repaint();
-
+		String url="http://code.google.com/p/neoeedit/";
+		Toolkit.getDefaultToolkit().getSystemClipboard()
+		.setContents(new StringSelection(url), null);
+		message("visit "+url+" for more info.(url copied)");
 	}
 
 	private void cancelSelect() {
