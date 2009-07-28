@@ -221,17 +221,24 @@ public class PlainPage implements Page {
 		final int defsize=4096;
 		int len= Math.min(defsize, (int) new File(fn).length());
 		try {
+			System.out.println("len:"+len);
 			byte[] buf = new byte[len];
 			len=in.read(buf);
+			System.out.println("len2:"+len);
 			if (len != defsize) {
 				byte[] b2 = new byte[len];
 				System.arraycopy(buf, 0, b2, 0, len);
 				buf = b2;
 			}
 			for (String enc : encodings) {
-				if (Arrays.equals(buf, new String(buf, enc).getBytes(enc))) {
-					return enc;
+				byte[] b2=new String(buf, enc).getBytes(enc);
+				if (b2.length != buf.length ){
+					continue;
 				}
+				int nlen=Math.min(0,len-1);//for not last complete char  			
+				if (Arrays.equals(Arrays.copyOf(buf,nlen), Arrays.copyOf(b2,nlen))) {					
+					return enc;
+				}			
 			}
 		} finally {
 			in.close();
