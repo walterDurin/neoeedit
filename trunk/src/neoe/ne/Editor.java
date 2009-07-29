@@ -184,7 +184,7 @@ public class Editor extends JComponent implements MouseMotionListener,
 
 	}
 
-	public void newFile() {
+	public PageInfo newFile() {
 		String fn = (pages.size() == 0) ? null : pages.get(pageNo).fn;
 		PageInfo pi;
 		pages.add(pi = new PageInfo(null, 0));
@@ -196,9 +196,10 @@ public class Editor extends JComponent implements MouseMotionListener,
 		} catch (Exception e) {
 			e.printStackTrace();
 			JOptionPane.showMessageDialog(this, "" + e);
-			return;
+			return pi;
 		}
 		changePage(pages.size() - 1);
+		return pi;
 
 	}
 
