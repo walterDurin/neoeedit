@@ -27,12 +27,14 @@ import java.util.Vector;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 
+import neoe.util.FileIterator;
+
 public class PlainPage implements Page {
 
 	private static final String UTF8 = "utf8";
 	private static final long VANISHTIME = 3000;
 	private Editor edit;
-	private PageInfo info;
+	public PageInfo info;
 	private Font font;
 	private int lineHeight;
 	private int lineGap;
@@ -213,38 +215,47 @@ public class PlainPage implements Page {
 		return lines;
 	}
 
-	private String guessEncoding(String fn) throws Exception {
-		System.out.println("guessing encoding");
-		String[] encodings = { UTF8,  "sjis" ,"gbk",};
-		
+	private static String guessEncoding(String fn) throws Exception {
+		String s = guessEncoding_(fn);
+		if (s == null) {
+			s = UTF8;
+		}
+		return s;
+	}
+
+	private static String guessEncoding_(String fn) throws Exception {
+		// S/ystem.out.println("guessing encoding");
+		String[] encodings = { UTF8, "sjis", "gbk", };
+
 		FileInputStream in = new FileInputStream(fn);
-		final int defsize=4096;
-		int len= Math.min(defsize, (int) new File(fn).length());
+		final int defsize = 4096;
+		int len = Math.min(defsize, (int) new File(fn).length());
 		try {
-			System.out.println("len:"+len);
+			// S/ystem.out.println("len:" + len);
 			byte[] buf = new byte[len];
-			len=in.read(buf);
-			System.out.println("len2:"+len);
+			len = in.read(buf);
+			// S/ystem.out.println("len2:" + len);
 			if (len != defsize) {
 				byte[] b2 = new byte[len];
 				System.arraycopy(buf, 0, b2, 0, len);
 				buf = b2;
 			}
 			for (String enc : encodings) {
-				byte[] b2=new String(buf, enc).getBytes(enc);
-				if (b2.length != buf.length ){
+				byte[] b2 = new String(buf, enc).getBytes(enc);
+				if (b2.length != buf.length) {
 					continue;
 				}
-				int nlen=Math.min(0,len-1);//for not last complete char  			
-				if (Arrays.equals(Arrays.copyOf(buf,nlen), Arrays.copyOf(b2,nlen))) {					
+				int nlen = Math.min(0, len - 1);// for not last complete char
+				if (Arrays.equals(Arrays.copyOf(buf, nlen), Arrays.copyOf(b2,
+						nlen))) {
 					return enc;
-				}			
+				}
 			}
 		} finally {
 			in.close();
 		}
 
-		return UTF8;
+		return null;
 	}
 
 	public void xpaint(Graphics g, Dimension size) {
@@ -949,7 +960,7 @@ public class PlainPage implements Page {
 		encoding = s;
 	}
 
-	private void reloadWithEncoding()  {
+	private void reloadWithEncoding() {
 		if (info.fn == null) {
 			message("use change encoding for new text.");
 			changeEncoding();
@@ -1620,11 +1631,67 @@ public class PlainPage implements Page {
 
 	}
 
-	public void doFind(String text, boolean ignoreCase, boolean selected2) {
-		text2find = text;
-		this.ignoreCase = ignoreCase;
-		findNext();
-		edit.repaint();
+	public void doFind(String text, boolean ignoreCase, boolean selected2,
+			boolean inDir, String dir) {
+		if (!inDir) {
+			text2find = text;
+			this.ignoreCase = ignoreCase;
+			findNext();
+			edit.repaint();
+		} else {
+			Iterable<File> it = new FileIterator(dir);
+			List all = new ArrayList();
+			for (File f : it) {
+				if (f.isDirectory()) {
+					continue;
+				}
+				List res = findInFile(f, text, ignoreCase);
+				all.addAll(res);
+			}
+			PageInfo pi = edit.newFile();
+			PlainPage p2 = (PlainPage) pi.page;
+			p2.lines.clear();
+			p2.appendLine(String.format("find %s results in dir %s for '%s'",
+					all.size(), dir, text));
+			for (Object o : all) {
+				p2.appendLine(o.toString());
+			}
+			edit.repaint();
+		}
+	}
+
+	private static List findInFile(File f, String text, boolean ignoreCase2) {
+		List a = new ArrayList();
+		try {
+			String enc = guessEncoding_(f.getAbsolutePath());
+			if (enc != null) {// skip binary
+				String fn = f.getAbsolutePath();
+				if (ignoreCase2) {
+					text = text.toLowerCase();
+				}
+				BufferedReader in = new BufferedReader(new InputStreamReader(
+						new FileInputStream(f), enc));
+				String line;
+				int lineno = 0;
+				while ((line = in.readLine()) != null) {
+					lineno++;
+					if (ignoreCase2) {
+						line = line.toLowerCase();
+					}
+
+					if (line.indexOf(text) >= 0) {
+						if (line.length() > 80) {
+							line = line.substring(0, 80) + "...";
+						}
+						a.add(String.format("[%s]%s:%s", fn, lineno, line));
+					}
+				}
+
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return a;
 	}
 
 	public void doReplace(String text, boolean ignoreCase, boolean selected2,
@@ -1738,5 +1805,9 @@ public class PlainPage implements Page {
 			boolean selected2, String text2, boolean record) {
 		_doReplace(text, ignoreCase, selected2, text2, true, record);
 
+	}
+
+	public void appendLine(String s) {
+		lines.add(new StringBuffer(s));
 	}
 }

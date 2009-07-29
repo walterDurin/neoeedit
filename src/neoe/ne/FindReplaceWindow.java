@@ -2,8 +2,10 @@ package neoe.ne;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -23,6 +25,10 @@ public class FindReplaceWindow implements ActionListener {
 	private JRadioButton jrb2;
 	private JDialog dialog;
 	private JFrame f;
+	private JCheckBox jcb1;
+	private JTextField jtadir;
+	private JCheckBox jcb2;
+	private JCheckBox jcb3;
 
 	public FindReplaceWindow(JFrame f, PlainPage page) {
 		this.page = page;
@@ -44,14 +50,26 @@ public class FindReplaceWindow implements ActionListener {
 		s.add(jb2 = new JButton("Replace"));
 		s.add(jb3 = new JButton("Replace All"));
 		s.newline();
+		s.add(jcb1 = new JCheckBox("in files", false));
+		s.add(new JLabel("Dir:"));
+		s.add(jtadir = new JTextField());
+		s.newline();
+		s.add(jcb2 = new JCheckBox("include subdir", true));
+		s.add(jcb3 = new JCheckBox("skip binary", true));
+		s.newline();
 		jb1.setActionCommand("find");
 		jb2.setActionCommand("replace");
 		jb3.setActionCommand("replaceall");
 		jb1.addActionListener(this);
 		jb2.addActionListener(this);
 		jb3.addActionListener(this);
+		jcb2.setEnabled(false);
+		jcb3.setEnabled(false);
 		dialog.pack();
 		dialog.setLocationRelativeTo(f);
+		if (page != null && page.info != null && page.info.fn != null) {
+			jtadir.setText(new File(page.info.fn).getParent());
+		}
 	}
 
 	public void show() {
@@ -69,7 +87,8 @@ public class FindReplaceWindow implements ActionListener {
 	public void actionPerformed(ActionEvent ae) {
 		String command = ae.getActionCommand();
 		if (command == "find") {
-			page.doFind(jta1.getText(), jrb1.isSelected(), jrb2.isSelected());
+			page.doFind(jta1.getText(), jrb1.isSelected(), jrb2.isSelected(),
+					jcb1.isSelected(), jtadir.getText());
 		} else if (command == "replace") {
 			page.doReplace(jta1.getText(), jrb1.isSelected(),
 					jrb2.isSelected(), jta2.getText(), true);
