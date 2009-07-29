@@ -25,4 +25,15 @@ public class PageInfo {
 		return s;
 	}
 
+	public void initPage(Editor editor) throws Exception {
+		if (page == null) {
+			if (size < 10000000) {
+				page = new PlainPage(editor, this);
+			} else {
+				page = new LargePage(editor, this);
+			}
+		}
+
+	}
+
 }

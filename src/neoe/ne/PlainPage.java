@@ -845,8 +845,14 @@ public class PlainPage implements Page {
 				openFile();
 			} else if (kc == KeyEvent.VK_N) {
 				newFile();
+			} else if (kc == KeyEvent.VK_S && env.isShiftDown()) {
+				saveAllFiles();
+
 			} else if (kc == KeyEvent.VK_S) {
-				saveFile();
+				if (saveFile(info)) {
+					System.out.println("saved");
+					message("saved");
+				}
 			} else if (kc == KeyEvent.VK_L) {
 				gotoLine();
 			} else if (kc == KeyEvent.VK_Z) {
@@ -1016,7 +1022,7 @@ public class PlainPage implements Page {
 			info.fn = fn;
 			edit.changeTitle();
 			message("file renamed");
-			savePageToFile();
+			savePageToFile(info);
 		}
 	}
 
@@ -1034,7 +1040,8 @@ public class PlainPage implements Page {
 		} else if (o.type == History.REPLACEALL) {
 			cx = o.x1;
 			cy = o.y1;
-			doReplaceAll(o.s, true, false, o.s2, false);// bug expected!
+			doReplaceAll(o.s, true, false, o.s2, false, false, null);// bug
+			// expected!
 		} else {
 			System.out.println("not supported " + o);
 		}
@@ -1146,46 +1153,60 @@ public class PlainPage implements Page {
 		edit.newFile();
 	}
 
-	private void saveFile() {
+	private void saveAllFiles() {
+		int total = 0;
+		for (PageInfo pi : edit.pages) {
+			if (saveFile(pi)) {
+				total++;
+			}
+		}
+		System.out.println(total + " files saved");
+		message(total + " files saved");
+	}
+
+	private static boolean saveFile(PageInfo info) {
+		PlainPage p = (PlainPage) info.page;
 		if (info.fn == null) {
 			JFileChooser chooser = new JFileChooser(info.defaultPath);
-			int returnVal = chooser.showSaveDialog(edit);
+			int returnVal = chooser.showSaveDialog(p.edit);
 			if (returnVal == JFileChooser.APPROVE_OPTION) {
 				String fn = chooser.getSelectedFile().getAbsolutePath();
 				if (new File(fn).exists()) {
 					if (JOptionPane.YES_OPTION != JOptionPane
-							.showConfirmDialog(edit,
+							.showConfirmDialog(p.edit,
 									"Are you sure to overwrite?",
 									"File exists", JOptionPane.YES_NO_OPTION)) {
-						message("not saved");
-						return;
+						p.message("not saved");
+						return false;
 					}
 				}
 				info.fn = fn;
-				edit.changeTitle();
+				p.edit.changeTitle();
+
 			} else {
-				return;
+				return false;
 			}
 		}
-		savePageToFile();
+		return savePageToFile(info);
 
 	}
 
-	private void savePageToFile() {
+	private static boolean savePageToFile(PageInfo info) {
+		System.out.println("save " + info.fn);
+		PlainPage p = (PlainPage) info.page;
 		try {
 			BufferedWriter out = new BufferedWriter(new OutputStreamWriter(
-					new FileOutputStream(info.fn), encoding));
-			for (StringBuffer sb : lines) {
+					new FileOutputStream(info.fn), p.encoding));
+			for (StringBuffer sb : p.lines) {
 				out.write(sb.toString());
 				out.write("\n");
 			}
 			out.close();
-			System.out.println("saved");
-			message("saved");
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-
+		return true;
 	}
 
 	private void message(String s) {
@@ -1624,7 +1645,8 @@ public class PlainPage implements Page {
 			o.x2 = r.width;
 			o.y2 = r.height;
 		} else if (o.type == History.REPLACEALL) {
-			doReplaceAll(o.s2, true, false, o.s, false);// bug expected!
+			doReplaceAll(o.s2, true, false, o.s, false, false, null);// bug
+			// expected!
 		} else {
 			System.out.println("not supported " + o);
 		}
@@ -1639,24 +1661,7 @@ public class PlainPage implements Page {
 			findNext();
 			edit.repaint();
 		} else {
-			Iterable<File> it = new FileIterator(dir);
-			List all = new ArrayList();
-			for (File f : it) {
-				if (f.isDirectory()) {
-					continue;
-				}
-				List res = findInFile(f, text, ignoreCase);
-				all.addAll(res);
-			}
-			PageInfo pi = edit.newFile();
-			PlainPage p2 = (PlainPage) pi.page;
-			p2.lines.clear();
-			p2.appendLine(String.format("find %s results in dir %s for '%s'",
-					all.size(), dir, text));
-			for (Object o : all) {
-				p2.appendLine(o.toString());
-			}
-			edit.repaint();
+			doFindInDir(text, ignoreCase, selected2, inDir, dir);
 		}
 	}
 
@@ -1696,12 +1701,14 @@ public class PlainPage implements Page {
 
 	public void doReplace(String text, boolean ignoreCase, boolean selected2,
 			String text2, boolean record) {
-		_doReplace(text, ignoreCase, selected2, text2, false, record);
+		_doReplace(text, ignoreCase, selected2, text2, false, record, false,
+				null);
 
 	}
 
 	private void _doReplace(String text, boolean ignoreCase, boolean selected2,
-			String text2, boolean all, boolean record) {
+			String text2, boolean all, boolean record, boolean inDir, String dir) {
+
 		text2find = text;
 		if (text2find != null && text2find.length() > 0) {
 			Point p = replace(text2find, cx, cy, text2, all, ignoreCase);
@@ -1727,6 +1734,66 @@ public class PlainPage implements Page {
 					}
 				}
 			}
+		}
+		edit.repaint();
+	}
+
+	private void doReplaceInDir(String text, boolean ignoreCase2, String text2,
+			boolean inDir, String dir) {
+		Iterable<File> it = new FileIterator(dir);
+		List all = new ArrayList();
+		for (File f : it) {
+			if (f.isDirectory()) {
+				continue;
+			}
+			try {
+				List res = findInFile(f, text, ignoreCase);
+				if (res.size() > 0) {
+					PageInfo pi = edit.openFile(f.getAbsolutePath());
+
+					pi.initPage(edit);
+
+					if (pi != null) {
+						((PlainPage) pi.page).doReplaceAll(text, ignoreCase2,
+								false, text2, true, false, null);
+					}
+				}
+				all.addAll(res);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
+		}
+		PageInfo pi = edit.newFile();
+		PlainPage p2 = (PlainPage) pi.page;
+		p2.lines.clear();
+		p2.appendLine(String.format(
+				"replaced %s results in dir %s for '%s', not saved.", all
+						.size(), dir, text));
+		for (Object o : all) {
+			p2.appendLine(o.toString());
+		}
+		edit.repaint();
+	}
+
+	private void doFindInDir(String text, boolean ignoreCase,
+			boolean selected2, boolean inDir, String dir) {
+		Iterable<File> it = new FileIterator(dir);
+		List all = new ArrayList();
+		for (File f : it) {
+			if (f.isDirectory()) {
+				continue;
+			}
+			List res = findInFile(f, text, ignoreCase);
+			all.addAll(res);
+		}
+		PageInfo pi = edit.newFile();
+		PlainPage p2 = (PlainPage) pi.page;
+		p2.lines.clear();
+		p2.appendLine(String.format("find %s results in dir %s for '%s'", all
+				.size(), dir, text));
+		for (Object o : all) {
+			p2.appendLine(o.toString());
 		}
 		edit.repaint();
 	}
@@ -1802,9 +1869,14 @@ public class PlainPage implements Page {
 	}
 
 	public void doReplaceAll(String text, boolean ignoreCase,
-			boolean selected2, String text2, boolean record) {
-		_doReplace(text, ignoreCase, selected2, text2, true, record);
-
+			boolean selected2, String text2, boolean record, boolean inDir,
+			String dir) {
+		if (inDir) {
+			doReplaceInDir(text, ignoreCase, text2, inDir, dir);
+		} else {
+			_doReplace(text, ignoreCase, selected2, text2, true, record, inDir,
+					dir);
+		}
 	}
 
 	public void appendLine(String s) {

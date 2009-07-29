@@ -47,13 +47,9 @@ public class Editor extends JComponent implements MouseMotionListener,
 					pageNo = pages.size() - 1;
 				}
 				PageInfo pi = pages.get(pageNo);
-				if (pi.page == null) {
-					if (pi.size < 10000000) {
-						pi.page = new PlainPage(this, pi);
-					} else {
-						pi.page = new LargePage(this, pi);
-					}
-				}
+				
+				pi.initPage(this);
+				
 
 				pi.page.xpaint(g, this.getSize());				
 			}
@@ -67,22 +63,25 @@ public class Editor extends JComponent implements MouseMotionListener,
 	int pageNo;
 	JFrame frame;
 	
-	public void openFile(String fn) {
+	public PageInfo openFile(String fn) {
 		File f = new File(fn);
+		PageInfo pi=null;
 		if (f.exists() && f.isFile()) {
 			if (pages.contains(fn)) {
 				// already open
+				pi=pages.get(pages.indexOf(fn));
 			} else {
 				long size = f.length();
 				Log.debug(String.format("open %s(%s)",
 						new Object[] { fn, size }));
-				pages.add(new PageInfo(fn, size));
+				pages.add(pi=new PageInfo(fn, size));
 			}
 			changePage(find(pages, fn));
+			return pi;
 		} else {
 			Log.debug("cannot open " + fn);
+			return null;
 		}
-
 	}
 
 	private int find(List<PageInfo> l, String fn) {
