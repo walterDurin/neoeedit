@@ -94,7 +94,7 @@ public class FindReplaceWindow implements ActionListener {
 					jrb2.isSelected(), jta2.getText(), true);
 		} else if (command == "replaceall") {
 			page.doReplaceAll(jta1.getText(), jrb1.isSelected(), jrb2
-					.isSelected(), jta2.getText(), true);
+					.isSelected(), jta2.getText(), true,jcb1.isSelected(), jtadir.getText());
 		} else {
 			return;
 		}
