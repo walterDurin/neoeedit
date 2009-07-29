@@ -16,9 +16,11 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -785,171 +787,175 @@ public class PlainPage implements Page {
 
 	@Override
 	public void keyPressed(KeyEvent env) {
-		// System.out.println("press " + env.getKeyChar());
+		try {
+			// System.out.println("press " + env.getKeyChar());
 
-		int kc = env.getKeyCode();
-		if (kc == KeyEvent.VK_F1) {
-			help();
-		} else if (kc == KeyEvent.VK_F2) {
-			saveAs();
-		} else if (kc == KeyEvent.VK_F3) {
-			findNext();
-		} else if (kc == KeyEvent.VK_F5) {
-			reloadWithEncoding();
-		}
-		boolean cmoved = false;
-		if (env.isAltDown()) {
-			if (kc == KeyEvent.VK_LEFT) {
-				String s = getline(cy).toString();
-				if (s.length() > 0
-						&& (s.charAt(0) == '\t' || s.charAt(0) == ' ')) {
-					getline(cy).sb().deleteCharAt(0);
-				}
-				cx -= 1;
-				if (cx < 0) {
-					cx = 0;
-				}
-				focusCursor();
-				cmoved = true;
-			} else if (kc == KeyEvent.VK_RIGHT) {
-				getline(cy).sb().insert(0, '\t');
-				cx += 1;
-				focusCursor();
-				cmoved = true;
+			int kc = env.getKeyCode();
+			if (kc == KeyEvent.VK_F1) {
+				help();
+			} else if (kc == KeyEvent.VK_F2) {
+				saveAs();
+			} else if (kc == KeyEvent.VK_F3) {
+				findNext();
+			} else if (kc == KeyEvent.VK_F5) {
+				reloadWithEncoding();
 			}
-		} else if (env.isControlDown()) {
-			if (kc == KeyEvent.VK_C) {
-				copySelected();
-			} else if (kc == KeyEvent.VK_V) {
-				pasteSelected();
-			} else if (kc == KeyEvent.VK_X) {
-				cutSelected();
-			} else if (kc == KeyEvent.VK_A) {
-				selectAll();
-			} else if (kc == KeyEvent.VK_D) {
-				if (isSelected()) {
-					deleteSelection();
-				} else {
-					cx = 0;
-					if (getLinesize() == 1) {
-						deleteInLine(0, 0, getline(0).length());
-					} else {
-						u_removeLine(cy);
-						if (cy >= getLinesize()) {
-							cy = getLinesize() - 1;
-						}
+			boolean cmoved = false;
+			if (env.isAltDown()) {
+				if (kc == KeyEvent.VK_LEFT) {
+					String s = getline(cy).toString();
+					if (s.length() > 0
+							&& (s.charAt(0) == '\t' || s.charAt(0) == ' ')) {
+						getline(cy).sb().deleteCharAt(0);
 					}
-				}
-				focusCursor();
-			} else if (kc == KeyEvent.VK_O) {
-				openFile();
-			} else if (kc == KeyEvent.VK_N) {
-				newFile();
-			} else if (kc == KeyEvent.VK_S && env.isShiftDown()) {
-				saveAllFiles();
-
-			} else if (kc == KeyEvent.VK_S) {
-				if (saveFile(info)) {
-					System.out.println("saved");
-					message("saved");
-				}
-			} else if (kc == KeyEvent.VK_L) {
-				gotoLine();
-			} else if (kc == KeyEvent.VK_Z) {
-				undo();
-			} else if (kc == KeyEvent.VK_F) {
-				find();
-			} else if (kc == KeyEvent.VK_TAB) {
-				changePage();
-			} else if (kc == KeyEvent.VK_Y) {
-				redo();
-			} else if (kc == KeyEvent.VK_W) {
-				closePage();
-			} else if (kc == KeyEvent.VK_E) {
-				changeEncoding();
-			} else if (kc == KeyEvent.VK_PAGE_UP) {
-				cy = 0;
-				cx = 0;
-				focusCursor();
-				cmoved = true;
-			} else if (kc == KeyEvent.VK_PAGE_DOWN) {
-				cy = getLinesize() - 1;
-				cx = 0;
-				focusCursor();
-				cmoved = true;
-			}
-		} else {
-			if (kc == KeyEvent.VK_LEFT) {
-				cx -= 1;
-				if (cx < 0) {
-					if (cy > 0) {
-						cy -= 1;
-						cx = getline(cy).length();
-					} else {
+					cx -= 1;
+					if (cx < 0) {
 						cx = 0;
 					}
+					focusCursor();
+					cmoved = true;
+				} else if (kc == KeyEvent.VK_RIGHT) {
+					getline(cy).sb().insert(0, '\t');
+					cx += 1;
+					focusCursor();
+					cmoved = true;
 				}
-				focusCursor();
-				cmoved = true;
-			} else if (kc == KeyEvent.VK_RIGHT) {
-				cx += 1;
-				if (cx > getline(cy).length() && cy < lines.size() - 1) {
-					cy += 1;
-					cx = 0;
-				}
-				focusCursor();
-				cmoved = true;
-			} else if (kc == KeyEvent.VK_UP) {
-				cy -= 1;
-				if (cy < 0) {
-					cy = 0;
-				}
-				focusCursor();
-				cmoved = true;
-			} else if (kc == KeyEvent.VK_DOWN) {
-				cy += 1;
-				if (cy >= getLinesize()) {
-					cy = getLinesize() - 1;
-				}
-				focusCursor();
-				cmoved = true;
-			} else if (kc == KeyEvent.VK_HOME) {
-				cx = 0;
-				focusCursor();
-				cmoved = true;
-			} else if (kc == KeyEvent.VK_END) {
-				cx = Integer.MAX_VALUE;
-				focusCursor();
-				cmoved = true;
-			} else if (kc == KeyEvent.VK_PAGE_UP) {
-				cy -= showLineCnt;
-				if (cy < 0) {
-					cy = 0;
-				}
-				focusCursor();
-				cmoved = true;
-			} else if (kc == KeyEvent.VK_PAGE_DOWN) {
-				cy += showLineCnt;
-				if (cy >= getLinesize()) {
-					cy = getLinesize() - 1;
-				}
-				focusCursor();
-				cmoved = true;
-			} else if (kc == KeyEvent.VK_CONTROL || kc == KeyEvent.VK_SHIFT
-					|| kc == KeyEvent.VK_ALT) {
-				return;
-			}
+			} else if (env.isControlDown()) {
+				if (kc == KeyEvent.VK_C) {
+					copySelected();
+				} else if (kc == KeyEvent.VK_V) {
+					pasteSelected();
+				} else if (kc == KeyEvent.VK_X) {
+					cutSelected();
+				} else if (kc == KeyEvent.VK_A) {
+					selectAll();
+				} else if (kc == KeyEvent.VK_D) {
+					if (isSelected()) {
+						deleteSelection();
+					} else {
+						cx = 0;
+						if (getLinesize() == 1) {
+							deleteInLine(0, 0, getline(0).length());
+						} else {
+							u_removeLine(cy);
+							if (cy >= getLinesize()) {
+								cy = getLinesize() - 1;
+							}
+						}
+					}
+					focusCursor();
+				} else if (kc == KeyEvent.VK_O) {
+					openFile();
+				} else if (kc == KeyEvent.VK_N) {
+					newFile();
+				} else if (kc == KeyEvent.VK_S && env.isShiftDown()) {
+					saveAllFiles();
 
-		}
-		if (cmoved) {
-			if (env.isShiftDown()) {
-				selectstopx = cx;
-				selectstopy = cy;
+				} else if (kc == KeyEvent.VK_S) {
+					if (saveFile(info)) {
+						System.out.println("saved");
+						message("saved");
+					}
+				} else if (kc == KeyEvent.VK_L) {
+					gotoLine();
+				} else if (kc == KeyEvent.VK_Z) {
+					undo();
+				} else if (kc == KeyEvent.VK_F) {
+					find();
+				} else if (kc == KeyEvent.VK_TAB) {
+					changePage();
+				} else if (kc == KeyEvent.VK_Y) {
+					redo();
+				} else if (kc == KeyEvent.VK_W) {
+					closePage();
+				} else if (kc == KeyEvent.VK_E) {
+					changeEncoding();
+				} else if (kc == KeyEvent.VK_PAGE_UP) {
+					cy = 0;
+					cx = 0;
+					focusCursor();
+					cmoved = true;
+				} else if (kc == KeyEvent.VK_PAGE_DOWN) {
+					cy = getLinesize() - 1;
+					cx = 0;
+					focusCursor();
+					cmoved = true;
+				}
 			} else {
-				cancelSelect();
+				if (kc == KeyEvent.VK_LEFT) {
+					cx -= 1;
+					if (cx < 0) {
+						if (cy > 0) {
+							cy -= 1;
+							cx = getline(cy).length();
+						} else {
+							cx = 0;
+						}
+					}
+					focusCursor();
+					cmoved = true;
+				} else if (kc == KeyEvent.VK_RIGHT) {
+					cx += 1;
+					if (cx > getline(cy).length() && cy < lines.size() - 1) {
+						cy += 1;
+						cx = 0;
+					}
+					focusCursor();
+					cmoved = true;
+				} else if (kc == KeyEvent.VK_UP) {
+					cy -= 1;
+					if (cy < 0) {
+						cy = 0;
+					}
+					focusCursor();
+					cmoved = true;
+				} else if (kc == KeyEvent.VK_DOWN) {
+					cy += 1;
+					if (cy >= getLinesize()) {
+						cy = getLinesize() - 1;
+					}
+					focusCursor();
+					cmoved = true;
+				} else if (kc == KeyEvent.VK_HOME) {
+					cx = 0;
+					focusCursor();
+					cmoved = true;
+				} else if (kc == KeyEvent.VK_END) {
+					cx = Integer.MAX_VALUE;
+					focusCursor();
+					cmoved = true;
+				} else if (kc == KeyEvent.VK_PAGE_UP) {
+					cy -= showLineCnt;
+					if (cy < 0) {
+						cy = 0;
+					}
+					focusCursor();
+					cmoved = true;
+				} else if (kc == KeyEvent.VK_PAGE_DOWN) {
+					cy += showLineCnt;
+					if (cy >= getLinesize()) {
+						cy = getLinesize() - 1;
+					}
+					focusCursor();
+					cmoved = true;
+				} else if (kc == KeyEvent.VK_CONTROL || kc == KeyEvent.VK_SHIFT
+						|| kc == KeyEvent.VK_ALT) {
+					return;
+				}
+
 			}
+			if (cmoved) {
+				if (env.isShiftDown()) {
+					selectstopx = cx;
+					selectstopy = cy;
+				} else {
+					cancelSelect();
+				}
+			}
+			edit.repaint();
+		} catch (Exception e) {
+			message("err:" + e);
 		}
-		edit.repaint();
 	}
 
 	private void changeEncoding() {
@@ -1006,7 +1012,7 @@ public class PlainPage implements Page {
 		edit.changePage(edit.pageNo);
 	}
 
-	private void saveAs() {
+	private void saveAs() throws Exception {
 		JFileChooser chooser = new JFileChooser(info.fn);
 		int returnVal = chooser.showSaveDialog(edit);
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
@@ -1153,7 +1159,7 @@ public class PlainPage implements Page {
 		edit.newFile();
 	}
 
-	private void saveAllFiles() {
+	private void saveAllFiles() throws Exception {
 		int total = 0;
 		for (PageInfo pi : edit.pages) {
 			if (saveFile(pi)) {
@@ -1164,7 +1170,7 @@ public class PlainPage implements Page {
 		message(total + " files saved");
 	}
 
-	private static boolean saveFile(PageInfo info) {
+	private static boolean saveFile(PageInfo info) throws Exception {
 		PlainPage p = (PlainPage) info.page;
 		if (info.fn == null) {
 			JFileChooser chooser = new JFileChooser(info.defaultPath);
@@ -1191,21 +1197,20 @@ public class PlainPage implements Page {
 
 	}
 
-	private static boolean savePageToFile(PageInfo info) {
+	private static boolean savePageToFile(PageInfo info) throws Exception {
 		System.out.println("save " + info.fn);
 		PlainPage p = (PlainPage) info.page;
-		try {
-			BufferedWriter out = new BufferedWriter(new OutputStreamWriter(
-					new FileOutputStream(info.fn), p.encoding));
-			for (StringBuffer sb : p.lines) {
-				out.write(sb.toString());
-				out.write("\n");
-			}
-			out.close();
-
-		} catch (Exception e) {
-			e.printStackTrace();
+		if (p.encoding == null) {
+			p.encoding = UTF8;
 		}
+		BufferedWriter out = new BufferedWriter(new OutputStreamWriter(
+				new FileOutputStream(info.fn), p.encoding));
+		for (StringBuffer sb : p.lines) {
+			out.write(sb.toString());
+			out.write("\n");
+		}
+		out.close();
+
 		return true;
 	}
 
