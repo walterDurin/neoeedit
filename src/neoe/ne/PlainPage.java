@@ -68,6 +68,7 @@ public class PlainPage implements Page {
 	private FindReplaceWindow findWindow;
 	private boolean ignoreCase = true;
 	private boolean highlight = true;
+	private boolean isCommentChecked = false;
 
 	final static String[] kws = { "ArithmeticError", "AssertionError",
 			"AttributeError", "BufferType", "BuiltinFunctionType",
@@ -264,6 +265,15 @@ public class PlainPage implements Page {
 		try {
 			this.size = size;
 
+			if (!isCommentChecked) {
+				isCommentChecked = true;
+				new Thread() {
+					public void run() {
+						checkComment();
+					}
+				}.start();
+			}
+
 			Graphics2D g2 = (Graphics2D) g;
 			g2.setFont(font);
 
@@ -436,6 +446,59 @@ public class PlainPage implements Page {
 		}
 	}
 
+	protected void checkComment() {
+		String[] commentchars = { "#", "%", "'", "//", "!" };
+		int[] cnts = new int[commentchars.length];
+		for (int i = 0; i < lines.size(); i++) {
+			RoSb sb = getline(i);
+			for (int j = 0; j < cnts.length; j++) {
+				if (sb.toString().trim().startsWith(commentchars[j])) {
+					cnts[j]++;
+				}
+			}
+		}
+		int kind = 0;
+		int max=0;
+		for (int j = 0; j < cnts.length; j++) {
+			if (cnts[j] > 0) {
+				kind++;
+				max=Math.max(max, cnts[j]);
+			}
+		}
+		if (kind == 1) {
+			for (int j = 0; j < cnts.length; j++) {
+				if (cnts[j] > 0) {
+					comment = commentchars[j];
+					message("comment found:"+comment);
+					break;
+				}
+			}
+		} else {
+			int k2 = 0;
+			int lv2 = Math.max(5,max/10);
+			for (int j = 0; j < cnts.length; j++) {
+				if (cnts[j] > lv2) {
+					k2++;
+				}
+			}
+			if (k2 == 1) {
+				for (int j = 0; j < cnts.length; j++) {
+					if (cnts[j] > lv2) {
+						comment = commentchars[j];
+						message("comment found:"+comment);
+						break;
+					}
+				}
+			}
+		}
+		if (comment==null){
+			message("no comment found"+Arrays.toString(cnts));
+		}
+		edit.repaint();
+	}
+
+	String comment = null;
+
 	private void pairMark(Graphics2D g2, int cx2, int cy2, char ch, char ch2,
 			int inc) {
 		int[] c1 = new int[] { cx2, cy2 };
@@ -568,7 +631,8 @@ public class PlainPage implements Page {
 
 	private void drawString(Graphics2D g2, String s, int x, int y) {
 		int w = 0;
-		if (highlight) {
+		boolean isComment = comment != null && s.trim().startsWith(comment);
+		if (highlight && !isComment) {
 			List<String> sx = split(s);
 			for (String s1 : sx) {
 				if (s1.equals("\t")) {
@@ -581,8 +645,14 @@ public class PlainPage implements Page {
 				}
 			}
 		} else {
+			Color c1=new Color(250,250,250),c2=new Color(2,2,2);
 			if (s.indexOf("\t") < 0) {
-				g2.drawString(s, x, y);
+				if (isComment){
+					drawTwoColor(g2,s,x,y,c1,c2);					
+				}else{
+					g2.drawString(s, x, y);	
+				}
+				
 			} else {
 
 				int p1 = 0;
@@ -590,11 +660,20 @@ public class PlainPage implements Page {
 				while (true) {
 					int p2 = s.indexOf("\t", p1);
 					if (p2 < 0) {
-						g2.drawString(s.substring(p1), x + w, y);
+						if (isComment){
+							drawTwoColor(g2,s.substring(p1),x+w,y,c1,c2);					
+						}else{
+							g2.drawString(s.substring(p1), x + w, y);
+						}
+						
 						w += g2.getFontMetrics().stringWidth(s.substring(p1));
 						break;
 					} else {
-						g2.drawString(s.substring(p1, p2), x + w, y);
+						if (isComment){
+							drawTwoColor(g2,s.substring(p1, p2),x+w,y,c1,c2);					
+						}else{
+							g2.drawString(s.substring(p1, p2), x + w, y);
+						}						
 						w += g2.getFontMetrics().stringWidth(
 								s.substring(p1, p2));
 						g2.drawImage(U.TabImg, x + w, y - lineHeight, null);
@@ -604,6 +683,15 @@ public class PlainPage implements Page {
 				}
 			}
 		}
+	}
+
+	private void drawTwoColor(Graphics2D g2, String s, int x, int y, Color c1,
+			Color c2) {
+		g2.setColor(c2);
+		g2.drawString(s, x+1, y+1);
+		g2.setColor(c1);
+		g2.drawString(s, x, y);
+		
 	}
 
 	private List<String> split(String s) {
