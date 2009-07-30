@@ -645,7 +645,7 @@ public class PlainPage implements Page {
 				}
 			}
 		} else {
-			Color c1=new Color(250,250,250),c2=new Color(2,2,2);
+			Color c1=new Color(200,80,50),c2=new Color(2,2,2);
 			if (s.indexOf("\t") < 0) {
 				if (isComment){
 					drawTwoColor(g2,s,x,y,c1,c2);					
