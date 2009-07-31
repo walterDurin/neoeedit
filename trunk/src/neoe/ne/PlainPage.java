@@ -1365,11 +1365,11 @@ public class PlainPage implements Page {
 
 	private void focusCursor() {
 		if (cy < sy) {
-			sy = cy;
+			sy = Math.max(0,cy-showLineCnt/2+1);
 		}
 		if (showLineCnt > 0) {
 			if (sy + showLineCnt - 1 < cy) {
-				sy = cy;
+				sy = Math.max(0,cy-showLineCnt/2+1);
 			}
 		}
 
