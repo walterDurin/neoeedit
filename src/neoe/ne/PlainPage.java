@@ -458,7 +458,7 @@ public class PlainPage implements Page {
 	}
 
 	protected void checkComment() {
-		String[] commentchars = { "#", "%", "'", "//", "!" };
+		String[] commentchars = { "#", "%", "'", "//", "!", ";" };
 		int[] cnts = new int[commentchars.length];
 		for (int i = 0; i < lines.size(); i++) {
 			RoSb sb = getline(i);
