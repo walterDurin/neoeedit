@@ -16,11 +16,9 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -33,6 +31,7 @@ import neoe.util.FileIterator;
 
 public class PlainPage implements Page {
 
+	private static final int MAX_SHOW_CHARS = 300;
 	private static final String UTF8 = "utf8";
 	private static final long VANISHTIME = 3000;
 	private Editor edit;
@@ -44,6 +43,7 @@ public class PlainPage implements Page {
 	private String encoding;
 	private List<StringBuffer> lines;
 	private Color bkColor;
+	private Color currentLineColor;
 	private int cy;
 	private int cx;
 	private int showLineCnt;
@@ -177,6 +177,7 @@ public class PlainPage implements Page {
 		this.lineGap = 5;
 		this.color = Color.BLACK;
 		this.bkColor = new Color(0xe0e0f0);
+		this.currentLineColor = new Color(0xF0F0F0);		
 		this.encoding = null;
 		this.lines = readFile(pi.fn);
 		history = new History(this);
@@ -365,6 +366,16 @@ public class PlainPage implements Page {
 			g2.translate(gutterWidth, 0);
 			g2.setColor(bkColor);
 			g2.fillRect(0, 0, size.width, size.height);
+			
+
+			{			//highlight current line
+				int l1=cy-sy;
+				if (l1>=0&&l1<showLineCnt){
+					g2.setColor(currentLineColor);
+					g2.fillRect(0, l1*(lineHeight + lineGap), size.width, lineHeight + lineGap-1);
+				}
+			}
+			
 			g2.setColor(color);
 
 			// g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
@@ -458,24 +469,24 @@ public class PlainPage implements Page {
 			}
 		}
 		int kind = 0;
-		int max=0;
+		int max = 0;
 		for (int j = 0; j < cnts.length; j++) {
 			if (cnts[j] > 0) {
 				kind++;
-				max=Math.max(max, cnts[j]);
+				max = Math.max(max, cnts[j]);
 			}
 		}
 		if (kind == 1) {
 			for (int j = 0; j < cnts.length; j++) {
 				if (cnts[j] > 0) {
 					comment = commentchars[j];
-					message("comment found:"+comment);
+					message("comment found:" + comment);
 					break;
 				}
 			}
 		} else {
 			int k2 = 0;
-			int lv2 = Math.max(5,max/10);
+			int lv2 = Math.max(5, max / 10);
 			for (int j = 0; j < cnts.length; j++) {
 				if (cnts[j] > lv2) {
 					k2++;
@@ -485,14 +496,14 @@ public class PlainPage implements Page {
 				for (int j = 0; j < cnts.length; j++) {
 					if (cnts[j] > lv2) {
 						comment = commentchars[j];
-						message("comment found:"+comment);
+						message("comment found:" + comment);
 						break;
 					}
 				}
 			}
 		}
-		if (comment==null){
-			message("no comment found"+Arrays.toString(cnts));
+		if (comment == null) {
+			message("no comment found" + Arrays.toString(cnts));
 		}
 		edit.repaint();
 	}
@@ -645,14 +656,14 @@ public class PlainPage implements Page {
 				}
 			}
 		} else {
-			Color c1=new Color(200,80,50),c2=Color.WHITE;
+			Color c1 = new Color(200, 80, 50), c2 = Color.WHITE;
 			if (s.indexOf("\t") < 0) {
-				if (isComment){
-					drawTwoColor(g2,s,x,y,c1,c2);					
-				}else{
-					g2.drawString(s, x, y);	
+				if (isComment) {
+					drawTwoColor(g2, s, x, y, c1, c2);
+				} else {
+					g2.drawString(s, x, y);
 				}
-				
+
 			} else {
 
 				int p1 = 0;
@@ -660,20 +671,21 @@ public class PlainPage implements Page {
 				while (true) {
 					int p2 = s.indexOf("\t", p1);
 					if (p2 < 0) {
-						if (isComment){
-							drawTwoColor(g2,s.substring(p1),x+w,y,c1,c2);					
-						}else{
+						if (isComment) {
+							drawTwoColor(g2, s.substring(p1), x + w, y, c1, c2);
+						} else {
 							g2.drawString(s.substring(p1), x + w, y);
 						}
-						
+
 						w += g2.getFontMetrics().stringWidth(s.substring(p1));
 						break;
 					} else {
-						if (isComment){
-							drawTwoColor(g2,s.substring(p1, p2),x+w,y,c1,c2);					
-						}else{
+						if (isComment) {
+							drawTwoColor(g2, s.substring(p1, p2), x + w, y, c1,
+									c2);
+						} else {
 							g2.drawString(s.substring(p1, p2), x + w, y);
-						}						
+						}
 						w += g2.getFontMetrics().stringWidth(
 								s.substring(p1, p2));
 						g2.drawImage(U.TabImg, x + w, y - lineHeight, null);
@@ -688,10 +700,10 @@ public class PlainPage implements Page {
 	private void drawTwoColor(Graphics2D g2, String s, int x, int y, Color c1,
 			Color c2) {
 		g2.setColor(c2);
-		g2.drawString(s, x+1, y+1);
+		g2.drawString(s, x + 1, y + 1);
 		g2.setColor(c1);
 		g2.drawString(s, x, y);
-		
+
 	}
 
 	private List<String> split(String s) {
@@ -1235,7 +1247,7 @@ public class PlainPage implements Page {
 		}
 		if (line > 0) {
 			line -= 1;
-			sy = line;
+			sy = Math.max(0, line - showLineCnt / 2 + 1);
 			cy = line;
 			cx = 0;
 			focusCursor();
@@ -1778,8 +1790,8 @@ public class PlainPage implements Page {
 					}
 
 					if (line.indexOf(text) >= 0) {
-						if (line.length() > 80) {
-							line = line.substring(0, 80) + "...";
+						if (line.length() > MAX_SHOW_CHARS) {
+							line = line.substring(0, MAX_SHOW_CHARS) + "...";
 						}
 						a.add(String.format("[%s]%s:%s", fn, lineno, line));
 					}
