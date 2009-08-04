@@ -285,11 +285,20 @@ public class PlainPage implements Page {
 			// change sx if needed
 			cx = Math.min(getline(cy).length(), cx);
 			if (cx < sx) {
-				sx = cx;
-			}
-			if (strWidth(g2, subs(getline(cy), sx, cx)) > size.width
-					- lineHeight * 3) {
-				sx = Math.max(0, cx - 1);
+				sx = Math.max(0, cx - charCntInLine / 2);
+			} else {
+
+				if (strWidth(g2, subs(getline(cy), sx, cx)) > size.width
+						- lineHeight * 3) {
+					sx = Math.max(0, cx - charCntInLine / 2);
+					int xx = charCntInLine / 4;
+					while (xx > 0
+							&& strWidth(g2, subs(getline(cy), sx, cx)) > size.width
+									- lineHeight * 3) {
+						sx = Math.max(0, cx - xx - 1);
+						xx /= 2;
+					}
+				}
 			}
 
 			// apply mouse click position
@@ -560,9 +569,9 @@ public class PlainPage implements Page {
 	}
 
 	private void markBox(Graphics2D g2, int x, int y) {
-		if (y >= sy && y <= sy + showLineCnt) {
+		if (y >= sy && y <= sy + showLineCnt && x >= sx) {
 			RoSb sb = getline(y);
-			int w1 = x > 0 ? strWidth(g2, sb.substring(0, x)) : 0;
+			int w1 = x > 0 ? strWidth(g2, sb.substring(sx, x)) : 0;
 			String c = sb.substring(x, x + 1);
 			int w2 = strWidth(g2, c);
 			g2.setColor(Color.WHITE);
@@ -644,8 +653,8 @@ public class PlainPage implements Page {
 		int w = 0;
 		boolean isComment = comment != null && s.trim().startsWith(comment);
 		if (highlight && !isComment) {
-			List<String> sx = split(s);
-			for (String s1 : sx) {
+			List<String> s1x = split(s);
+			for (String s1 : s1x) {
 				if (s1.equals("\t")) {
 					g2.drawImage(U.TabImg, x + w, y - lineHeight, null);
 					w += U.TABWIDTH;
