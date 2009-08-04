@@ -1195,7 +1195,7 @@ public class PlainPage implements Page {
 			t = text2find;
 		}
 
-		if (findWindow.jta1.getText().length() == 0) {
+		if (t.length()>0) {
 			findWindow.jta1.setText(t);
 		}
 		findWindow.show();
