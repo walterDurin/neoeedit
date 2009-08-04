@@ -989,6 +989,8 @@ public class PlainPage implements Page {
 					cx = 0;
 					focusCursor();
 					cmoved = true;
+				} else if (kc == KeyEvent.VK_R) {
+					removeTrailingSpace();
 				}
 			} else {
 				if (kc == KeyEvent.VK_LEFT) {
@@ -1065,6 +1067,20 @@ public class PlainPage implements Page {
 		} catch (Exception e) {
 			message("err:" + e);
 		}
+	}
+
+	private void removeTrailingSpace() {
+		for (int i = 0; i < getLinesize(); i++) {// no record, why? ...emm...
+			RoSb sb = getline(i);
+			int p = sb.length() - 1;
+			while (p >= 0 && "\r\n\t ".indexOf(sb.charAt(p)) >= 0) {
+				p--;
+			}
+			if (p < sb.length() - 1) {
+				sb.sb().setLength(p + 1);
+			}
+		}
+
 	}
 
 	private void changeEncoding() {
@@ -1796,7 +1812,7 @@ public class PlainPage implements Page {
 				int lineno = 0;
 				while ((line = in.readLine()) != null) {
 					lineno++;
-					String oline=line;
+					String oline = line;
 					if (ignoreCase2) {
 						line = line.toLowerCase();
 					}
