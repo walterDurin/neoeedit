@@ -1796,6 +1796,7 @@ public class PlainPage implements Page {
 				int lineno = 0;
 				while ((line = in.readLine()) != null) {
 					lineno++;
+					String oline=line;
 					if (ignoreCase2) {
 						line = line.toLowerCase();
 					}
@@ -1804,7 +1805,7 @@ public class PlainPage implements Page {
 						if (line.length() > MAX_SHOW_CHARS) {
 							line = line.substring(0, MAX_SHOW_CHARS) + "...";
 						}
-						a.add(String.format("[%s]%s:%s", fn, lineno, line));
+						a.add(String.format("[%s]%s:%s", fn, lineno, oline));
 					}
 				}
 
