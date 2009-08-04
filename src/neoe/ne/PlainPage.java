@@ -177,7 +177,7 @@ public class PlainPage implements Page {
 		this.lineGap = 5;
 		this.color = Color.BLACK;
 		this.bkColor = new Color(0xe0e0f0);
-		this.currentLineColor = new Color(0xF0F0F0);		
+		this.currentLineColor = new Color(0xF0F0F0);
 		this.encoding = null;
 		this.lines = readFile(pi.fn);
 		history = new History(this);
@@ -366,16 +366,16 @@ public class PlainPage implements Page {
 			g2.translate(gutterWidth, 0);
 			g2.setColor(bkColor);
 			g2.fillRect(0, 0, size.width, size.height);
-			
 
-			{			//highlight current line
-				int l1=cy-sy;
-				if (l1>=0&&l1<showLineCnt){
+			{ // highlight current line
+				int l1 = cy - sy;
+				if (l1 >= 0 && l1 < showLineCnt) {
 					g2.setColor(currentLineColor);
-					g2.fillRect(0, l1*(lineHeight + lineGap), size.width, lineHeight + lineGap-1);
+					g2.fillRect(0, l1 * (lineHeight + lineGap), size.width,
+							lineHeight + lineGap - 1);
 				}
 			}
-			
+
 			g2.setColor(color);
 
 			// g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
@@ -1170,7 +1170,7 @@ public class PlainPage implements Page {
 
 	private void findNext() {
 		if (text2find != null && text2find.length() > 0) {
-			Point p = find(text2find, cx, cy);
+			Point p = find(text2find, cx + 1, cy);
 			if (p == null) {
 				message("string not found");
 			} else {
@@ -1195,10 +1195,12 @@ public class PlainPage implements Page {
 			t = text2find;
 		}
 
-		if (t.length()>0) {
+		if (t.length() > 0) {
 			findWindow.jta1.setText(t);
 		}
+
 		findWindow.show();
+		findWindow.jta1.grabFocus();
 	}
 
 	private Point find(String s, int x, int y) {
@@ -1206,7 +1208,7 @@ public class PlainPage implements Page {
 			s = s.toLowerCase();
 		}
 		// first half row
-		int p1 = getline(y).toString(ignoreCase).indexOf(s, x + 1);
+		int p1 = getline(y).toString(ignoreCase).indexOf(s, x);
 		if (p1 >= 0) {
 			return new Point(p1, y);
 		}
@@ -1365,11 +1367,11 @@ public class PlainPage implements Page {
 
 	private void focusCursor() {
 		if (cy < sy) {
-			sy = Math.max(0,cy-showLineCnt/2+1);
+			sy = Math.max(0, cy - showLineCnt / 2 + 1);
 		}
 		if (showLineCnt > 0) {
 			if (sy + showLineCnt - 1 < cy) {
-				sy = Math.max(0,cy-showLineCnt/2+1);
+				sy = Math.max(0, cy - showLineCnt / 2 + 1);
 			}
 		}
 
@@ -1910,7 +1912,7 @@ public class PlainPage implements Page {
 		}
 		// first half row
 		boolean found = false;
-		int p1 = x + 1;
+		int p1 = x;
 		while (true) {
 			p1 = getline(y).toString(ignoreCase).indexOf(s, p1);
 			if (p1 >= 0) {
