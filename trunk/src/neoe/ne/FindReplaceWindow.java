@@ -2,6 +2,8 @@ package neoe.ne;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.io.File;
 
 import javax.swing.JButton;
@@ -13,7 +15,7 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 
-public class FindReplaceWindow implements ActionListener {
+public class FindReplaceWindow implements ActionListener, KeyListener {
 
 	JTextField jta1;
 	JTextField jta2;
@@ -44,6 +46,7 @@ public class FindReplaceWindow implements ActionListener {
 		s.add(jta2 = new JTextField());
 		s.newline();
 		s.add(jrb1 = new JRadioButton("IgnoreCase"));
+		jrb1.setSelected(true);
 		s.add(jrb2 = new JRadioButton("RegularExpression"));
 		s.newline();
 		s.add(jb1 = new JButton("Find"));
@@ -70,6 +73,8 @@ public class FindReplaceWindow implements ActionListener {
 		if (page != null && page.info != null && page.info.fn != null) {
 			jtadir.setText(new File(page.info.fn).getParent());
 		}
+		jta1.addKeyListener(this);
+		jta2.addKeyListener(this);
 	}
 
 	public void show() {
@@ -94,11 +99,39 @@ public class FindReplaceWindow implements ActionListener {
 					jrb2.isSelected(), jta2.getText(), true);
 		} else if (command == "replaceall") {
 			page.doReplaceAll(jta1.getText(), jrb1.isSelected(), jrb2
-					.isSelected(), jta2.getText(), true,jcb1.isSelected(), jtadir.getText());
+					.isSelected(), jta2.getText(), true, jcb1.isSelected(),
+					jtadir.getText());
 		} else {
 			return;
 		}
 		dialog.setVisible(false);
+
+	}
+
+	@Override
+	public void keyPressed(KeyEvent e) {
+		if (e.getSource() == jta1) {
+			if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+				ActionEvent ae = new ActionEvent(this, 1, "find");
+				actionPerformed(ae);
+			}
+		} else {
+			if (e.getSource() == jta2) {
+				if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+					ActionEvent ae = new ActionEvent(this, 1, "replaceall");
+					actionPerformed(ae);
+				}
+			}
+		}
+	}
+
+	@Override
+	public void keyReleased(KeyEvent e) {
+
+	}
+
+	@Override
+	public void keyTyped(KeyEvent e) {
 
 	}
 }
