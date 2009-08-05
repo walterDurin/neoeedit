@@ -401,7 +401,7 @@ public class PlainPage implements Page {
 					int chari2 = Math.min(charCntInLine + sx, sb.length());
 					String s = subs(sb, sx, chari2);
 					g2.setColor(color);
-					drawString(g2, s, 0, py);
+					drawStringLine(g2, s, 0, py);
 					int w = strWidth(g2, s);
 					g2.setColor(Color.red);
 					g2.drawLine(w, py - lineHeight + font.getSize(), w + 3, py
@@ -649,10 +649,34 @@ public class PlainPage implements Page {
 		}
 	}
 
-	private void drawString(Graphics2D g2, String s, int x, int y) {
+	Color c1 = new Color(200, 80, 50), c2 = Color.WHITE;
+
+	private void drawStringLine(Graphics2D g2, String s, int x, int y) {
+		int commentPos = comment == null ? -1 : s.indexOf(comment);
+		if (commentPos >= 0) {
+			String s1 = s.substring(0, commentPos);
+			String s2 = s.substring(commentPos);
+			int w1 = drawText(g2, s1, x, y, false);
+			drawText(g2, s2, x + w1, y, true);
+		} else {
+			drawText(g2, s, x, y, false);
+		}
+	}
+
+	private int drawText(Graphics2D g2, String s, int x, int y,
+			boolean isComment) {
 		int w = 0;
-		boolean isComment = comment != null && s.trim().startsWith(comment);
-		if (highlight && !isComment) {
+		if (isComment) {
+			String[] ws = s.split("\t");
+			int i = 0;
+			for (String s1 : ws) {
+				if (i++ != 0) {
+					g2.drawImage(U.TabImg, x + w, y - lineHeight, null);
+					w += U.TABWIDTH;
+				}
+				w += drawTwoColor(g2, s1, x + w, y, c1, c2);
+			}
+		} else {
 			List<String> s1x = split(s);
 			for (String s1 : s1x) {
 				if (s1.equals("\t")) {
@@ -664,54 +688,18 @@ public class PlainPage implements Page {
 					w += g2.getFontMetrics().stringWidth(s1);
 				}
 			}
-		} else {
-			Color c1 = new Color(200, 80, 50), c2 = Color.WHITE;
-			if (s.indexOf("\t") < 0) {
-				if (isComment) {
-					drawTwoColor(g2, s, x, y, c1, c2);
-				} else {
-					g2.drawString(s, x, y);
-				}
-
-			} else {
-
-				int p1 = 0;
-
-				while (true) {
-					int p2 = s.indexOf("\t", p1);
-					if (p2 < 0) {
-						if (isComment) {
-							drawTwoColor(g2, s.substring(p1), x + w, y, c1, c2);
-						} else {
-							g2.drawString(s.substring(p1), x + w, y);
-						}
-
-						w += g2.getFontMetrics().stringWidth(s.substring(p1));
-						break;
-					} else {
-						if (isComment) {
-							drawTwoColor(g2, s.substring(p1, p2), x + w, y, c1,
-									c2);
-						} else {
-							g2.drawString(s.substring(p1, p2), x + w, y);
-						}
-						w += g2.getFontMetrics().stringWidth(
-								s.substring(p1, p2));
-						g2.drawImage(U.TabImg, x + w, y - lineHeight, null);
-						w += U.TABWIDTH;
-						p1 = p2 + 1;
-					}
-				}
-			}
 		}
+		return w;
+
 	}
 
-	private void drawTwoColor(Graphics2D g2, String s, int x, int y, Color c1,
+	private int drawTwoColor(Graphics2D g2, String s, int x, int y, Color c1,
 			Color c2) {
 		g2.setColor(c2);
 		g2.drawString(s, x + 1, y + 1);
 		g2.setColor(c1);
 		g2.drawString(s, x, y);
+		return g2.getFontMetrics().stringWidth(s);
 
 	}
 
