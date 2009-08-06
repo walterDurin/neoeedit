@@ -5,6 +5,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
@@ -12,6 +13,7 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -21,7 +23,9 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Vector;
 
 import javax.swing.JFileChooser;
@@ -30,6 +34,39 @@ import javax.swing.JOptionPane;
 import neoe.util.FileIterator;
 
 public class PlainPage implements Page {
+
+	public static class PriorityList {
+
+		private Map<Integer, Image> cache;
+		private List<Integer> ks;
+		private int max;
+		private int cut;
+
+		public PriorityList(Map<Integer, Image> lineCache) {
+			this.cache = lineCache;
+			ks = new ArrayList<Integer>();
+			max = 200;
+			cut = 100;
+		}
+
+		public void touch(Integer k) {
+			int p = ks.indexOf(k);
+			if (p >= cut) {
+				ks.remove(k);
+				ks.add(0, k);
+			} else if (p < 0) {
+				ks.add(0, k);
+			}
+			if (ks.size() > max) {
+				for (Integer rm : ks.subList(cut, ks.size())) {
+					cache.remove(rm);
+				}
+				ks = ks.subList(0, cut);
+			}
+
+		}
+
+	}
 
 	private static final int MAX_SHOW_CHARS = 300;
 	private static final String UTF8 = "utf8";
@@ -69,6 +106,7 @@ public class PlainPage implements Page {
 	private boolean ignoreCase = true;
 	private boolean highlight = true;
 	private boolean isCommentChecked = false;
+	private boolean isCacheMode = false;// disabled because slower.
 
 	final static String[] kws = { "ArithmeticError", "AssertionError",
 			"AttributeError", "BufferType", "BuiltinFunctionType",
@@ -172,6 +210,8 @@ public class PlainPage implements Page {
 		sy = 0;
 		cx = 0;
 		cy = 0;
+		lineCache = new HashMap<Integer, Image>();
+		lineCacheKey = new PriorityList(lineCache);
 		this.font = new Font("Monospaced", Font.PLAIN, 12);
 		this.lineHeight = 10;
 		this.lineGap = 5;
@@ -391,17 +431,19 @@ public class PlainPage implements Page {
 			// RenderingHints.VALUE_ANTIALIAS_ON);
 			int y = sy;
 			int py = lineHeight;
+			int notHit = 0;
 			for (int i = 0; i < showLineCnt; i++) {
 
 				if (y >= getLinesize()) {
 					break;
 				}
 				RoSb sb = getline(y);
+
 				if (sx < sb.length()) {
 					int chari2 = Math.min(charCntInLine + sx, sb.length());
 					String s = subs(sb, sx, chari2);
 					g2.setColor(color);
-					drawStringLine(g2, s, 0, py);
+					notHit += drawStringLine(g2, s, 0, py, y);
 					int w = strWidth(g2, s);
 					g2.setColor(Color.red);
 					g2.drawLine(w, py - lineHeight + font.getSize(), w + 3, py
@@ -414,7 +456,9 @@ public class PlainPage implements Page {
 				y += 1;
 				py += lineHeight + lineGap;
 			}
-
+			if (isCacheMode) {
+				System.out.println("not hit lines=" + notHit);
+			}
 			if (true) {// select mode
 				Rectangle r = getSelectRect();
 				int x1 = r.x;
@@ -650,14 +694,48 @@ public class PlainPage implements Page {
 	}
 
 	Color c1 = new Color(200, 80, 50), c2 = Color.WHITE;
+	private Map<Integer, Image> lineCache;
+	PriorityList lineCacheKey;
 
-	private void drawStringLine(Graphics2D g2, String s, int x, int y) {
+	private int drawStringLine(Graphics2D g2, String s, int x, int y, int lineno) {
+		int notHit = 0;
+		if (isCacheMode) {
+			Image im = lineCache.get(lineno);
+			if (im == null) {
+				im = createLineImage(g2, s, x, y, lineno);
+				lineCache.put(lineno, im);
+				notHit = 1;
+			}
+			lineCacheKey.touch(lineno);
+			g2.drawImage(im, x, y - lineHeight, null);
+		} else {
+			_drawLine(g2, s, x, y);
+		}
+		return notHit;
+	}
+
+	private Image createLineImage(Graphics2D g3, String s, int x, int y,
+			int lineno) {
+		BufferedImage im = new BufferedImage(size.width - gutterWidth,
+				lineHeight + lineGap, BufferedImage.TYPE_INT_ARGB);
+
+		Graphics2D g2 = (Graphics2D) im.getGraphics();
+		g2.setFont(g3.getFont());
+		y = lineHeight;
+		_drawLine(g2, s, x, y);
+		g2.dispose();
+		return im;
+	}
+
+	private void _drawLine(Graphics2D g2, String s, int x, int y) {
 		int commentPos = comment == null ? -1 : s.indexOf(comment);
 		if (commentPos >= 0) {
 			String s1 = s.substring(0, commentPos);
 			String s2 = s.substring(commentPos);
 			int w1 = drawText(g2, s1, x, y, false);
-			drawText(g2, s2, x + w1, y, true);
+			if (w1 < size.width - gutterWidth) {
+				drawText(g2, s2, x + w1, y, true);
+			}
 		} else {
 			drawText(g2, s, x, y, false);
 		}
@@ -675,6 +753,9 @@ public class PlainPage implements Page {
 					w += U.TABWIDTH;
 				}
 				w += drawTwoColor(g2, s1, x + w, y, c1, c2);
+				if (w > size.width - gutterWidth) {
+					break;
+				}
 			}
 		} else {
 			List<String> s1x = split(s);
@@ -686,6 +767,9 @@ public class PlainPage implements Page {
 					int highlightid = getHighLightID(s1, g2);
 					g2.drawString(s1, x + w, y);
 					w += g2.getFontMetrics().stringWidth(s1);
+				}
+				if (w > size.width - gutterWidth) {
+					break;
 				}
 			}
 		}
@@ -1738,7 +1822,7 @@ public class PlainPage implements Page {
 		mshift = env.isShiftDown();
 		mcount = env.getClickCount();
 		edit.repaint();
-		System.out.println("m press");
+		//System.out.println("m press");
 	}
 
 	@Override
