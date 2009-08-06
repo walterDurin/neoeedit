@@ -17,12 +17,11 @@ import java.util.Vector;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
-
-import sun.swing.SwingUtilities2;
 
 public class Editor extends JComponent implements MouseMotionListener,
 		MouseListener, MouseWheelListener, KeyListener {
+
+	private boolean debugFPS = false;
 
 	public Editor() {
 		pages = new Vector<PageInfo>();
@@ -41,40 +40,42 @@ public class Editor extends JComponent implements MouseMotionListener,
 	}
 
 	public void paint(Graphics g) {
+		long t1 = System.currentTimeMillis();
 		try {
 			if (pages.size() > 0) {
 				if (pageNo >= pages.size()) {
 					pageNo = pages.size() - 1;
 				}
 				PageInfo pi = pages.get(pageNo);
-				
-				pi.initPage(this);
-				
 
-				pi.page.xpaint(g, this.getSize());				
+				pi.initPage(this);
+
+				pi.page.xpaint(g, this.getSize());
 			}
 		} catch (Throwable e) {
 			e.printStackTrace();
 		}
-
+		if (debugFPS) {
+			System.out.println("p " + (System.currentTimeMillis() - t1));
+		}
 	}
 
 	List<PageInfo> pages;
 	int pageNo;
 	JFrame frame;
-	
+
 	public PageInfo openFile(String fn) {
 		File f = new File(fn);
-		PageInfo pi=null;
+		PageInfo pi = null;
 		if (f.exists() && f.isFile()) {
 			if (pages.contains(fn)) {
 				// already open
-				pi=pages.get(pages.indexOf(fn));
+				pi = pages.get(pages.indexOf(fn));
 			} else {
 				long size = f.length();
 				Log.debug(String.format("open %s(%s)",
 						new Object[] { fn, size }));
-				pages.add(pi=new PageInfo(fn, size));
+				pages.add(pi = new PageInfo(fn, size));
 			}
 			changePage(find(pages, fn));
 			return pi;
