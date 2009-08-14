@@ -1063,6 +1063,24 @@ public class PlainPage implements Page {
 					cmoved = true;
 				} else if (kc == KeyEvent.VK_R) {
 					removeTrailingSpace();
+				} else if (kc == KeyEvent.VK_LEFT) {
+					RoSb line = getline(cy);
+					cx = Math.max(0, cx - 1);
+					while (cx > 0
+							&& Character.isJavaIdentifierPart(line.charAt(cx))) {
+						cx--;
+					}
+				} else if (kc == KeyEvent.VK_RIGHT) {
+					RoSb line = getline(cy);
+					cx = Math.min(line.length() - 1, cx + 1);
+					while (cx < line.length()
+							&& Character.isJavaIdentifierPart(line.charAt(cx))) {
+						cx++;
+					}
+				} else if (kc == KeyEvent.VK_UP) {
+					sy = Math.max(0, sy - 1);
+				} else if (kc == KeyEvent.VK_DOWN) {
+					sy = Math.min(sy + 1, getLinesize() - 1);
 				}
 			} else {
 				if (kc == KeyEvent.VK_LEFT) {
@@ -1100,11 +1118,25 @@ public class PlainPage implements Page {
 					focusCursor();
 					cmoved = true;
 				} else if (kc == KeyEvent.VK_HOME) {
-					cx = 0;
+					String line = getline(cy).toString();
+					String lx = line.trim();
+					int p1 = line.indexOf(lx);
+					if (cx > p1 || cx == 0) {
+						cx = p1;
+					} else {
+						cx = 0;
+					}
 					focusCursor();
 					cmoved = true;
 				} else if (kc == KeyEvent.VK_END) {
-					cx = Integer.MAX_VALUE;
+					String line = getline(cy).toString();
+					String lx = line.trim();
+					int p1 = line.lastIndexOf(lx) + lx.length();
+					if (cx < p1 || cx >= line.length()) {
+						cx = p1;
+					} else {
+						cx = Integer.MAX_VALUE;
+					}
 					focusCursor();
 					cmoved = true;
 				} else if (kc == KeyEvent.VK_PAGE_UP) {
@@ -1642,6 +1674,9 @@ public class PlainPage implements Page {
 					}
 				}
 			}
+		} else if (ch == KeyEvent.VK_ESCAPE) {
+			selectstopy = selectstarty;
+			selectstopx = selectstartx;
 		} else {
 			if (isSelected()) {
 				deleteSelection();
@@ -1822,7 +1857,7 @@ public class PlainPage implements Page {
 		mshift = env.isShiftDown();
 		mcount = env.getClickCount();
 		edit.repaint();
-		//System.out.println("m press");
+		// System.out.println("m press");
 	}
 
 	@Override
