@@ -1066,16 +1066,19 @@ public class PlainPage implements Page {
 				} else if (kc == KeyEvent.VK_LEFT) {
 					RoSb line = getline(cy);
 					cx = Math.max(0, cx - 1);
-					while (cx > 0
-							&& Character.isJavaIdentifierPart(line.charAt(cx))) {
+					char ch1 = line.charAt(cx);
+					while (cx > 0 && isSkipChar(line.charAt(cx), ch1)) {
 						cx--;
 					}
 				} else if (kc == KeyEvent.VK_RIGHT) {
 					RoSb line = getline(cy);
-					cx = Math.min(line.length() - 1, cx + 1);
-					while (cx < line.length()
-							&& Character.isJavaIdentifierPart(line.charAt(cx))) {
-						cx++;
+					cx = Math.min(line.length(), cx + 1);
+					if (cx < line.length()) {
+						char ch1 = line.charAt(cx);
+						while (cx < line.length()
+								&& isSkipChar(line.charAt(cx), ch1)) {
+							cx++;
+						}
 					}
 				} else if (kc == KeyEvent.VK_UP) {
 					sy = Math.max(0, sy - 1);
@@ -1170,6 +1173,14 @@ public class PlainPage implements Page {
 			edit.repaint();
 		} catch (Exception e) {
 			message("err:" + e);
+		}
+	}
+
+	private boolean isSkipChar(char ch, char ch1) {
+		if (Character.isSpaceChar(ch1) || ch1 == '\t') {
+			return Character.isSpaceChar(ch) || ch == '\t';
+		} else {
+			return Character.isJavaIdentifierPart(ch);
 		}
 	}
 
