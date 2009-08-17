@@ -9,7 +9,5 @@ public class Main {
 			editor.newFile();
 		}
 		editor.show(true);
-		editor.repaint();
 	}
-
 }
