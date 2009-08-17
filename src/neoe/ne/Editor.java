@@ -63,7 +63,30 @@ public class Editor extends JComponent implements MouseMotionListener,
 	List<PageInfo> pages;
 	int pageNo;
 	JFrame frame;
-
+	public PageInfo openFileInNewWindow(String fn) {
+		File f = new File(fn);
+		PageInfo pi = null;
+		if (f.exists() && f.isFile()) {
+			if (pages.contains(fn)) {
+				// already open
+				pi = pages.get(pages.indexOf(fn));
+				changePage(find(pages, fn));
+				return pi;
+			} else {
+				long size = f.length();
+				Log.debug(String.format("open %s(%s)",
+						new Object[] { fn, size }));
+				Editor ed=new Editor();
+				ed.pages.add(pi = new PageInfo(fn, size));
+				ed.changePage(0);
+				ed.show(true);
+				return pi;
+			}			
+		} else {
+			Log.debug("cannot open " + fn);
+			return null;
+		}
+	}
 	public PageInfo openFile(String fn) {
 		File f = new File(fn);
 		PageInfo pi = null;
@@ -183,24 +206,22 @@ public class Editor extends JComponent implements MouseMotionListener,
 		}
 
 	}
-
-	public PageInfo newFile() {
-		String fn = (pages.size() == 0) ? null : pages.get(pageNo).fn;
-		PageInfo pi;
-		pages.add(pi = new PageInfo(null, 0));
-		try {
-			pi.page = new PlainPage(this, pi);
-			if (fn != null) {
-				pi.defaultPath = new File(fn).getParent();
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			JOptionPane.showMessageDialog(this, "" + e);
-			return pi;
-		}
-		changePage(pages.size() - 1);
+	public PageInfo newFileInNewWindow() {
+		PageInfo pi= new PageInfo(null, 0);	
+		pi.defaultPath = (pages.size() == 0) ? null : pages.get(pageNo).defaultPath;		
+		Editor editor = new Editor();
+		editor.pages.add(pi);
+		editor.changePage(0);
+		editor.show(true);
 		return pi;
-
+	}
+	
+	public PageInfo newFile() {
+		PageInfo pi= new PageInfo(null, 0);		
+		pi.defaultPath = (pages.size() == 0) ? null : pages.get(pageNo).defaultPath;
+		pages.add(pi);
+		changePage(pages.size()-1);
+		return pi;
 	}
 
 	public void changeTitle() {

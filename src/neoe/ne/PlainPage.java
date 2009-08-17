@@ -1028,7 +1028,7 @@ public class PlainPage implements Page {
 				} else if (kc == KeyEvent.VK_O) {
 					openFile();
 				} else if (kc == KeyEvent.VK_N) {
-					newFile();
+					edit.newFileInNewWindow();
 				} else if (kc == KeyEvent.VK_S && env.isShiftDown()) {
 					saveAllFiles();
 
@@ -1173,6 +1173,7 @@ public class PlainPage implements Page {
 			edit.repaint();
 		} catch (Exception e) {
 			message("err:" + e);
+			e.printStackTrace();
 		}
 	}
 
@@ -1397,10 +1398,6 @@ public class PlainPage implements Page {
 		}
 	}
 
-	private void newFile() {
-		edit.newFile();
-	}
-
 	private void saveAllFiles() throws Exception {
 		int total = 0;
 		for (PageInfo pi : edit.pages) {
@@ -1464,17 +1461,17 @@ public class PlainPage implements Page {
 
 	private void openFile() {
 		JFileChooser chooser = new JFileChooser();
-		// Note: source for ExampleFileFilter can be found in FileChooserDemo,
-		// under the demo/jfc directory in the JDK.
 		if (info.fn != null) {
 			chooser.setSelectedFile(new File(info.fn));
+		}else if(info.defaultPath!=null){
+			chooser.setSelectedFile(new File(info.defaultPath));//Fixme:cannot set correctly
 		}
 		int returnVal = chooser.showOpenDialog(edit);
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			String fn = chooser.getSelectedFile().getAbsolutePath();
 			System.out.println("You chose to open this file: "
 					+ chooser.getSelectedFile().getAbsolutePath());
-			edit.openFile(fn);
+			edit.openFileInNewWindow(fn);
 		}
 
 	}

@@ -8,6 +8,9 @@ public class PageInfo {
 	public PageInfo(String fn, long size) {
 		this.fn = fn;
 		this.size = size;
+		if (fn!=null){
+			this.defaultPath=new File(fn).getParent();
+		}
 	}
 
 	public String fn;
