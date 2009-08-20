@@ -90,6 +90,7 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 
 	@Override
 	public void actionPerformed(ActionEvent ae) {
+		try{
 		String command = ae.getActionCommand();
 		if (command == "find") {
 			page.doFind(jta1.getText(), jrb1.isSelected(), jrb2.isSelected(),
@@ -105,6 +106,10 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 			return;
 		}
 		dialog.setVisible(false);
+		}catch (Exception e) {
+			e.printStackTrace();
+			page.message(e.toString());
+		}
 
 	}
 

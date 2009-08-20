@@ -63,7 +63,7 @@ public class Editor extends JComponent implements MouseMotionListener,
 	List<PageInfo> pages;
 	int pageNo;
 	JFrame frame;
-	public PageInfo openFileInNewWindow(String fn) {
+	public PageInfo openFileInNewWindow(String fn) throws Exception {
 		File f = new File(fn);
 		PageInfo pi = null;
 		if (f.exists() && f.isFile()) {
@@ -77,7 +77,7 @@ public class Editor extends JComponent implements MouseMotionListener,
 				Log.debug(String.format("open %s(%s)",
 						new Object[] { fn, size }));
 				Editor ed=new Editor();
-				ed.pages.add(pi = new PageInfo(fn, size));
+				ed.pages.add(pi = new PageInfo(fn, size,ed));
 				ed.changePage(0);
 				ed.show(true);
 				return pi;
@@ -87,7 +87,7 @@ public class Editor extends JComponent implements MouseMotionListener,
 			return null;
 		}
 	}
-	public PageInfo openFile(String fn) {
+	public PageInfo openFile(String fn) throws Exception {
 		File f = new File(fn);
 		PageInfo pi = null;
 		if (f.exists() && f.isFile()) {
@@ -98,7 +98,7 @@ public class Editor extends JComponent implements MouseMotionListener,
 				long size = f.length();
 				Log.debug(String.format("open %s(%s)",
 						new Object[] { fn, size }));
-				pages.add(pi = new PageInfo(fn, size));
+				pages.add(pi = new PageInfo(fn, size,this));
 			}
 			changePage(find(pages, fn));
 			return pi;
@@ -206,18 +206,18 @@ public class Editor extends JComponent implements MouseMotionListener,
 		}
 
 	}
-	public PageInfo newFileInNewWindow() {
-		PageInfo pi= new PageInfo(null, 0);	
-		pi.defaultPath = (pages.size() == 0) ? null : pages.get(pageNo).defaultPath;		
+	public PageInfo newFileInNewWindow() throws Exception {
 		Editor editor = new Editor();
+		PageInfo pi= new PageInfo(null, 0,editor);
+		pi.defaultPath = (pages.size() == 0) ? null : pages.get(pageNo).defaultPath;
 		editor.pages.add(pi);
 		editor.changePage(0);
 		editor.show(true);
 		return pi;
 	}
 	
-	public PageInfo newFile() {
-		PageInfo pi= new PageInfo(null, 0);		
+	public PageInfo newFile() throws Exception {
+		PageInfo pi= new PageInfo(null, 0,this);		
 		pi.defaultPath = (pages.size() == 0) ? null : pages.get(pageNo).defaultPath;
 		pages.add(pi);
 		changePage(pages.size()-1);
