@@ -1273,7 +1273,7 @@ public class PlainPage implements Page {
 		}
 	}
 
-	private void redo() {
+	private void redo() throws Exception {
 
 		HistoryInfo o = history.getRedo();
 		if (o == null) {
@@ -1453,13 +1453,12 @@ public class PlainPage implements Page {
 		return true;
 	}
 
-	private void message(String s) {
+	public void message(String s) {
 		msg = s;
 		msgtime = System.currentTimeMillis();
-
 	}
 
-	private void openFile() {
+	private void openFile() throws Exception {
 		JFileChooser chooser = new JFileChooser();
 		if (info.fn != null) {
 			chooser.setSelectedFile(new File(info.fn));
@@ -1876,7 +1875,7 @@ public class PlainPage implements Page {
 		edit.repaint();
 	}
 
-	public void undo() {
+	public void undo() throws Exception {
 		HistoryInfo o = history.get();
 		System.out.println(o);
 		if (o == null) {
@@ -1901,7 +1900,7 @@ public class PlainPage implements Page {
 	}
 
 	public void doFind(String text, boolean ignoreCase, boolean selected2,
-			boolean inDir, String dir) {
+			boolean inDir, String dir) throws Exception {
 		if (!inDir) {
 			text2find = text;
 			this.ignoreCase = ignoreCase;
@@ -1987,7 +1986,7 @@ public class PlainPage implements Page {
 	}
 
 	private void doReplaceInDir(String text, boolean ignoreCase2, String text2,
-			boolean inDir, String dir) {
+			boolean inDir, String dir) throws Exception {
 		Iterable<File> it = new FileIterator(dir);
 		List all = new ArrayList();
 		for (File f : it) {
@@ -2025,7 +2024,7 @@ public class PlainPage implements Page {
 	}
 
 	private void doFindInDir(String text, boolean ignoreCase,
-			boolean selected2, boolean inDir, String dir) {
+			boolean selected2, boolean inDir, String dir) throws Exception {
 		Iterable<File> it = new FileIterator(dir);
 		List all = new ArrayList();
 		for (File f : it) {
@@ -2036,6 +2035,7 @@ public class PlainPage implements Page {
 			all.addAll(res);
 		}
 		PageInfo pi = edit.newFile();
+		
 		PlainPage p2 = (PlainPage) pi.page;
 		p2.lines.clear();
 		p2.appendLine(String.format("find %s results in dir %s for '%s'", all
@@ -2118,7 +2118,7 @@ public class PlainPage implements Page {
 
 	public void doReplaceAll(String text, boolean ignoreCase,
 			boolean selected2, String text2, boolean record, boolean inDir,
-			String dir) {
+			String dir) throws Exception {
 		if (inDir) {
 			doReplaceInDir(text, ignoreCase, text2, inDir, dir);
 		} else {

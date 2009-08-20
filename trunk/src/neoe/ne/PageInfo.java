@@ -5,12 +5,13 @@ import java.io.File;
 public class PageInfo {
 	public long size;
 
-	public PageInfo(String fn, long size) {
+	public PageInfo(String fn, long size, Editor editor) throws Exception {
 		this.fn = fn;
 		this.size = size;
-		if (fn!=null){
-			this.defaultPath=new File(fn).getParent();
+		if (fn != null) {
+			this.defaultPath = new File(fn).getParent();
 		}
+		initPage(editor);
 	}
 
 	public String fn;
