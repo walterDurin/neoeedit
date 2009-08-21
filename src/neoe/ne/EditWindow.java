@@ -16,14 +16,15 @@ import java.util.Vector;
 
 import javax.swing.JComponent;
 import javax.swing.JFrame;
-import javax.swing.JOptionPane;
 
-public class Editor extends JComponent implements MouseMotionListener,
+import neoe.ne.PlainPage.PageInfo;
+
+public class EditWindow extends JComponent implements MouseMotionListener,
 		MouseListener, MouseWheelListener, KeyListener {
 
 	private boolean debugFPS = false;
 
-	public Editor() {
+	public EditWindow() {
 		pages = new Vector<PageInfo>();
 		frame = new JFrame("neoeedit");
 		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -43,13 +44,7 @@ public class Editor extends JComponent implements MouseMotionListener,
 		long t1 = System.currentTimeMillis();
 		try {
 			if (pages.size() > 0) {
-				if (pageNo >= pages.size()) {
-					pageNo = pages.size() - 1;
-				}
-				PageInfo pi = pages.get(pageNo);
-
-				pi.initPage(this);
-
+				PageInfo pi = getCurrentPage();
 				pi.page.xpaint(g, this.getSize());
 			}
 		} catch (Throwable e) {
@@ -60,62 +55,43 @@ public class Editor extends JComponent implements MouseMotionListener,
 		}
 	}
 
+	private PageInfo getCurrentPage() {
+		if (pageNo >= pages.size()) {
+			pageNo = pages.size() - 1;
+		}
+		return pages.get(pageNo);
+	}
+
 	List<PageInfo> pages;
 	int pageNo;
 	JFrame frame;
-	public PageInfo openFileInNewWindow(String fn) throws Exception {
+
+	public void openFileInNewWindow(String fn) throws Exception {
 		File f = new File(fn);
-		PageInfo pi = null;
 		if (f.exists() && f.isFile()) {
-			if (pages.contains(fn)) {
-				// already open
-				pi = pages.get(pages.indexOf(fn));
-				changePage(find(pages, fn));
-				return pi;
-			} else {
-				long size = f.length();
-				Log.debug(String.format("open %s(%s)",
-						new Object[] { fn, size }));
-				Editor ed=new Editor();
-				ed.pages.add(pi = new PageInfo(fn, size,ed));
-				ed.changePage(0);
-				ed.show(true);
-				return pi;
-			}			
+			long size = f.length();
+			U.log(String.format("open %s(%s)", new Object[] { fn, size }));
+			EditWindow ed = new EditWindow();
+			ed.openFile(fn);
+			ed.show(true);
 		} else {
-			Log.debug("cannot open " + fn);
-			return null;
+			U.log("cannot open " + fn);
 		}
 	}
+
 	public PageInfo openFile(String fn) throws Exception {
 		File f = new File(fn);
 		PageInfo pi = null;
 		if (f.exists() && f.isFile()) {
-			if (pages.contains(fn)) {
-				// already open
-				pi = pages.get(pages.indexOf(fn));
-			} else {
-				long size = f.length();
-				Log.debug(String.format("open %s(%s)",
-						new Object[] { fn, size }));
-				pages.add(pi = new PageInfo(fn, size,this));
-			}
-			changePage(find(pages, fn));
+			long size = f.length();
+			U.log(String.format("open %s(%s)", new Object[] { fn, size }));
+			pages.add(pi = new PageInfo(fn, size, this));
+			changePage(pages.size() - 1);
 			return pi;
 		} else {
-			Log.debug("cannot open " + fn);
+			U.log("cannot open " + fn);
 			return null;
 		}
-	}
-
-	private int find(List<PageInfo> l, String fn) {
-		for (int i = 0; i < l.size(); i++) {
-			PageInfo pi = l.get(i);
-			if (pi.fn != null && pi.fn.equals(fn)) {
-				return i;
-			}
-		}
-		return -1;
 	}
 
 	public void changePage(int p) {
@@ -206,21 +182,20 @@ public class Editor extends JComponent implements MouseMotionListener,
 		}
 
 	}
+
 	public PageInfo newFileInNewWindow() throws Exception {
-		Editor editor = new Editor();
-		PageInfo pi= new PageInfo(null, 0,editor);
-		pi.defaultPath = (pages.size() == 0) ? null : pages.get(pageNo).defaultPath;
-		editor.pages.add(pi);
-		editor.changePage(0);
-		editor.show(true);
+		EditWindow ed = new EditWindow();
+		PageInfo pi = ed.newFileInNewWindow();
+		ed.show(true);
 		return pi;
 	}
-	
-	public PageInfo newFile() throws Exception {
-		PageInfo pi= new PageInfo(null, 0,this);		
-		pi.defaultPath = (pages.size() == 0) ? null : pages.get(pageNo).defaultPath;
+
+	public PageInfo newEmptyFile() throws Exception {
+		PageInfo pi = new PageInfo(null, 0, this);
+		pi.workPath = (pages.size() == 0) ? null
+				: pages.get(pageNo).workPath;
 		pages.add(pi);
-		changePage(pages.size()-1);
+		changePage(pages.size() - 1);
 		return pi;
 	}
 

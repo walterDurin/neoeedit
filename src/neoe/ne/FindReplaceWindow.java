@@ -15,6 +15,8 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 
+import neoe.ne.U.SimpleLayout;
+
 public class FindReplaceWindow implements ActionListener, KeyListener {
 
 	JTextField jta1;
@@ -93,13 +95,13 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 		try{
 		String command = ae.getActionCommand();
 		if (command == "find") {
-			page.doFind(jta1.getText(), jrb1.isSelected(), jrb2.isSelected(),
+			page.prtFind.doFind(jta1.getText(), jrb1.isSelected(), jrb2.isSelected(),
 					jcb1.isSelected(), jtadir.getText());
 		} else if (command == "replace") {
-			page.doReplace(jta1.getText(), jrb1.isSelected(),
+			page.prtFind.doReplace(jta1.getText(), jrb1.isSelected(),
 					jrb2.isSelected(), jta2.getText(), true);
 		} else if (command == "replaceall") {
-			page.doReplaceAll(jta1.getText(), jrb1.isSelected(), jrb2
+			page.prtFind.doReplaceAll(jta1.getText(), jrb1.isSelected(), jrb2
 					.isSelected(), jta2.getText(), true, jcb1.isSelected(),
 					jtadir.getText());
 		} else {
