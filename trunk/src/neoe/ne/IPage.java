@@ -5,7 +5,7 @@ import java.awt.Graphics;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 
-public interface Page {
+public interface IPage {
 
 	void xpaint(Graphics g, Dimension size);
 
