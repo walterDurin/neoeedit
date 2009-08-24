@@ -26,7 +26,7 @@ public class EditWindow extends JComponent implements MouseMotionListener,
 
 	public EditWindow() {
 		pages = new Vector<PageInfo>();
-		frame = new JFrame("neoeedit");
+		frame = new JFrame("neoeedit $Rev$");
 		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		frame.setSize(new Dimension(800, 600));
 		frame.getContentPane().add(this);
