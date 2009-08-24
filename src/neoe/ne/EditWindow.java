@@ -185,7 +185,7 @@ public class EditWindow extends JComponent implements MouseMotionListener,
 
 	public PageInfo newFileInNewWindow() throws Exception {
 		EditWindow ed = new EditWindow();
-		PageInfo pi = ed.newFileInNewWindow();
+		PageInfo pi = ed.newEmptyFile();
 		ed.show(true);
 		return pi;
 	}
