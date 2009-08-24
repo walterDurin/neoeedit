@@ -22,8 +22,8 @@ import neoe.ne.PlainPage.PageInfo;
 
 public class EditWindow extends JComponent implements MouseMotionListener,
 		MouseListener, MouseWheelListener, KeyListener {
-
-	private static final String WINDOW_NAME = "neoeedit $Rev$";
+	private static final String REV="$Rev$";
+	private static final String WINDOW_NAME = "neoeedit r"+REV.substring(6, REV.length()-2);
 	private boolean debugFPS = false;
 
 	public EditWindow() {
