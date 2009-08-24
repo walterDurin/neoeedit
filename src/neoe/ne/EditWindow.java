@@ -3,6 +3,7 @@ package neoe.ne;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.GraphicsConfiguration;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -22,11 +23,12 @@ import neoe.ne.PlainPage.PageInfo;
 public class EditWindow extends JComponent implements MouseMotionListener,
 		MouseListener, MouseWheelListener, KeyListener {
 
+	private static final String WINDOW_NAME = "neoeedit $Rev$";
 	private boolean debugFPS = false;
 
 	public EditWindow() {
 		pages = new Vector<PageInfo>();
-		frame = new JFrame("neoeedit $Rev$");
+		frame = new JFrame(WINDOW_NAME);
 		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		frame.setSize(new Dimension(800, 600));
 		frame.getContentPane().add(this);
@@ -203,9 +205,9 @@ public class EditWindow extends JComponent implements MouseMotionListener,
 		String fn = pages.get(pageNo).fn;
 		if (fn != null) {
 			frame.setTitle(new File(fn).getName() + " "
-					+ new File(fn).getParent() + " - neoeedit");
+					+ new File(fn).getParent() + " - "+WINDOW_NAME);
 		} else {
-			frame.setTitle("neoeedit");
+			frame.setTitle(WINDOW_NAME);
 		}
 	}
 
