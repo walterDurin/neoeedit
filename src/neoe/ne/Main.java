@@ -6,7 +6,7 @@ public class Main {
 		if (args.length > 0) {
 			editor.openFile(args[0]);
 		}else{
-			editor.newEmptyFile();
+			editor.newEmptyFile(null);
 		}
 		editor.show(true);
 	}

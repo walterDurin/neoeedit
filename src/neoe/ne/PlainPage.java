@@ -260,7 +260,7 @@ public class PlainPage implements IPage {
 				List res = U.findInFile(f, text, ignoreCase);
 				all.addAll(res);
 			}
-			PageInfo pi = edit.newEmptyFile();
+			PageInfo pi = edit.newEmptyFile(edit.getWorkPath());
 
 			PlainPage p2 = (PlainPage) pi.page;
 			p2.lines.clear();
@@ -317,7 +317,7 @@ public class PlainPage implements IPage {
 				}
 
 			}
-			PageInfo pi = edit.newEmptyFile();
+			PageInfo pi = edit.newEmptyFile(edit.getWorkPath());
 			PlainPage p2 = (PlainPage) pi.page;
 			p2.lines.clear();
 			p2.txtEdt.appendLine(p2, String.format(
