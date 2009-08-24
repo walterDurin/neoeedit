@@ -3,7 +3,6 @@ package neoe.ne;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Graphics;
-import java.awt.GraphicsConfiguration;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -187,15 +186,19 @@ public class EditWindow extends JComponent implements MouseMotionListener,
 
 	public PageInfo newFileInNewWindow() throws Exception {
 		EditWindow ed = new EditWindow();
-		PageInfo pi = ed.newEmptyFile();
+		PageInfo pi = ed.newEmptyFile(getWorkPath());
 		ed.show(true);
 		return pi;
 	}
 
-	public PageInfo newEmptyFile() throws Exception {
-		PageInfo pi = new PageInfo(null, 0, this);
-		pi.workPath = (pages.size() == 0) ? null
+	String getWorkPath() {
+		return  (pages.size() == 0) ? null
 				: pages.get(pageNo).workPath;
+	}
+
+	public PageInfo newEmptyFile(String workPath) throws Exception {
+		PageInfo pi = new PageInfo(null, 0, this);
+		pi.workPath =workPath;
 		pages.add(pi);
 		changePage(pages.size() - 1);
 		return pi;
