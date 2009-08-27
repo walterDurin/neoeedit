@@ -66,9 +66,9 @@ public class U {
 	}
 
 	/**
-	 * read-only stringbuffer. changes should done with undo manner.
+	 * read-only stringbuffer. 
 	 */
-	public static class RoSb {
+	static class RoSb {
 
 		private StringBuffer sb;
 
@@ -82,10 +82,6 @@ public class U {
 
 		public int length() {
 			return sb.length();
-		}
-
-		public StringBuffer sb() {
-			return sb;
 		}
 
 		public String substring(int i) {
@@ -498,16 +494,17 @@ public class U {
 
 	}
 
-	static List<StringBuffer> readFile(PlainPage page, String fn) {
+	static void readFile(PlainPage page, String fn) {
 		if (fn == null) {
 			List<StringBuffer> lines = new ArrayList<StringBuffer>();
 			lines.add(new StringBuffer("edit here..."));
-			return lines;
+			page.ptEdit.setLines(lines);
+			return;
 		}
 		if (page.encoding == null) {
 			page.encoding = U.guessEncodingForEditor(fn);
 		}
-		return U.readFileForEditor(fn, page.encoding);
+		page.ptEdit.setLines(U.readFileForEditor(fn, page.encoding));
 	}
 
 	static List<StringBuffer> readFileForEditor(String fn, String encoding) {
@@ -556,8 +553,9 @@ public class U {
 
 	}
 
-	static Point replace(PlainPage thePage, String s, int x, int y, String s2,
+	static Point replace(PlainPage page, String s, int x, int y, String s2,
 			boolean all, boolean ignoreCase, boolean record) {// TODO:record
+		Edit ptEdit=page.ptEdit;
 		if (ignoreCase) {
 			s = s.toLowerCase();
 		}
@@ -565,10 +563,12 @@ public class U {
 		boolean found = false;
 		int p1 = x;
 		while (true) {
-			p1 = thePage.ptEdit.getline(y).toString(ignoreCase).indexOf(s, p1);
+			p1 = ptEdit.getline(y).toString(ignoreCase).indexOf(s, p1);
 			if (p1 >= 0) {
-				found = true;
-				thePage.ptEdit.getline(y).sb().replace(p1, p1 + s.length(), s2);
+				found = true;				
+//				ptEdit.getline(y).sb().replace(p1, p1 + s.length(), s2);
+				ptEdit.deleteInLine(y, p1, p1+s.length());
+				ptEdit.insertInLine(y,p1,s2);
 				if (!all) {
 					return new Point(p1, y);
 				}
@@ -579,19 +579,21 @@ public class U {
 		}
 		// middle rows
 		int fy = y;
-		for (int i = 0; i < thePage.ptEdit.getLinesize() - 1; i++) {
+		for (int i = 0; i < ptEdit.getLinesize() - 1; i++) {
 			fy += 1;
-			if (fy >= thePage.ptEdit.getLinesize()) {
+			if (fy >= ptEdit.getLinesize()) {
 				fy = 0;
 			}
 			p1 = 0;
 			while (true) {
-				p1 = thePage.ptEdit.getline(fy).toString(ignoreCase).indexOf(s,
+				p1 = ptEdit.getline(fy).toString(ignoreCase).indexOf(s,
 						p1);
 				if (p1 >= 0) {
 					found = true;
-					thePage.ptEdit.getline(fy).sb().replace(p1,
-							p1 + s.length(), s2);
+//					ptEdit.getline(fy).sb().replace(p1,
+//							p1 + s.length(), s2);
+					ptEdit.deleteInLine(y, p1, p1+s.length());
+					ptEdit.insertInLine(y,p1,s2);
 					if (!all) {
 						return new Point(p1 + s2.length(), fy);
 					}
@@ -603,17 +605,19 @@ public class U {
 		}
 		// last half row
 		fy += 1;
-		if (fy >= thePage.ptEdit.getLinesize()) {
+		if (fy >= ptEdit.getLinesize()) {
 			fy = 0;
 		}
 		p1 = 0;
 		while (true) {
-			p1 = thePage.ptEdit.getline(fy).toString(ignoreCase)
+			p1 = ptEdit.getline(fy).toString(ignoreCase)
 					.substring(0, x).indexOf(s, p1);
 			if (p1 >= 0) {
 				found = true;
-				thePage.ptEdit.getline(fy).sb()
-						.replace(p1, p1 + s.length(), s2);
+//				ptEdit.getline(fy).sb()
+//						.replace(p1, p1 + s.length(), s2);
+				ptEdit.deleteInLine(y, p1, p1+s.length());
+				ptEdit.insertInLine(y,p1,s2);
 				if (!all) {
 					return new Point(p1 + s2.length(), fy);
 				}

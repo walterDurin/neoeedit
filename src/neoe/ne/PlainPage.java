@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Vector;
 
 import javax.swing.JOptionPane;
 
@@ -78,9 +77,9 @@ public class PlainPage {
 				}
 				if (delcnt > 200 && delcnt > ptEdit.getLinesize() - delcnt) {
 					System.out.println("reverse delete mode");
-					List<StringBuffer> l2 = new Vector<StringBuffer>();
+					List<StringBuffer> l2 = new ArrayList<StringBuffer>();
 					for (int i = 0; i < y1; i++) {
-						l2.add(ptEdit.getline(i).sb());
+						l2.add(lines.get(i));
 					}
 					if (x1 > 0) {
 						l2.add(new StringBuffer(ptEdit.getline(y1).substring(0,
@@ -91,7 +90,7 @@ public class PlainPage {
 								.substring(x2)));
 					}
 					for (int i = y2 + 1; i < ptEdit.getLinesize(); i++) {
-						l2.add(ptEdit.getline(i).sb());
+						l2.add(lines.get(i));
 					}
 					lines = l2;
 					if (ptEdit.getLinesize() == 0) {
@@ -124,19 +123,17 @@ public class PlainPage {
 			while (true) {
 				int p2 = s.indexOf("\n", p1);
 				if (p2 < 0) {
-					ptEdit.getline(cy).sb().insert(cx,
-							U.f(s.substring(p1, s.length())));
+					lines.get(cy).insert(cx, U.f(s.substring(p1, s.length())));
 					cx += s.length() - p1;
 					break;
 				}
 				if (cx == 0) {
 					lines.add(cy, new StringBuffer(U.f(s.substring(p1, p2))));
 				} else {
-					ptEdit.getline(cy).sb()
-							.insert(cx, U.f(s.substring(p1, p2)));
+					lines.get(cy).insert(cx, U.f(s.substring(p1, p2)));
 					lines.add(cy + 1, new StringBuffer(ptEdit.getline(cy)
 							.substring(cx + p2 - p1)));
-					ptEdit.getline(cy).sb().setLength(cx + p2 - p1);
+					lines.get(cy).setLength(cx + p2 - p1);
 					cx = 0;
 				}
 				cy += 1;
@@ -224,12 +221,18 @@ public class PlainPage {
 			editor.repaint();
 		}
 
-		private void insertInLine(int cy, int cx, char ch) {
-			lines.get(cy).insert(cx, ch);
+		void insertInLine(int cy, int cx, String s) {
+			lines.get(cy).insert(cx, s);
+			history.addOne(new HistoryInfo(cx, cy, "", cx + s.length(), cy, -1,
+					-1));
+		}
+
+		void insertInLine(int cy, int cx, char c) {
+			lines.get(cy).insert(cx, c);
 			history.addOne(new HistoryInfo(cx, cy, "", cx + 1, cy, -1, -1));
 		}
 
-		private void mergeLine(int y) {
+		void mergeLine(int y) {
 			int ol = ptEdit.getline(y).length();
 			lines.get(y).append(lines.get(y + 1));
 			lines.remove(y + 1);
@@ -259,10 +262,14 @@ public class PlainPage {
 			U.readFile(PlainPage.this, fn);
 		}
 
-		private void removeLine(int y) {
+		void removeLine(int y) {
 			StringBuffer sb = lines.remove(y);
 			history
 					.addOne(new HistoryInfo(0, y, sb.toString(), 0, y, 0, y + 1));
+		}
+
+		void setLines(List<StringBuffer> newLines) {
+			lines = newLines;
 		}
 
 	}
@@ -757,8 +764,6 @@ public class PlainPage {
 		private int lineHeight = 10;
 		private Dimension size;
 
-	
-
 		private void drawGutter(Graphics2D g2) {
 			g2.setColor(new Color(0x115511));
 			for (int i = 0; i < showLineCnt; i++) {
@@ -917,8 +922,6 @@ public class PlainPage {
 			}
 		}
 
-	
-
 		private int getHighLightID(String s, Graphics2D g2) {
 			if (Arrays.binarySearch(U.kws, s) >= 0
 					|| Arrays.binarySearch(U.kws, s.toLowerCase()) >= 0) {
@@ -939,7 +942,7 @@ public class PlainPage {
 					isCommentChecked = true;
 					new Thread() {
 						public void run() {
-							U.guessComment(PlainPage.this);							
+							U.guessComment(PlainPage.this);
 						}
 					}.start();
 				}
@@ -1165,7 +1168,7 @@ public class PlainPage {
 		}
 
 		history = new History(this);
-		lines = U.readFile(this, fn);
+		U.readFile(this, fn);
 		findWindow = new FindReplaceWindow(editor.frame, this);
 	}
 
@@ -1241,7 +1244,7 @@ public class PlainPage {
 					String s = ptEdit.getline(cy).toString();
 					if (s.length() > 0
 							&& (s.charAt(0) == '\t' || s.charAt(0) == ' ')) {
-						ptEdit.getline(cy).sb().deleteCharAt(0);
+						ptEdit.deleteInLine(cy, 0, 1);
 					}
 					cx -= 1;
 					if (cx < 0) {
@@ -1250,7 +1253,7 @@ public class PlainPage {
 					focusCursor();
 					cmoved = true;
 				} else if (kc == KeyEvent.VK_RIGHT) {
-					ptEdit.getline(cy).sb().insert(0, '\t');
+					ptEdit.insertInLine(cy, 0, '\t');
 					cx += 1;
 					focusCursor();
 					cmoved = true;
@@ -1446,7 +1449,7 @@ public class PlainPage {
 				if (ptEdit.getline(i).length() > 0) {
 					char ch = ptEdit.getline(i).charAt(0);
 					if (ch == ' ' || ch == '\t') {
-						ptEdit.getline(i).sb().delete(0, 1);
+						ptEdit.deleteInLine(i, 0, 1);
 					}
 				}
 			}
@@ -1456,7 +1459,7 @@ public class PlainPage {
 
 			if (selectstarty < selectstopy) {
 				for (int i = selectstarty; i <= selectstopy; i++) {
-					ptEdit.getline(i).sb().insert(0, "\t");
+					ptEdit.insertInLine(i, 0, '\t');
 				}
 				focusCursor();
 			}
