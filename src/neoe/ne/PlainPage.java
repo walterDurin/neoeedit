@@ -707,7 +707,7 @@ public class PlainPage implements IPage {
 			List<HistoryInfo> last = data.peekLast();
 			// stem.out.println("last=" + last);
 			if (!append(last, o)) {
-				System.out.println("add:" + o);
+//				System.out.println("add:" + o);
 				data.add(o);
 				if (data.size() > MAXSIZE) {
 					data.removeFirst();
@@ -758,9 +758,9 @@ public class PlainPage implements IPage {
 					}
 				}
 			}
-			if (ret == true) {
-				System.out.println("append:" + os);
-			}
+//			if (ret == true) {
+//				System.out.println("append:" + os);
+//			}
 			return ret;
 		}
 
@@ -787,7 +787,7 @@ public class PlainPage implements IPage {
 				return null;
 			}
 			p -= 1;
-			System.out.println("undo:" + data.get(p));
+//			System.out.println("undo:" + data.get(p));
 			return data.get(p);
 		}
 
