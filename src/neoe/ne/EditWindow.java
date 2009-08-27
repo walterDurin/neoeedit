@@ -11,13 +11,11 @@ import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Vector;
 
 import javax.swing.JComponent;
 import javax.swing.JFrame;
-
-import neoe.ne.PlainPage.PageInfo;
 
 public class EditWindow extends JComponent implements MouseMotionListener,
 		MouseListener, MouseWheelListener, KeyListener {
@@ -29,7 +27,7 @@ public class EditWindow extends JComponent implements MouseMotionListener,
 	private boolean debugFPS = false;
 
 	public EditWindow() {
-		pages = new Vector<PageInfo>();
+		pages = new ArrayList<PlainPage>();
 		frame = new JFrame(WINDOW_NAME);
 		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		frame.setSize(new Dimension(800, 600));
@@ -48,8 +46,8 @@ public class EditWindow extends JComponent implements MouseMotionListener,
 		long t1 = System.currentTimeMillis();
 		try {
 			if (pages.size() > 0) {
-				PageInfo pi = getCurrentPage();
-				pi.page.xpaint(g, this.getSize());
+				PlainPage pi = getCurrentPage();
+				pi.xpaint(g, this.getSize());
 			}
 		} catch (Throwable e) {
 			e.printStackTrace();
@@ -59,14 +57,14 @@ public class EditWindow extends JComponent implements MouseMotionListener,
 		}
 	}
 
-	private PageInfo getCurrentPage() {
+	private PlainPage getCurrentPage() {
 		if (pageNo >= pages.size()) {
 			pageNo = pages.size() - 1;
 		}
 		return pages.get(pageNo);
 	}
 
-	List<PageInfo> pages;
+	List<PlainPage> pages;
 	int pageNo;
 	JFrame frame;
 
@@ -83,13 +81,13 @@ public class EditWindow extends JComponent implements MouseMotionListener,
 		}
 	}
 
-	public PageInfo openFile(String fn) throws Exception {
+	public PlainPage openFile(String fn) throws Exception {
 		File f = new File(fn);
-		PageInfo pi = null;
+		PlainPage pi = null;
 		if (f.exists() && f.isFile()) {
 			long size = f.length();
 			U.log(String.format("open %s(%s)", new Object[] { fn, size }));
-			pages.add(pi = new PageInfo(fn, size, this));
+			pages.add(pi = new PlainPage(this, fn));
 			changePage(pages.size() - 1);
 			return pi;
 		} else {
@@ -111,7 +109,7 @@ public class EditWindow extends JComponent implements MouseMotionListener,
 	@Override
 	public void mouseDragged(MouseEvent env) {
 		if (pageNo < pages.size()) {
-			pages.get(pageNo).page.mouseDragged(env);
+			pages.get(pageNo).mouseDragged(env);
 		}
 	}
 
@@ -143,7 +141,7 @@ public class EditWindow extends JComponent implements MouseMotionListener,
 	public void mousePressed(MouseEvent env) {
 
 		if (pageNo < pages.size()) {
-			pages.get(pageNo).page.mousePressed(env);
+			pages.get(pageNo).mousePressed(env);
 		}
 
 	}
@@ -158,7 +156,7 @@ public class EditWindow extends JComponent implements MouseMotionListener,
 	public void mouseWheelMoved(MouseWheelEvent env) {
 		int amount = env.getWheelRotation() * env.getScrollAmount();
 		if (pageNo < pages.size()) {
-			pages.get(pageNo).page.scroll(amount);
+			pages.get(pageNo).scroll(amount);
 		}
 
 	}
@@ -166,7 +164,7 @@ public class EditWindow extends JComponent implements MouseMotionListener,
 	@Override
 	public void keyPressed(KeyEvent env) {
 		if (pageNo < pages.size()) {
-			pages.get(pageNo).page.keyPressed(env);
+			pages.get(pageNo).keyPressed(env);
 		}
 
 	}
@@ -174,7 +172,7 @@ public class EditWindow extends JComponent implements MouseMotionListener,
 	@Override
 	public void keyReleased(KeyEvent env) {
 		if (pageNo < pages.size()) {
-			pages.get(pageNo).page.keyReleased(env);
+			pages.get(pageNo).keyReleased(env);
 		}
 
 	}
@@ -182,14 +180,14 @@ public class EditWindow extends JComponent implements MouseMotionListener,
 	@Override
 	public void keyTyped(KeyEvent env) {
 		if (pageNo < pages.size()) {
-			pages.get(pageNo).page.keyTyped(env);
+			pages.get(pageNo).keyTyped(env);
 		}
 
 	}
 
-	public PageInfo newFileInNewWindow() throws Exception {
+	public PlainPage newFileInNewWindow() throws Exception {
 		EditWindow ed = new EditWindow();
-		PageInfo pi = ed.newEmptyFile(getWorkPath());
+		PlainPage pi = ed.newEmptyFile(getWorkPath());
 		ed.show(true);
 		return pi;
 	}
@@ -198,8 +196,8 @@ public class EditWindow extends JComponent implements MouseMotionListener,
 		return (pages.size() == 0) ? null : pages.get(pageNo).workPath;
 	}
 
-	public PageInfo newEmptyFile(String workPath) throws Exception {
-		PageInfo pi = new PageInfo(null, 0, this);
+	public PlainPage newEmptyFile(String workPath) throws Exception {
+		PlainPage pi = new PlainPage(this, null);
 		pi.workPath = workPath;
 		pages.add(pi);
 		changePage(pages.size() - 1);
