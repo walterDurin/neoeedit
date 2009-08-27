@@ -28,7 +28,7 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 	private PlainPage page;
 	private JRadioButton jrb2;
 	private JDialog dialog;
-//	private JFrame f;
+	// private JFrame f;
 	private JCheckBox jcb1;
 	private JTextField jtadir;
 	private JCheckBox jcb2;
@@ -36,7 +36,7 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 
 	public FindReplaceWindow(JFrame f, PlainPage page) {
 		this.page = page;
-//		this.f = f;
+		// this.f = f;
 		dialog = new JDialog(f, "Find/Replace");
 		JPanel p = new JPanel();
 		dialog.getContentPane().add(p);
@@ -72,8 +72,8 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 		jcb3.setEnabled(false);
 		dialog.pack();
 		dialog.setLocationRelativeTo(f);
-		if (page != null && page.info != null && page.info.fn != null) {
-			jtadir.setText(new File(page.info.fn).getParent());
+		if (page != null && page.fn != null) {
+			jtadir.setText(new File(page.fn).getParent());
 		}
 		jta1.addKeyListener(this);
 		jta2.addKeyListener(this);
@@ -99,12 +99,12 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 				page.ptFind.doFind(jta1.getText(), jrb1.isSelected(), jrb2
 						.isSelected(), jcb1.isSelected(), jtadir.getText());
 			} else if (command == "replace") {
-				page.ptFind.doReplace(jta1.getText(), jrb1.isSelected(), jrb2
-						.isSelected(), jta2.getText(), true);
+				U.doReplace(page, jta1.getText(), jrb1.isSelected(), jrb2
+						.isSelected(), jta2.getText(), true, true, false, null);
 			} else if (command == "replaceall") {
-				page.ptFind.doReplaceAll(jta1.getText(), jrb1.isSelected(),
-						jrb2.isSelected(), jta2.getText(), true, jcb1
-								.isSelected(), jtadir.getText());
+				U.doReplaceAll(page, jta1.getText(), jrb1.isSelected(), jrb2
+						.isSelected(), jta2.getText(), true, jcb1.isSelected(),
+						jtadir.getText());
 			} else {
 				return;
 			}
