@@ -475,8 +475,8 @@ public class U {
 		}
 		BufferedWriter out = new BufferedWriter(new OutputStreamWriter(
 				new FileOutputStream(info.fn), p.encoding));
-		for (StringBuffer sb : p.lines) {
-			out.write(sb.toString());
+		for(int i=0;i<p.ptEdit.getLinesize();i++){
+			out.write(p.ptEdit.getline(i).toString());
 			out.write("\n");
 		}
 		out.close();
@@ -484,8 +484,8 @@ public class U {
 		return true;
 	}
 
-	static List findInFile(File f, String text, boolean ignoreCase2) {
-		List a = new ArrayList();
+	static List<String> findInFile(File f, String text, boolean ignoreCase2) {
+		List<String> a = new ArrayList<String>();
 		try {
 			String enc = guessEncoding(f.getAbsolutePath());
 			if (enc != null) {// skip binary

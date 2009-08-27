@@ -12,11 +12,11 @@ import java.util.Map;
 
 public class FileIterator implements Iterable<File> {
 
-	private String root;
+//	private String root;
 	List<File> buf;
 
 	public FileIterator(String dir) {
-		this.root = dir;
+//		this.root = dir;
 		buf = new ArrayList<File>();
 		File f = new File(dir);
 		buf.add(f);
