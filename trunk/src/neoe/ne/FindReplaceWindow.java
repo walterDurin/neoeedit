@@ -28,7 +28,7 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 	private PlainPage page;
 	private JRadioButton jrb2;
 	private JDialog dialog;
-	private JFrame f;
+//	private JFrame f;
 	private JCheckBox jcb1;
 	private JTextField jtadir;
 	private JCheckBox jcb2;
@@ -36,7 +36,7 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 
 	public FindReplaceWindow(JFrame f, PlainPage page) {
 		this.page = page;
-		this.f = f;
+//		this.f = f;
 		dialog = new JDialog(f, "Find/Replace");
 		JPanel p = new JPanel();
 		dialog.getContentPane().add(p);
@@ -92,27 +92,28 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 
 	@Override
 	public void actionPerformed(ActionEvent ae) {
-		try{
-		String command = ae.getActionCommand();
-		if (command == "find") {
-			page.prtFind.doFind(jta1.getText(), jrb1.isSelected(), jrb2.isSelected(),
-					jcb1.isSelected(), jtadir.getText());
-		} else if (command == "replace") {
-			page.prtFind.doReplace(jta1.getText(), jrb1.isSelected(),
-					jrb2.isSelected(), jta2.getText(), true);
-		} else if (command == "replaceall") {
-			page.prtFind.doReplaceAll(jta1.getText(), jrb1.isSelected(), jrb2
-					.isSelected(), jta2.getText(), true, jcb1.isSelected(),
-					jtadir.getText());
-		} else {
-			return;
-		}
-		dialog.setVisible(false);
-		}catch (Exception e) {
+		page.history.beginAtom();
+		try {
+			String command = ae.getActionCommand();
+			if (command == "find") {
+				page.ptFind.doFind(jta1.getText(), jrb1.isSelected(), jrb2
+						.isSelected(), jcb1.isSelected(), jtadir.getText());
+			} else if (command == "replace") {
+				page.ptFind.doReplace(jta1.getText(), jrb1.isSelected(), jrb2
+						.isSelected(), jta2.getText(), true);
+			} else if (command == "replaceall") {
+				page.ptFind.doReplaceAll(jta1.getText(), jrb1.isSelected(),
+						jrb2.isSelected(), jta2.getText(), true, jcb1
+								.isSelected(), jtadir.getText());
+			} else {
+				return;
+			}
+			dialog.setVisible(false);
+		} catch (Exception e) {
 			e.printStackTrace();
 			page.message(e.toString());
 		}
-
+		page.history.endAtom();
 	}
 
 	@Override

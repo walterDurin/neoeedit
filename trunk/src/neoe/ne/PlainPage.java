@@ -18,6 +18,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
@@ -29,63 +30,266 @@ import neoe.ne.U.RoSb;
 import neoe.util.FileIterator;
 
 public class PlainPage implements IPage {
-	public static class PageInfo {
-		public long size;
-
-		public PageInfo(String fn, long size, EditWindow editor) throws Exception {
-			this.fn = fn;
-			this.size = size;
-			if (fn != null) {
-				this.workPath = new File(fn).getParent();
-			}
-			initPage(editor);
-		}
-
-		public String fn;
-		public IPage page;
-		public String workPath;
-
-		public String toString() {
-			String s;
-			if (fn == null) {
-				s = "New Text...";
-			} else {
-				File f = new File(fn);
-				s = f.getName() + " " + f.getParent();
-			}
-			return s;
-		}
-
-		public void initPage(EditWindow editor) throws Exception {
-			if (page == null) {
-				if (size < 10000000) {
-					page = new PlainPage(editor, this);
-				} else {
-					page = new LargePage(editor, this);
-				}
-			}
-
-		}
-
-	}
 	class Cursor {
 	}
-	class Files {
-		void changeEncoding(PlainPage plainPage) {
-			String s = JOptionPane.showInputDialog(plainPage.edit,
-					"Reload with Encoding:", plainPage.encoding);
-			if (s == null) {
-				return;
-			}
-			try {
-				"a".getBytes(s);
-			} catch (Exception e) {
-				plainPage.message("bad encoding:" + s);
-				return;
-			}
-			plainPage.encoding = s;
+
+	class Edit {
+		void appendMsgLine(PlainPage plainPage, String s) {
+			plainPage.lines.add(new StringBuffer(s));
 		}
 
+		void deleteInLine(int y, int x1, int x2) {
+			deleteInLine(y, x1, x2, true);
+		}
+
+		void deleteInLine(int y, int x1, int x2, boolean record) {
+			StringBuffer sb = lines.get(y);
+			if (x2 > sb.length()) {
+				x2 = sb.length();
+			}
+			if (x1 > sb.length()) {
+				x1 = sb.length();
+			}
+			String deleted = sb.substring(x1, x2);
+			sb.delete(x1, x2);
+			if (record) {
+				history.addOne(new HistoryInfo(x1, y, deleted, x1, y, x2, y));
+			}
+		}
+
+		void deleteRect(PlainPage plainPage, Rectangle r, boolean record) {
+			int x1 = r.x;
+			int y1 = r.y;
+			int x2 = r.width;
+			int y2 = r.height;
+			if (y1 == y2 && x1 < x2) {
+				ptEdit.deleteInLine(y1, x1, x2, record);
+			} else if (y1 < y2) {
+				int delcnt = y2 - y1;
+				String deleted = null;
+				if (record) {
+					deleted = ptSelection.getTextInRect(r);
+				}
+				if (delcnt > 200
+						&& delcnt > plainPage.ptEdit.getLinesize() - delcnt) {
+					System.out.println("reverse delete mode");
+					List<StringBuffer> l2 = new Vector<StringBuffer>();
+					for (int i = 0; i < y1; i++) {
+						l2.add(plainPage.ptEdit.getline(i).sb());
+					}
+					if (x1 > 0) {
+						l2.add(new StringBuffer(plainPage.ptEdit.getline(y1)
+								.substring(0, x1)));
+					}
+					if (x2 < plainPage.ptEdit.getline(y2).length() - 1) {
+						l2.add(new StringBuffer(plainPage.ptEdit.getline(y2)
+								.substring(x2)));
+					}
+					for (int i = y2 + 1; i < plainPage.ptEdit.getLinesize(); i++) {
+						l2.add(plainPage.ptEdit.getline(i).sb());
+					}
+					plainPage.lines = l2;
+					if (plainPage.ptEdit.getLinesize() == 0) {
+						plainPage.lines.add(new StringBuffer());
+					}
+				} else {// normal mode
+
+					ptEdit.deleteInLine(y1, x1, Integer.MAX_VALUE, false);
+					ptEdit.deleteInLine(y2, 0, x2, false);
+					for (int i = y1 + 1; i < y2; i++) {
+						plainPage.lines.remove(y1 + 1);
+					}
+					plainPage.lines.get(y1).append(
+							plainPage.ptEdit.getline(y1 + 1).toString());
+					plainPage.lines.remove(y1 + 1);
+				}
+				if (record) {
+					history.addOne(new HistoryInfo(x1, y1, deleted, x1, y1, x2,
+							y2));
+				}
+			}
+			plainPage.cx = x1;
+			plainPage.cy = y1;
+			plainPage.focusCursor();
+		}
+
+		void deleteSelection() {
+			deleteSelection(true);
+		}
+
+		void deleteSelection(boolean record) {
+			deleteRect(PlainPage.this, ptSelection.getSelectRect(), record);
+		}
+
+		Rectangle doPaste(String s, int cx, int cy, boolean record) {
+			Rectangle r = new Rectangle();
+			r.x = cx;
+			r.y = cy;
+			int p1 = 0;
+			while (true) {
+				int p2 = s.indexOf("\n", p1);
+				if (p2 < 0) {
+					ptEdit.getline(cy).sb().insert(cx,
+							U.f(s.substring(p1, s.length())));
+					cx += s.length() - p1;
+					break;
+				}
+				if (cx == 0) {
+					lines.add(cy, new StringBuffer(U.f(s.substring(p1, p2))));
+				} else {
+					ptEdit.getline(cy).sb()
+							.insert(cx, U.f(s.substring(p1, p2)));
+					lines.add(cy + 1, new StringBuffer(ptEdit.getline(cy)
+							.substring(cx + p2 - p1)));
+					ptEdit.getline(cy).sb().setLength(cx + p2 - p1);
+					cx = 0;
+				}
+				cy += 1;
+				p1 = p2 + 1;
+			}
+			if (record) {
+				history.addOne(new HistoryInfo(r.x, r.y, "", cx, cy, -1, -1));
+			}
+			PlainPage.this.cx = cx;
+			PlainPage.this.cy = cy;
+			r.width = cx;
+			r.height = cy;
+			ptSelection.cancelSelect();
+			focusCursor();
+			return r;
+
+		}
+
+		RoSb getline(int i) {
+			return new RoSb(lines.get(i));
+		}
+
+		int getLinesize() {
+			return lines.size();
+		}
+
+		void insert(char ch) {
+			if (ch == KeyEvent.VK_ENTER) {
+				if (ptSelection.isSelected()) {
+					ptEdit.deleteSelection();
+				}
+				RoSb sb = getline(cy);
+				String indent = U.getIndent(sb.toString());
+				String s = sb.substring(cx, sb.length());
+				lines.add(cy + 1, new StringBuffer(indent + s));
+				deleteInLine(cy, cx, Integer.MAX_VALUE, false);
+				int ocy = cy;
+				int ocx = cx;
+				cy += 1;
+				cx = indent.length();
+				history.addOne(new HistoryInfo(ocx, ocy, "", cx, cy, -1, -1));
+			} else if (ch == KeyEvent.VK_BACK_SPACE) {
+				if (ptSelection.isSelected()) {
+					ptEdit.deleteSelection();
+				} else {
+					if (cx > 0) {
+						deleteInLine(cy, cx - 1, cx);
+						cx -= 1;
+					} else {
+						if (cy > 0) {
+							cx = ptEdit.getline(cy - 1).length();
+							mergeLine(cy - 1);
+							cy -= 1;
+						}
+					}
+				}
+			} else if (ch == KeyEvent.VK_DELETE) {
+				if (ptSelection.isSelected()) {
+					ptEdit.deleteSelection();
+				} else {
+					if (cx < ptEdit.getline(cy).length()) {
+						deleteInLine(cy, cx, cx + 1);
+					} else {
+						if (cy < ptEdit.getLinesize() - 1) {
+							mergeLine(cy);
+						}
+					}
+				}
+			} else if (ch == KeyEvent.VK_ESCAPE) {
+				selectstopy = selectstarty;
+				selectstopx = selectstartx;
+			} else {
+				if (ptSelection.isSelected()) {
+					ptEdit.deleteSelection();
+				}
+				RoSb sb = ptEdit.getline(cy);
+				if (cx > sb.length()) {
+					cx = sb.length();
+				}
+				insertInLine(cy, cx, ch);
+				cx += 1;
+			}
+			focusCursor();
+			ptSelection.cancelSelect();
+			edit.repaint();
+		}
+
+		private void insertInLine(int cy, int cx, char ch) {
+			lines.get(cy).insert(cx, ch);
+			history.addOne(new HistoryInfo(cx, cy, "", cx + 1, cy, -1, -1));
+		}
+
+		private void mergeLine(int y) {
+			int ol = ptEdit.getline(y).length();
+			lines.get(y).append(lines.get(y + 1));
+			lines.remove(y + 1);
+			history.addOne(new HistoryInfo(ol, y, "\n", ol, y, 0, y + 1));
+		}
+
+		void pasteSelected() {
+			if (ptSelection.isSelected()) {
+				deleteSelection();
+			}
+			String s;
+			try {
+				s = Toolkit.getDefaultToolkit().getSystemClipboard().getData(
+						DataFlavor.stringFlavor).toString();
+			} catch (Exception e) {
+				s = "";
+			}
+			doPaste(s, cx, cy, true);
+		}
+
+		public void readFile(String fn) {
+			lines = ptFiles.readFile(fn);
+			history.clear();
+		}
+
+		void reloadWithEncodingByUser() {
+			if (info.fn == null) {
+				message("file not saved.");
+				return;
+			}
+			ptFiles.setEncodingByUser(PlainPage.this);
+			readFile(info.fn);
+		}
+
+		private void removeLine(int y) {
+			StringBuffer sb = lines.remove(y);
+			history
+					.addOne(new HistoryInfo(0, y, sb.toString(), 0, y, 0, y + 1));
+		}
+
+		private void removeTrailingSpace() {
+			for (int i = 0; i < ptEdit.getLinesize(); i++) {
+				RoSb sb = ptEdit.getline(i);
+				int p = sb.length() - 1;
+				while (p >= 0 && "\r\n\t ".indexOf(sb.charAt(p)) >= 0) {
+					p--;
+				}
+				if (p < sb.length() - 1) {
+					deleteInLine(i, p + 1, sb.length());
+				}
+			}
+		}
+	}
+
+	class Files {
 		private void changePage() {
 			Object[] possibilities = edit.pages.toArray();
 			PageInfo p = (PageInfo) JOptionPane.showInputDialog(edit,
@@ -150,15 +354,6 @@ public class PlainPage implements IPage {
 			return U.readFileForEditor(fn, encoding);
 		}
 
-		private void reloadWithEncoding() {
-			if (info.fn == null) {
-				message("file not saved.");
-				return;
-			}
-			prtFiles.changeEncoding(PlainPage.this);
-			lines = readFile(info.fn);
-		}
-
 		private void saveAllFiles() throws Exception {
 			int total = 0;
 			for (PageInfo pi : edit.pages) {
@@ -191,7 +386,23 @@ public class PlainPage implements IPage {
 			}
 		}
 
+		void setEncodingByUser(PlainPage plainPage) {
+			String s = JOptionPane.showInputDialog(plainPage.edit,
+					"Reload with Encoding:", plainPage.encoding);
+			if (s == null) {
+				return;
+			}
+			try {
+				"a".getBytes(s);
+			} catch (Exception e) {
+				plainPage.message("bad encoding:" + s);
+				return;
+			}
+			plainPage.encoding = s;
+		}
+
 	}
+
 	class FindAndReplace {
 
 		private boolean ignoreCase = true;
@@ -204,7 +415,7 @@ public class PlainPage implements IPage {
 			text2find = text;
 			if (text2find != null && text2find.length() > 0) {
 				Point p = replace(plainPage, text2find, plainPage.cx,
-						plainPage.cy, text2, all, ignoreCase);
+						plainPage.cy, text2, all, ignoreCase, record);
 				if (p == null) {
 					plainPage.message("string not found");
 				} else {
@@ -215,23 +426,23 @@ public class PlainPage implements IPage {
 					plainPage.selectstopx = plainPage.cx + text2.length();
 					plainPage.selectstopy = plainPage.cy;
 					plainPage.focusCursor();
-					if (record) {
-						if (!all) {
-							plainPage.history.add(new HistoryInfo(
-									History.DELETE, plainPage.cy, plainPage.cx,
-									plainPage.cx + text.length(), text,
-									plainPage.cy));
-							plainPage.history.add(new HistoryInfo(
-									History.INSERT, plainPage.cy, plainPage.cx,
-									plainPage.cx + text2.length(), text2,
-									plainPage.cy));
-						} else {
-							plainPage.history.add(new HistoryInfo(
-									History.REPLACEALL, plainPage.cy,
-									plainPage.cx, plainPage.cx, text,
-									plainPage.cy, text2));
-						}
-					}
+					// if (record) {
+					// if (!all) {
+					// plainPage.history.add(new HistoryInfo(
+					// History.DELETE, plainPage.cy, plainPage.cx,
+					// plainPage.cx + text.length(), text,
+					// plainPage.cy));
+					// plainPage.history.add(new HistoryInfo(
+					// History.INSERT, plainPage.cy, plainPage.cx,
+					// plainPage.cx + text2.length(), text2,
+					// plainPage.cy));
+					// } else {
+					// plainPage.history.add(new HistoryInfo(
+					// History.REPLACEALL, plainPage.cy,
+					// plainPage.cx, plainPage.cx, text,
+					// plainPage.cy, text2));
+					// }
+					// }
 				}
 			}
 			plainPage.edit.repaint();
@@ -252,22 +463,22 @@ public class PlainPage implements IPage {
 		private void doFindInDir(String text, boolean ignoreCase,
 				boolean selected2, boolean inDir, String dir) throws Exception {
 			Iterable<File> it = new FileIterator(dir);
-			List all = new ArrayList();
+			List<String> all = new ArrayList<String>();
 			for (File f : it) {
 				if (f.isDirectory()) {
 					continue;
 				}
-				List res = U.findInFile(f, text, ignoreCase);
+				List<String> res = U.findInFile(f, text, ignoreCase);
 				all.addAll(res);
 			}
 			PageInfo pi = edit.newEmptyFile(edit.getWorkPath());
 
 			PlainPage p2 = (PlainPage) pi.page;
-			p2.lines.clear();
-			p2.txtEdt.appendLine(p2, String.format("find %s results in dir %s for '%s'",
-					all.size(), dir, text));
+			p2.ptEdit.appendMsgLine(p2, String
+					.format("find %s results in dir %s for '%s'", all.size(),
+							dir, text));
 			for (Object o : all) {
-				p2.txtEdt.appendLine(p2, o.toString());
+				p2.ptEdit.appendMsgLine(p2, o.toString());
 			}
 			edit.repaint();
 		}
@@ -285,7 +496,7 @@ public class PlainPage implements IPage {
 			if (inDir) {
 				doReplaceInDir(text, ignoreCase, text2, inDir, dir);
 			} else {
-				prtFind._doReplace(PlainPage.this, text, ignoreCase, selected2,
+				ptFind._doReplace(PlainPage.this, text, ignoreCase, selected2,
 						text2, true, record, inDir, dir);
 			}
 		}
@@ -293,20 +504,20 @@ public class PlainPage implements IPage {
 		private void doReplaceInDir(String text, boolean ignoreCase2,
 				String text2, boolean inDir, String dir) throws Exception {
 			Iterable<File> it = new FileIterator(dir);
-			List all = new ArrayList();
+			List<String> all = new ArrayList<String>();
 			for (File f : it) {
 				if (f.isDirectory()) {
 					continue;
 				}
 				try {
-					List res = U.findInFile(f, text, ignoreCase);
+					List<String> res = U.findInFile(f, text, ignoreCase);
 					if (res.size() > 0) {
 						PageInfo pi = edit.openFile(f.getAbsolutePath());
 
 						pi.initPage(edit);
 
 						if (pi != null) {
-							((PlainPage) pi.page).prtFind.doReplaceAll(text,
+							((PlainPage) pi.page).ptFind.doReplaceAll(text,
 									ignoreCase2, false, text2, true, false,
 									null);
 						}
@@ -319,18 +530,17 @@ public class PlainPage implements IPage {
 			}
 			PageInfo pi = edit.newEmptyFile(edit.getWorkPath());
 			PlainPage p2 = (PlainPage) pi.page;
-			p2.lines.clear();
-			p2.txtEdt.appendLine(p2, String.format(
+			p2.ptEdit.appendMsgLine(p2, String.format(
 					"replaced %s results in dir %s for '%s', not saved.", all
 							.size(), dir, text));
 			for (Object o : all) {
-				p2.txtEdt.appendLine(p2, o.toString());
+				p2.ptEdit.appendMsgLine(p2, o.toString());
 			}
 			edit.repaint();
 		}
 
 		private void find() {
-			String t = prtSelection.getSelected();
+			String t = ptSelection.getSelected();
 			int p1 = t.indexOf("\n");
 			if (p1 >= 0) {
 				t = t.substring(0, p1);
@@ -352,28 +562,29 @@ public class PlainPage implements IPage {
 				s = s.toLowerCase();
 			}
 			// first half row
-			int p1 = getline(y).toString(ignoreCase).indexOf(s, x);
+			int p1 = ptEdit.getline(y).toString(ignoreCase).indexOf(s, x);
 			if (p1 >= 0) {
 				return new Point(p1, y);
 			}
 			// middle rows
 			int fy = y;
-			for (int i = 0; i < lines.size() - 1; i++) {
+			for (int i = 0; i < ptEdit.getLinesize() - 1; i++) {
 				fy += 1;
-				if (fy >= lines.size()) {
+				if (fy >= ptEdit.getLinesize()) {
 					fy = 0;
 				}
-				p1 = getline(fy).toString(ignoreCase).indexOf(s);
+				p1 = ptEdit.getline(fy).toString(ignoreCase).indexOf(s);
 				if (p1 >= 0) {
 					return new Point(p1, fy);
 				}
 			}
 			// last half row
 			fy += 1;
-			if (fy >= lines.size()) {
+			if (fy >= ptEdit.getLinesize()) {
 				fy = 0;
 			}
-			p1 = getline(fy).toString(ignoreCase).substring(0, x).indexOf(s);
+			p1 = ptEdit.getline(fy).toString(ignoreCase).substring(0, x)
+					.indexOf(s);
 			if (p1 >= 0) {
 				return new Point(p1, fy);
 			}
@@ -397,8 +608,8 @@ public class PlainPage implements IPage {
 			}
 		}
 
-		Point replace(PlainPage plainPage, String s, int x, int y, String s2,
-				boolean all, boolean ignoreCase) {
+		Point replace(PlainPage thePage, String s, int x, int y, String s2,
+				boolean all, boolean ignoreCase, boolean record) {// TODO:record
 			if (ignoreCase) {
 				s = s.toLowerCase();
 			}
@@ -406,10 +617,12 @@ public class PlainPage implements IPage {
 			boolean found = false;
 			int p1 = x;
 			while (true) {
-				p1 = plainPage.getline(y).toString(ignoreCase).indexOf(s, p1);
+				p1 = thePage.ptEdit.getline(y).toString(ignoreCase).indexOf(s,
+						p1);
 				if (p1 >= 0) {
 					found = true;
-					plainPage.getline(y).sb().replace(p1, p1 + s.length(), s2);
+					thePage.ptEdit.getline(y).sb().replace(p1, p1 + s.length(),
+							s2);
 					if (!all) {
 						return new Point(p1, y);
 					}
@@ -420,19 +633,19 @@ public class PlainPage implements IPage {
 			}
 			// middle rows
 			int fy = y;
-			for (int i = 0; i < plainPage.lines.size() - 1; i++) {
+			for (int i = 0; i < thePage.ptEdit.getLinesize() - 1; i++) {
 				fy += 1;
-				if (fy >= plainPage.lines.size()) {
+				if (fy >= thePage.ptEdit.getLinesize()) {
 					fy = 0;
 				}
 				p1 = 0;
 				while (true) {
-					p1 = plainPage.getline(fy).toString(ignoreCase).indexOf(s,
-							p1);
+					p1 = thePage.ptEdit.getline(fy).toString(ignoreCase)
+							.indexOf(s, p1);
 					if (p1 >= 0) {
 						found = true;
-						plainPage.getline(fy).sb().replace(p1, p1 + s.length(),
-								s2);
+						thePage.ptEdit.getline(fy).sb().replace(p1,
+								p1 + s.length(), s2);
 						if (!all) {
 							return new Point(p1 + s2.length(), fy);
 						}
@@ -444,16 +657,17 @@ public class PlainPage implements IPage {
 			}
 			// last half row
 			fy += 1;
-			if (fy >= plainPage.lines.size()) {
+			if (fy >= thePage.ptEdit.getLinesize()) {
 				fy = 0;
 			}
 			p1 = 0;
 			while (true) {
-				p1 = plainPage.getline(fy).toString(ignoreCase).substring(0, x)
-						.indexOf(s, p1);
+				p1 = thePage.ptEdit.getline(fy).toString(ignoreCase).substring(
+						0, x).indexOf(s, p1);
 				if (p1 >= 0) {
 					found = true;
-					plainPage.getline(fy).sb().replace(p1, p1 + s.length(), s2);
+					thePage.ptEdit.getline(fy).sb().replace(p1,
+							p1 + s.length(), s2);
 					if (!all) {
 						return new Point(p1 + s2.length(), fy);
 					}
@@ -470,60 +684,242 @@ public class PlainPage implements IPage {
 		}
 
 	}
-	class RedoUndo {
 
-		private void redo() throws Exception {
+	static class History {
+		public static int MAXSIZE = 200;
+		private List<HistoryInfo> atom;
+		private LinkedList<List<HistoryInfo>> data;
+		private int p;
 
-			HistoryInfo o = history.getRedo();
-			if (o == null) {
-				return;
+		public History(PlainPage page) {
+			data = new LinkedList<List<HistoryInfo>>();
+			p = 0;
+			atom = new ArrayList<HistoryInfo>();
+		}
+
+		private void add(List<HistoryInfo> o) {
+			if (p < data.size() && p >= 0) {
+				for (int i = 0; i < data.size() - p; i++) {
+					data.removeLast();
+				}
 			}
-			// tem.out.println(o);
-			if (o.type == History.INSERT) {
-				prtSelection.doPaste(o.s, o.x1, o.y1, false);
-			} else if (o.type == History.DELETE) {
-				prtSelection.deleteRect(PlainPage.this, new Rectangle(o.x1,
-						o.y1, o.x2, o.y2), false);
-			} else if (o.type == History.REPLACEALL) {
-				cx = o.x1;
-				cy = o.y1;
-				prtFind
-						.doReplaceAll(o.s, true, false, o.s2, false, false,
-								null);// bug
-				// expected!
-			} else {
-				System.out.println("not supported " + o);
+
+			List<HistoryInfo> last = data.peekLast();
+			// stem.out.println("last=" + last);
+			if (!append(last, o)) {
+				System.out.println("add:" + o);
+				data.add(o);
+				if (data.size() > MAXSIZE) {
+					data.removeFirst();
+				} else {
+					p += 1;
+				}
 			}
 
 		}
 
-		public void undo() throws Exception {
-			HistoryInfo o = history.get();
-			System.out.println(o);
-			if (o == null) {
-				return;
-			}
-			// tem.out.println(o);
-			if (o.type == History.INSERT) {
-				Rectangle r = new Rectangle(o.x1, o.y1, o.x2, o.y2);
-				o.s = prtSelection.getTextInRect(r);
-				prtSelection.deleteRect(PlainPage.this, r, false);
-			} else if (o.type == History.DELETE) {
-				Rectangle r = prtSelection.doPaste(o.s, o.x1, o.y1, false);
-				o.x2 = r.width;
-				o.y2 = r.height;
-			} else if (o.type == History.REPLACEALL) {
-				prtFind
-						.doReplaceAll(o.s2, true, false, o.s, false, false,
-								null);// bug
-				// expected!
-			} else {
-				System.out.println("not supported " + o);
-			}
+		public void addOne(HistoryInfo historyInfo) {
+			atom.add(historyInfo);
+		}
 
+		/**
+		 * try to append this change to the last ones
+		 */
+		private boolean append(List<HistoryInfo> lasts, List<HistoryInfo> os) {
+			if (lasts == null) {
+				return false;
+			}
+			boolean ret = false;
+			if (os.size() == 1) {
+				HistoryInfo o = os.get(0);
+				HistoryInfo last = lasts.get(lasts.size() - 1);
+				if (o.deleted.length() == 0 && last.deleted.length() == 0
+						&& o.y == last.y2 && o.x == last.x2) {
+					// last.x2 = o.x2;
+					// last.y2 = o.y2;
+					lasts.addAll(os);
+					ret = true;
+				} else if (o.x == o.x2 && o.y == o.y2 && last.x == last.x2
+						&& last.y == last.y2) {
+					if (last.y == o.dely2 && last.x == o.delx2) {
+						lasts.addAll(os);
+						// last.deleted = o.deleted + last.deleted;
+						// last.x = o.x;
+						// last.y = o.y;
+						ret = true;
+					} else if (last.x == o.x && last.y == o.y) {
+						lasts.addAll(os);
+						// last.deleted = last.deleted + o.deleted;
+						// last.delx2 = -1;// invalid, will be valid when undo a
+						// delete
+						// last.dely2 = -1;// invalid, will be valid when undo a
+						// delete
+						ret = true;
+					}
+				}
+			}
+			if (ret == true) {
+				System.out.println("append:" + os);
+			}
+			return ret;
+		}
+
+		public void beginAtom() {
+			if (atom.size() > 0) {
+				endAtom();
+			}
+		}
+
+		public void clear() {
+			data.clear();
+			p = 0;
+		}
+
+		public void endAtom() {
+			if (atom.size() > 0) {
+				add(atom);
+				atom = new ArrayList<HistoryInfo>();
+			}
+		}
+
+		public List<HistoryInfo> get() {
+			if (p <= 0) {
+				return null;
+			}
+			p -= 1;
+			System.out.println("undo:" + data.get(p));
+			return data.get(p);
+		}
+
+		public List<HistoryInfo> getRedo() {
+			if (p < data.size()) {
+				p += 1;
+				return data.get(p - 1);
+			} else {
+				return null;
+			}
+		}
+
+		public int size() {
+			return p;
 		}
 
 	}
+
+	static class HistoryInfo {
+		public String deleted;
+		public int delx2;
+		public int dely2;
+		/** set when undo a insert */
+		public String inserted;
+		public int x;
+		public int x2;
+		public int y;
+		public int y2;
+
+		public HistoryInfo(int x, int y, String deleted, int x2, int y2,
+				int delx2, int dely2) {
+			super();
+			this.x = x;
+			this.y = y;
+			this.deleted = deleted == null ? "" : deleted;
+			this.x2 = x2;
+			this.y2 = y2;
+			this.delx2 = delx2;
+			this.dely2 = dely2;
+		}
+
+		@Override
+		public String toString() {
+			return "HistoryInfo [deleted=" + deleted + ", delx2=" + delx2
+					+ ", dely2=" + dely2 + ", inserted=" + inserted + ", x="
+					+ x + ", x2=" + x2 + ", y=" + y + ", y2=" + y2 + "]";
+		}
+	}
+
+	public static class PageInfo {
+		public String fn;
+
+		public IPage page;
+
+		public long size;
+		public String workPath;
+
+		public PageInfo(String fn, long size, EditWindow editor)
+				throws Exception {
+			this.fn = fn;
+			this.size = size;
+			if (fn != null) {
+				this.workPath = new File(fn).getParent();
+			}
+			initPage(editor);
+		}
+
+		public void initPage(EditWindow editor) throws Exception {
+			if (page == null) {
+				if (size < 10000000) {
+					page = new PlainPage(editor, this);
+				} else {
+					page = new LargePage(editor, this);
+				}
+			}
+
+		}
+
+		public String toString() {
+			String s;
+			if (fn == null) {
+				s = "New Text...";
+			} else {
+				File f = new File(fn);
+				s = f.getName() + " " + f.getParent();
+			}
+			return s;
+		}
+
+	}
+
+	class RedoUndo {
+
+		void redo() throws Exception {
+
+			List<HistoryInfo> os = history.getRedo();
+			if (os == null) {
+				return;
+			}
+			// tem.out.println(o);
+			for (HistoryInfo o : os) {
+				if (o.deleted.length() == 0) {
+					ptEdit.doPaste(o.inserted, o.x, o.y, false);
+					o.inserted = null;
+				} else {
+					ptEdit.deleteRect(PlainPage.this, new Rectangle(o.x, o.y,
+							o.x2, o.y2), false);
+				}
+			}
+		}
+
+		void undo() throws Exception {
+			List<HistoryInfo> os = history.get();
+			if (os == null) {
+				return;
+			}
+			for (int i = os.size() - 1; i >= 0; i--) {
+				HistoryInfo o = os.get(i);
+				if (o.deleted.length() == 0) {
+					Rectangle r = new Rectangle(o.x, o.y, o.x2, o.y2);
+					o.inserted = ptSelection.getTextInRect(r);
+					ptEdit.deleteRect(PlainPage.this, r, false);
+				} else {
+					Rectangle r = ptEdit.doPaste(o.deleted, o.x, o.y, false);
+					o.x2 = r.width;
+					o.y2 = r.height;
+				}
+			}
+		}
+
+	}
+
 	class Selection {
 		private void cancelSelect() {
 			selectstartx = cx;
@@ -541,111 +937,8 @@ public class PlainPage implements IPage {
 
 		private void cutSelected() {
 			copySelected();
-			deleteSelection();
+			ptEdit.deleteSelection();
 			cancelSelect();
-		}
-
-		void deleteRect(PlainPage plainPage, Rectangle r, boolean record) {
-			int x1 = r.x;
-			int y1 = r.y;
-			int x2 = r.width;
-			int y2 = r.height;
-			if (y1 == y2 && x1 < x2) {
-				txtEdt.deleteInLine(y1, x1, x2, record);
-			} else if (y1 < y2) {
-				int delcnt = y2 - y1;
-				if (record && delcnt > 200
-						&& delcnt > plainPage.getLinesize() - delcnt) {
-					System.out.println("reverse delete mode");
-					List<StringBuffer> l2 = new Vector<StringBuffer>();
-					for (int i = 0; i < y1; i++) {
-						l2.add(plainPage.getline(i).sb());
-					}
-					if (x1 > 0) {
-						l2.add(new StringBuffer(plainPage.getline(y1)
-								.substring(0, x1)));
-					}
-					if (x2 < plainPage.getline(y2).length() - 1) {
-						l2.add(new StringBuffer(plainPage.getline(y2)
-								.substring(x2)));
-					}
-					for (int i = y2 + 1; i < plainPage.getLinesize(); i++) {
-						l2.add(plainPage.getline(i).sb());
-					}
-					plainPage.lines = l2;
-					if (plainPage.getLinesize() == 0) {
-						plainPage.lines.add(new StringBuffer());
-					}
-					U.gc();
-					plainPage.history.clear();
-				} else {// normal mode
-					if (record) {
-						plainPage.history.add(new HistoryInfo(History.DELETE,
-								y1, x1, x2, getSelected(), y2));
-					}
-					txtEdt.deleteInLine(y1, x1, Integer.MAX_VALUE, false);
-					txtEdt.deleteInLine(y2, 0, x2, false);
-					for (int i = y1 + 1; i < y2; i++) {
-						plainPage.lines.remove(y1 + 1);
-					}
-					plainPage.lines.get(y1).append(
-							plainPage.getline(y1 + 1).toString());
-					plainPage.lines.remove(y1 + 1);
-				}
-			}
-			plainPage.cx = x1;
-			plainPage.cy = y1;
-			plainPage.focusCursor();
-		}
-
-		private void deleteSelection() {
-			deleteSelection(true);
-		}
-
-		private void deleteSelection(boolean record) {
-			deleteRect(PlainPage.this, getSelectRect(), record);
-		}
-
-		private Rectangle doPaste(String s, int cx, int cy, boolean record) {
-			Rectangle r = new Rectangle();
-			r.x = cx;
-			r.y = cy;
-			int p1 = 0;
-			int ocx = cx;
-			int ocy = cy;
-			while (true) {
-				int p2 = s.indexOf("\n", p1);
-				if (p2 < 0) {
-					getline(cy).sb().insert(cx,
-							U.f(s.substring(p1, s.length())));
-					cx += s.length() - p1;
-					break;
-				}
-				if (cx == 0) {
-					lines.add(cy, new StringBuffer(U.f(s.substring(p1, p2))));
-				} else {
-					getline(cy).sb().insert(cx, U.f(s.substring(p1, p2)));
-					lines.add(cy + 1, new StringBuffer(getline(cy).substring(
-							cx + p2 - p1)));
-					getline(cy).sb().setLength(cx + p2 - p1);
-					cx = 0;
-				}
-				cy += 1;
-				p1 = p2 + 1;
-			}
-			if (record) {
-				history
-						.add(new HistoryInfo(History.INSERT, ocy, ocx, cx, s,
-								cy));
-			}
-			PlainPage.this.cx = cx;
-			PlainPage.this.cy = cy;
-			r.width = cx;
-			r.height = cy;
-			cancelSelect();
-			focusCursor();
-			return r;
-
 		}
 
 		String getSelected() {
@@ -685,7 +978,7 @@ public class PlainPage implements IPage {
 				sb.append(getInLine(y1, x1, Integer.MAX_VALUE));
 				for (int i = y1 + 1; i < y2; i++) {
 					sb.append(lineSep);
-					sb.append(getline(i));
+					sb.append(ptEdit.getline(i));
 				}
 				sb.append(lineSep);
 				sb.append(getInLine(y2, 0, x2));
@@ -739,159 +1032,24 @@ public class PlainPage implements IPage {
 			}
 		}
 
-		private void pasteSelected() {
-			if (isSelected()) {
-				deleteSelection();
-			}
-			String s;
-			try {
-				s = Toolkit.getDefaultToolkit().getSystemClipboard().getData(
-						DataFlavor.stringFlavor).toString();
-			} catch (Exception e) {
-				s = "";
-			}
-			doPaste(s, cx, cy, true);
-
-		}
-
 		private void selectAll() {
 			selectstartx = 0;
 			selectstarty = 0;
-			selectstopy = getLinesize() - 1;
-			selectstopx = getline(selectstopy).length();
+			selectstopy = ptEdit.getLinesize() - 1;
+			selectstopx = ptEdit.getline(selectstopy).length();
 
 		}
 
 	}
-	class TextEdit {
-		public void appendLine(PlainPage plainPage, String s) {
-			plainPage.lines.add(new StringBuffer(s));
-		}
 
-		private void deleteInLine(int y, int x1, int x2) {
-			deleteInLine(y, x1, x2, true);
-		}
-
-		private void deleteInLine(int y, int x1, int x2, boolean record) {
-			StringBuffer sb = lines.get(y);
-			if (x2 > sb.length()) {
-				x2 = sb.length();
-			}
-			if (x1 > sb.length()) {
-				x1 = sb.length();
-			}
-			String s = sb.substring(x1, x2);
-			sb.delete(x1, x2);
-			if (record) {
-				history.add(new HistoryInfo(History.DELETE, y, x1, x2, s, y));
-			}
-		}
-
-		private void insert(char ch) {
-			if (ch == KeyEvent.VK_ENTER) {
-				if (prtSelection.isSelected()) {
-					prtSelection.deleteSelection();
-				}
-				RoSb sb = getline(cy);
-				String indent = U.getIndent(sb.toString());
-				String s = sb.substring(cx, sb.length());
-				lines.add(cy + 1, new StringBuffer(indent + s));
-				deleteInLine(cy, cx, Integer.MAX_VALUE, false);
-				int ocy = cy;
-				int ocx = cx;
-				cy += 1;
-				cx = indent.length();
-				history.add(new HistoryInfo(History.INSERT, ocy, ocx, cx, null,
-						cy));
-			} else if (ch == KeyEvent.VK_BACK_SPACE) {
-				if (prtSelection.isSelected()) {
-					prtSelection.deleteSelection();
-				} else {
-
-					if (cx > 0) {
-						deleteInLine(cy, cx - 1, cx);
-						cx -= 1;
-					} else {
-						if (cy > 0) {
-							cx = getline(cy - 1).length();
-							u_mergeLine(cy - 1);
-							cy -= 1;
-						}
-					}
-				}
-			} else if (ch == KeyEvent.VK_DELETE) {
-				if (prtSelection.isSelected()) {
-					prtSelection.deleteSelection();
-				} else {
-					if (cx < getline(cy).length()) {
-						deleteInLine(cy, cx, cx + 1);
-					} else {
-						if (cy < getLinesize() - 1) {
-							u_mergeLine(cy);
-						}
-					}
-				}
-			} else if (ch == KeyEvent.VK_ESCAPE) {
-				selectstopy = selectstarty;
-				selectstopx = selectstartx;
-			} else {
-				if (prtSelection.isSelected()) {
-					prtSelection.deleteSelection();
-				}
-				RoSb sb = getline(cy);
-				if (cx > sb.length()) {
-					cx = sb.length();
-				}
-				u_insertInLine(cy, cx, ch);
-				cx += 1;
-			}
-			focusCursor();
-			prtSelection.cancelSelect();
-			edit.repaint();
-		}
-
-		private void removeTrailingSpace() {
-			for (int i = 0; i < getLinesize(); i++) {// no record, why?
-														// ...emm...
-				RoSb sb = getline(i);
-				int p = sb.length() - 1;
-				while (p >= 0 && "\r\n\t ".indexOf(sb.charAt(p)) >= 0) {
-					p--;
-				}
-				if (p < sb.length() - 1) {
-					sb.sb().setLength(p + 1);
-				}
-			}
-
-		}
-
-		private void u_insertInLine(int cy, int cx, char ch) {
-			getline(cy).sb().insert(cx, ch);
-			history.add(new HistoryInfo(History.INSERT, cy, cx, cx + 1, null,
-					cy));
-		}
-
-		private void u_mergeLine(int i) {
-			String x = getline(i + 1).toString();
-			int ol = getline(i).length();
-			getline(i).sb().append(x);
-			lines.remove(i + 1);
-			history.add(new HistoryInfo(History.DELETE, i, ol, 0, "\n", i + 1));
-		}
-
-		private void u_removeLine(int i) {
-			StringBuffer sb = lines.remove(i);
-			history.add(new HistoryInfo(History.DELETE, i, 0, sb.length(), sb
-					.toString(), i));
-
-		}
-	}
 	class UI {
 		class CacheMode {
 			private Map<Integer, Image> lineCache;
 
 			U.PriorityList lineCacheKey;
-			private int notHit;
+
+			// private int notHit;
+
 			public CacheMode() {
 				lineCache = new HashMap<Integer, Image>();
 				lineCacheKey = new U.PriorityList(lineCache);
@@ -917,7 +1075,7 @@ public class PlainPage implements IPage {
 				if (im == null) {
 					im = createLineImage(g2, s, x, y, lineno);
 					lineCache.put(lineno, im);
-					notHit = 1;
+					// notHit = 1;
 				}
 				lineCacheKey.touch(lineno);
 				g2.drawImage(im, x, y - lineHeight, null);
@@ -929,7 +1087,7 @@ public class PlainPage implements IPage {
 			private void findchar(char ch, int inc, int[] c1, char chx) {
 				int cx1 = c1[0];
 				int cy1 = c1[1];
-				RoSb csb = getline(cy1);
+				RoSb csb = ptEdit.getline(cy1);
 				int lv = 1;
 				while (true) {
 					if (inc == -1) {
@@ -941,7 +1099,7 @@ public class PlainPage implements IPage {
 								c1[1] = -1;
 								return;
 							} else {
-								csb = getline(cy1);
+								csb = ptEdit.getline(cy1);
 								cx1 = csb.length() - 1;
 								if (cx1 < 0) {
 									continue;
@@ -963,12 +1121,12 @@ public class PlainPage implements IPage {
 						cx1++;
 						if (cx1 >= csb.length()) {
 							cy1++;
-							if (cy1 >= getLinesize()) {
+							if (cy1 >= ptEdit.getLinesize()) {
 								c1[0] = -1;
 								c1[1] = -1;
 								return;
 							} else {
-								csb = getline(cy1);
+								csb = ptEdit.getline(cy1);
 								cx1 = 0;
 								if (cx1 >= csb.length()) {
 									continue;
@@ -994,8 +1152,8 @@ public class PlainPage implements IPage {
 				String[] commentchars = { "#", "%", "'", "//", "!", ";", "--",
 						"/*", "<!--" };
 				int[] cnts = new int[commentchars.length];
-				for (int i = 0; i < lines.size(); i++) {
-					RoSb sb = getline(i);
+				for (int i = 0; i < ptEdit.getLinesize(); i++) {
+					RoSb sb = ptEdit.getline(i);
 					for (int j = 0; j < cnts.length; j++) {
 						if (sb.toString().trim().startsWith(commentchars[j])) {
 							cnts[j]++;
@@ -1044,7 +1202,7 @@ public class PlainPage implements IPage {
 
 			private void markBox(Graphics2D g2, int x, int y) {
 				if (y >= sy && y <= sy + showLineCnt && x >= sx) {
-					RoSb sb = getline(y);
+					RoSb sb = ptEdit.getline(y);
 					int w1 = x > 0 ? U.strWidth(g2, sb.substring(sx, x)) : 0;
 					String c = sb.substring(x, x + 1);
 					int w2 = U.strWidth(g2, c);
@@ -1127,6 +1285,7 @@ public class PlainPage implements IPage {
 		private int lineGap = 5;
 		private int lineHeight = 10;
 		private Dimension size;
+
 		/**
 		 * quick find how much char can be shown in width
 		 * 
@@ -1158,7 +1317,7 @@ public class PlainPage implements IPage {
 		private void drawGutter(Graphics2D g2) {
 			g2.setColor(new Color(0x115511));
 			for (int i = 0; i < showLineCnt; i++) {
-				if (sy + i + 1 > lines.size()) {
+				if (sy + i + 1 > ptEdit.getLinesize()) {
 					break;
 				}
 				g2.drawString("" + (sy + i + 1), 0, lineHeight
@@ -1190,7 +1349,7 @@ public class PlainPage implements IPage {
 		private void drawSelect(Graphics2D g2, int y1, int x1, int x2) {
 			int scry = y1 - sy;
 			if (scry < showLineCnt) {
-				String s = getline(y1).toString();
+				String s = ptEdit.getline(y1).toString();
 				if (sx > s.length()) {
 					return;
 				}
@@ -1249,7 +1408,8 @@ public class PlainPage implements IPage {
 						g2.drawImage(U.TabImg, x + w, y - lineHeight, null);
 						w += U.TABWIDTH;
 					} else {
-						int highlightid = getHighLightID(s1, g2);
+						// int highlightid =
+						getHighLightID(s1, g2);
 						g2.drawString(s1, x + w, y);
 						w += g2.getFontMetrics().stringWidth(s1);
 					}
@@ -1267,10 +1427,10 @@ public class PlainPage implements IPage {
 			int py = lineHeight;
 			int notHit = 0;
 			for (int i = 0; i < showLineCnt; i++) {
-				if (y >= getLinesize()) {
+				if (y >= ptEdit.getLinesize()) {
 					break;
 				}
-				RoSb sb = getline(y);
+				RoSb sb = ptEdit.getline(y);
 				if (sx < sb.length()) {
 					int chari2 = Math.min(charCntInLine + sx, sb.length());
 					String s = U.subs(sb, sx, chari2);
@@ -1290,7 +1450,7 @@ public class PlainPage implements IPage {
 		}
 
 		private void drawToolbar(Graphics2D g2) {
-			String s1 = "<F1>:Help, Line:" + lines.size() + ", Doc:"
+			String s1 = "<F1>:Help, Line:" + ptEdit.getLinesize() + ", Doc:"
 					+ edit.pages.size() + ", byte:" + info.size + ", "
 					+ encoding + ", X:" + (cx + 1) + ", his:" + history.size()
 					+ ", " + info.fn;
@@ -1356,17 +1516,17 @@ public class PlainPage implements IPage {
 				int charCntInLine = (size.width - gutterWidth) / (lineHeight)
 						* 2;
 				// change sx if needed
-				cx = Math.min(getline(cy).length(), cx);
+				cx = Math.min(ptEdit.getline(cy).length(), cx);
 				if (cx < sx) {
 					sx = Math.max(0, cx - charCntInLine / 2);
 				} else {
-					if (U.strWidth(g2, U.subs(getline(cy), sx, cx)) > size.width
+					if (U.strWidth(g2, U.subs(ptEdit.getline(cy), sx, cx)) > size.width
 							- lineHeight * 3) {
 						sx = Math.max(0, cx - charCntInLine / 2);
 						int xx = charCntInLine / 4;
 						while (xx > 0
-								&& U.strWidth(g2, U.subs(getline(cy), sx, cx)) > size.width
-										- lineHeight * 3) {
+								&& U.strWidth(g2, U.subs(ptEdit.getline(cy),
+										sx, cx)) > size.width - lineHeight * 3) {
 							sx = Math.max(0, cx - xx - 1);
 							xx /= 2; // quick guess
 						}
@@ -1387,13 +1547,13 @@ public class PlainPage implements IPage {
 					mx -= gutterWidth;
 					my -= toolbarHeight;
 					cy = sy + my / (lineHeight + lineGap);
-					if (cy >= getLinesize()) {
-						cy = getLinesize() - 1;
+					if (cy >= ptEdit.getLinesize()) {
+						cy = ptEdit.getLinesize() - 1;
 					}
-					RoSb sb = getline(cy);
+					RoSb sb = ptEdit.getline(cy);
 					cx = sx + computeShowIndex(sb.substring(sx), mx, g2);
 					my = 0;
-					prtSelection.mouseSelection(sb);
+					ptSelection.mouseSelection(sb);
 				}
 				// draw toolbar
 				drawToolbar(g2);
@@ -1421,7 +1581,7 @@ public class PlainPage implements IPage {
 				drawTextLines(g2, charCntInLine);
 
 				if (true) {// select mode
-					Rectangle r = prtSelection.getSelectRect();
+					Rectangle r = ptSelection.getSelectRect();
 					int x1 = r.x;
 					int y1 = r.y;
 					int x2 = r.width;
@@ -1442,8 +1602,8 @@ public class PlainPage implements IPage {
 					}
 				}
 				if (true) {// (){}[]<> pair marking
-					if (cx - 1 < getline(cy).length() && cx - 1 >= 0) {
-						char c = getline(cy).charAt(cx - 1);
+					if (cx - 1 < ptEdit.getline(cy).length() && cx - 1 >= 0) {
+						char c = ptEdit.getline(cy).charAt(cx - 1);
 						String pair = "(){}[]<>";
 						int p1 = pair.indexOf(c);
 						if (p1 >= 0) {
@@ -1461,7 +1621,7 @@ public class PlainPage implements IPage {
 				// draw cursor
 				if (cy >= sy && cy <= sy + showLineCnt) {
 					g2.setXORMode(new Color(0x30f0f0));
-					String s = U.subs(getline(cy), sx, cx);
+					String s = U.subs(ptEdit.getline(cy), sx, cx);
 					int w = U.strWidth(g2, s);
 					g2.fillRect(w, (cy - sy) * (lineHeight + lineGap), 2,
 							lineHeight);
@@ -1473,6 +1633,7 @@ public class PlainPage implements IPage {
 		}
 
 	}
+
 	static final int MAX_SHOW_CHARS_IN_LINE = 300;
 	private static final long MSG_VANISH_TIME = 3000;
 	Cursor cursor = new Cursor();;
@@ -1480,7 +1641,7 @@ public class PlainPage implements IPage {
 	EditWindow edit;
 	String encoding;
 	private FindReplaceWindow findWindow;
-	private History history;
+	History history;
 	public PageInfo info;
 	private boolean isCommentChecked = false;
 
@@ -1492,13 +1653,15 @@ public class PlainPage implements IPage {
 	private long msgtime;
 	private boolean mshift;
 	private int mx, my;
-	Files prtFiles = new Files();
+	Edit ptEdit = new Edit();
 
-	FindAndReplace prtFind = new FindAndReplace();
+	Files ptFiles = new Files();
 
-	RedoUndo prtRedoUndo = new RedoUndo();
+	FindAndReplace ptFind = new FindAndReplace();
 
-	Selection prtSelection = new Selection();
+	RedoUndo ptRedoUndo = new RedoUndo();
+
+	Selection ptSelection = new Selection();
 
 	private int selectstartx, selectstarty, selectstopx, selectstopy;
 
@@ -1506,15 +1669,13 @@ public class PlainPage implements IPage {
 
 	private int toolbarHeight = 40;
 
-	TextEdit txtEdt = new TextEdit();
-
 	UI ui = new UI();
 
 	public PlainPage(EditWindow editor, PageInfo pi) throws Exception {
 		this.edit = editor;
 		this.info = pi;
-		this.lines = prtFiles.readFile(pi.fn);
 		history = new History(this);
+		ptEdit.readFile(pi.fn);
 		this.findWindow = new FindReplaceWindow(editor.frame, this);
 	}
 
@@ -1531,7 +1692,7 @@ public class PlainPage implements IPage {
 	}
 
 	private String getInLine(int y, int x1, int x2) {
-		RoSb sb = getline(y);
+		RoSb sb = ptEdit.getline(y);
 		if (x2 > sb.length()) {
 			x2 = sb.length();
 		}
@@ -1539,14 +1700,6 @@ public class PlainPage implements IPage {
 			x1 = sb.length();
 		}
 		return sb.substring(x1, x2);
-	}
-
-	private RoSb getline(int i) {
-		return new RoSb(lines.get(i));
-	}
-
-	private int getLinesize() {
-		return lines.size();
 	}
 
 	private void gotoLine() {
@@ -1557,7 +1710,7 @@ public class PlainPage implements IPage {
 		} catch (Exception e) {
 			line = -1;
 		}
-		if (line > lines.size()) {
+		if (line > ptEdit.getLinesize()) {
 			line = -1;
 		}
 		if (line > 0) {
@@ -1583,6 +1736,7 @@ public class PlainPage implements IPage {
 
 	@Override
 	public void keyPressed(KeyEvent env) {
+		history.beginAtom();
 		try {
 			// System.out.println("press " + env.getKeyChar());
 
@@ -1590,19 +1744,19 @@ public class PlainPage implements IPage {
 			if (kc == KeyEvent.VK_F1) {
 				help();
 			} else if (kc == KeyEvent.VK_F2) {
-				prtFiles.saveAs();
+				ptFiles.saveAs();
 			} else if (kc == KeyEvent.VK_F3) {
-				prtFind.findNext();
+				ptFind.findNext();
 			} else if (kc == KeyEvent.VK_F5) {
-				prtFiles.reloadWithEncoding();
+				ptEdit.reloadWithEncodingByUser();
 			}
 			boolean cmoved = false;
 			if (env.isAltDown()) {
 				if (kc == KeyEvent.VK_LEFT) {
-					String s = getline(cy).toString();
+					String s = ptEdit.getline(cy).toString();
 					if (s.length() > 0
 							&& (s.charAt(0) == '\t' || s.charAt(0) == ' ')) {
-						getline(cy).sb().deleteCharAt(0);
+						ptEdit.getline(cy).sb().deleteCharAt(0);
 					}
 					cx -= 1;
 					if (cx < 0) {
@@ -1611,41 +1765,42 @@ public class PlainPage implements IPage {
 					focusCursor();
 					cmoved = true;
 				} else if (kc == KeyEvent.VK_RIGHT) {
-					getline(cy).sb().insert(0, '\t');
+					ptEdit.getline(cy).sb().insert(0, '\t');
 					cx += 1;
 					focusCursor();
 					cmoved = true;
 				}
 			} else if (env.isControlDown()) {
 				if (kc == KeyEvent.VK_C) {
-					prtSelection.copySelected();
+					ptSelection.copySelected();
 				} else if (kc == KeyEvent.VK_V) {
-					prtSelection.pasteSelected();
+					ptEdit.pasteSelected();
 				} else if (kc == KeyEvent.VK_X) {
-					prtSelection.cutSelected();
+					ptSelection.cutSelected();
 				} else if (kc == KeyEvent.VK_A) {
-					prtSelection.selectAll();
+					ptSelection.selectAll();
 				} else if (kc == KeyEvent.VK_D) {
-					if (prtSelection.isSelected()) {
-						prtSelection.deleteSelection();
+					if (ptSelection.isSelected()) {
+						ptEdit.deleteSelection();
 					} else {
 						cx = 0;
-						if (getLinesize() == 1) {
-							txtEdt.deleteInLine(0, 0, getline(0).length());
+						if (ptEdit.getLinesize() == 1) {
+							ptEdit.deleteInLine(0, 0, ptEdit.getline(0)
+									.length());
 						} else {
-							txtEdt.u_removeLine(cy);
-							if (cy >= getLinesize()) {
-								cy = getLinesize() - 1;
+							ptEdit.removeLine(cy);
+							if (cy >= ptEdit.getLinesize()) {
+								cy = ptEdit.getLinesize() - 1;
 							}
 						}
 					}
 					focusCursor();
 				} else if (kc == KeyEvent.VK_O) {
-					prtFiles.openFile();
+					ptFiles.openFile();
 				} else if (kc == KeyEvent.VK_N) {
 					edit.newFileInNewWindow();
 				} else if (kc == KeyEvent.VK_S && env.isShiftDown()) {
-					prtFiles.saveAllFiles();
+					ptFiles.saveAllFiles();
 
 				} else if (kc == KeyEvent.VK_S) {
 					if (U.saveFile(info)) {
@@ -1655,38 +1810,38 @@ public class PlainPage implements IPage {
 				} else if (kc == KeyEvent.VK_L) {
 					gotoLine();
 				} else if (kc == KeyEvent.VK_Z) {
-					prtRedoUndo.undo();
+					ptRedoUndo.undo();
 				} else if (kc == KeyEvent.VK_F) {
-					prtFind.find();
+					ptFind.find();
 				} else if (kc == KeyEvent.VK_TAB) {
-					prtFiles.changePage();
+					ptFiles.changePage();
 				} else if (kc == KeyEvent.VK_Y) {
-					prtRedoUndo.redo();
+					ptRedoUndo.redo();
 				} else if (kc == KeyEvent.VK_W) {
-					prtFiles.closePage();
+					ptFiles.closePage();
 				} else if (kc == KeyEvent.VK_E) {
-					prtFiles.changeEncoding(this);
+					ptFiles.setEncodingByUser(this);
 				} else if (kc == KeyEvent.VK_PAGE_UP) {
 					cy = 0;
 					cx = 0;
 					focusCursor();
 					cmoved = true;
 				} else if (kc == KeyEvent.VK_PAGE_DOWN) {
-					cy = getLinesize() - 1;
+					cy = ptEdit.getLinesize() - 1;
 					cx = 0;
 					focusCursor();
 					cmoved = true;
 				} else if (kc == KeyEvent.VK_R) {
-					txtEdt.removeTrailingSpace();
+					ptEdit.removeTrailingSpace();
 				} else if (kc == KeyEvent.VK_LEFT) {
-					RoSb line = getline(cy);
+					RoSb line = ptEdit.getline(cy);
 					cx = Math.max(0, cx - 1);
 					char ch1 = line.charAt(cx);
 					while (cx > 0 && U.isSkipChar(line.charAt(cx), ch1)) {
 						cx--;
 					}
 				} else if (kc == KeyEvent.VK_RIGHT) {
-					RoSb line = getline(cy);
+					RoSb line = ptEdit.getline(cy);
 					cx = Math.min(line.length(), cx + 1);
 					if (cx < line.length()) {
 						char ch1 = line.charAt(cx);
@@ -1698,7 +1853,7 @@ public class PlainPage implements IPage {
 				} else if (kc == KeyEvent.VK_UP) {
 					sy = Math.max(0, sy - 1);
 				} else if (kc == KeyEvent.VK_DOWN) {
-					sy = Math.min(sy + 1, getLinesize() - 1);
+					sy = Math.min(sy + 1, ptEdit.getLinesize() - 1);
 				}
 			} else {
 				if (kc == KeyEvent.VK_LEFT) {
@@ -1706,7 +1861,7 @@ public class PlainPage implements IPage {
 					if (cx < 0) {
 						if (cy > 0) {
 							cy -= 1;
-							cx = getline(cy).length();
+							cx = ptEdit.getline(cy).length();
 						} else {
 							cx = 0;
 						}
@@ -1715,7 +1870,8 @@ public class PlainPage implements IPage {
 					cmoved = true;
 				} else if (kc == KeyEvent.VK_RIGHT) {
 					cx += 1;
-					if (cx > getline(cy).length() && cy < lines.size() - 1) {
+					if (cx > ptEdit.getline(cy).length()
+							&& cy < ptEdit.getLinesize() - 1) {
 						cy += 1;
 						cx = 0;
 					}
@@ -1730,13 +1886,13 @@ public class PlainPage implements IPage {
 					cmoved = true;
 				} else if (kc == KeyEvent.VK_DOWN) {
 					cy += 1;
-					if (cy >= getLinesize()) {
-						cy = getLinesize() - 1;
+					if (cy >= ptEdit.getLinesize()) {
+						cy = ptEdit.getLinesize() - 1;
 					}
 					focusCursor();
 					cmoved = true;
 				} else if (kc == KeyEvent.VK_HOME) {
-					String line = getline(cy).toString();
+					String line = ptEdit.getline(cy).toString();
 					String lx = line.trim();
 					int p1 = line.indexOf(lx);
 					if (cx > p1 || cx == 0) {
@@ -1747,7 +1903,7 @@ public class PlainPage implements IPage {
 					focusCursor();
 					cmoved = true;
 				} else if (kc == KeyEvent.VK_END) {
-					String line = getline(cy).toString();
+					String line = ptEdit.getline(cy).toString();
 					String lx = line.trim();
 					int p1 = line.lastIndexOf(lx) + lx.length();
 					if (cx < p1 || cx >= line.length()) {
@@ -1766,8 +1922,8 @@ public class PlainPage implements IPage {
 					cmoved = true;
 				} else if (kc == KeyEvent.VK_PAGE_DOWN) {
 					cy += showLineCnt;
-					if (cy >= getLinesize()) {
-						cy = getLinesize() - 1;
+					if (cy >= ptEdit.getLinesize()) {
+						cy = ptEdit.getLinesize() - 1;
 					}
 					focusCursor();
 					cmoved = true;
@@ -1782,7 +1938,7 @@ public class PlainPage implements IPage {
 					selectstopx = cx;
 					selectstopy = cy;
 				} else {
-					prtSelection.cancelSelect();
+					ptSelection.cancelSelect();
 				}
 			}
 			edit.repaint();
@@ -1790,6 +1946,7 @@ public class PlainPage implements IPage {
 			message("err:" + e);
 			e.printStackTrace();
 		}
+		history.endAtom();
 	}
 
 	@Override
@@ -1799,14 +1956,15 @@ public class PlainPage implements IPage {
 
 	@Override
 	public void keyTyped(KeyEvent env) {
+		history.beginAtom();
 		char kc = env.getKeyChar();
 		// System.out.println("type " + kc);
 		if (kc == KeyEvent.VK_TAB && env.isShiftDown()) {
 			for (int i = selectstarty; i <= selectstopy; i++) {
-				if (getline(i).length() > 0) {
-					char ch = getline(i).charAt(0);
+				if (ptEdit.getline(i).length() > 0) {
+					char ch = ptEdit.getline(i).charAt(0);
 					if (ch == ' ' || ch == '\t') {
-						getline(i).sb().delete(0, 1);
+						ptEdit.getline(i).sb().delete(0, 1);
 					}
 				}
 			}
@@ -1816,16 +1974,16 @@ public class PlainPage implements IPage {
 
 			if (selectstarty < selectstopy) {
 				for (int i = selectstarty; i <= selectstopy; i++) {
-					getline(i).sb().insert(0, "\t");
+					ptEdit.getline(i).sb().insert(0, "\t");
 				}
 				focusCursor();
 			}
 		} else if (env.isControlDown() || env.isAltDown()) {
 			// ignore
 		} else {
-			txtEdt.insert(kc);
+			ptEdit.insert(kc);
 		}
-
+		history.endAtom();
 	}
 
 	public void message(String s) {
@@ -1854,8 +2012,8 @@ public class PlainPage implements IPage {
 	@Override
 	public void scroll(int amount) {
 		sy += amount;
-		if (sy >= getLinesize()) {
-			sy = getLinesize() - 1;
+		if (sy >= ptEdit.getLinesize()) {
+			sy = ptEdit.getLinesize() - 1;
 		}
 		if (sy < 0) {
 			sy = 0;

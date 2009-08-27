@@ -21,8 +21,11 @@ import neoe.ne.PlainPage.PageInfo;
 
 public class EditWindow extends JComponent implements MouseMotionListener,
 		MouseListener, MouseWheelListener, KeyListener {
-	private static final String REV="$Rev$";
-	private static final String WINDOW_NAME = "neoeedit r"+REV.substring(6, REV.length()-2);
+
+	private static final long serialVersionUID = -1667283144475200365L;
+	private static final String REV = "$Rev$";
+	private static final String WINDOW_NAME = "neoeedit r"
+			+ REV.substring(6, REV.length() - 2);
 	private boolean debugFPS = false;
 
 	public EditWindow() {
@@ -192,13 +195,12 @@ public class EditWindow extends JComponent implements MouseMotionListener,
 	}
 
 	String getWorkPath() {
-		return  (pages.size() == 0) ? null
-				: pages.get(pageNo).workPath;
+		return (pages.size() == 0) ? null : pages.get(pageNo).workPath;
 	}
 
 	public PageInfo newEmptyFile(String workPath) throws Exception {
 		PageInfo pi = new PageInfo(null, 0, this);
-		pi.workPath =workPath;
+		pi.workPath = workPath;
 		pages.add(pi);
 		changePage(pages.size() - 1);
 		return pi;
@@ -208,7 +210,7 @@ public class EditWindow extends JComponent implements MouseMotionListener,
 		String fn = pages.get(pageNo).fn;
 		if (fn != null) {
 			frame.setTitle(new File(fn).getName() + " "
-					+ new File(fn).getParent() + " - "+WINDOW_NAME);
+					+ new File(fn).getParent() + " - " + WINDOW_NAME);
 		} else {
 			frame.setTitle(WINDOW_NAME);
 		}
