@@ -565,8 +565,7 @@ public class U {
 		while (true) {
 			p1 = ptEdit.getline(y).toString(ignoreCase).indexOf(s, p1);
 			if (p1 >= 0) {
-				found = true;				
-//				ptEdit.getline(y).sb().replace(p1, p1 + s.length(), s2);
+				found = true;		
 				ptEdit.deleteInLine(y, p1, p1+s.length());
 				ptEdit.insertInLine(y,p1,s2);
 				if (!all) {
@@ -590,14 +589,12 @@ public class U {
 						p1);
 				if (p1 >= 0) {
 					found = true;
-//					ptEdit.getline(fy).sb().replace(p1,
-//							p1 + s.length(), s2);
-					ptEdit.deleteInLine(y, p1, p1+s.length());
-					ptEdit.insertInLine(y,p1,s2);
+					ptEdit.deleteInLine(fy, p1, p1+s.length());
+					ptEdit.insertInLine(fy,p1,s2);
 					if (!all) {
 						return new Point(p1 + s2.length(), fy);
 					}
-					p1 = p1 + 1;
+					p1 = p1 + + s2.length();
 				} else {
 					break;
 				}
@@ -614,14 +611,12 @@ public class U {
 					.substring(0, x).indexOf(s, p1);
 			if (p1 >= 0) {
 				found = true;
-//				ptEdit.getline(fy).sb()
-//						.replace(p1, p1 + s.length(), s2);
-				ptEdit.deleteInLine(y, p1, p1+s.length());
-				ptEdit.insertInLine(y,p1,s2);
+				ptEdit.deleteInLine(fy, p1, p1+s.length());
+				ptEdit.insertInLine(fy,p1,s2);
 				if (!all) {
 					return new Point(p1 + s2.length(), fy);
 				}
-				p1 = p1 + 1;
+				p1 = p1 + s2.length();
 			} else {
 				break;
 			}
