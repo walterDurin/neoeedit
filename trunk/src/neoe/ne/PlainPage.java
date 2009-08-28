@@ -699,7 +699,7 @@ public class PlainPage {
 
 			Image createLineImage(Graphics2D g3, String s, int x, int y,
 					int lineno) {
-				BufferedImage im = new BufferedImage(ui.size.width
+				BufferedImage im = new BufferedImage(ui.dim.width
 						- gutterWidth, lineHeight + lineGap,
 						BufferedImage.TYPE_INT_ARGB);
 
@@ -811,7 +811,7 @@ public class PlainPage {
 		private int gutterWidth = 40;
 		private int lineGap = 5;
 		private int lineHeight = 10;
-		private Dimension size;
+		private Dimension dim;
 
 		private void drawGutter(Graphics2D g2) {
 			g2.setColor(new Color(0x115511));
@@ -866,7 +866,7 @@ public class PlainPage {
 				String s1 = s.substring(0, commentPos);
 				String s2 = s.substring(commentPos);
 				int w1 = drawText(g2, s1, x, y, false);
-				if (w1 < size.width - gutterWidth) {
+				if (w1 < dim.width - gutterWidth) {
 					drawText(g2, s2, x + w1, y, true);
 				}
 			} else {
@@ -896,7 +896,7 @@ public class PlainPage {
 						w += U.TABWIDTH;
 					}
 					w += U.drawTwoColor(g2, s1, x + w, y, c1, c2);
-					if (w > size.width - gutterWidth) {
+					if (w > dim.width - gutterWidth) {
 						break;
 					}
 				}
@@ -912,7 +912,7 @@ public class PlainPage {
 						g2.drawString(s1, x + w, y);
 						w += g2.getFontMetrics().stringWidth(s1);
 					}
-					if (w > size.width - gutterWidth) {
+					if (w > dim.width - gutterWidth) {
 						break;
 					}
 				}
@@ -950,7 +950,7 @@ public class PlainPage {
 
 		private void drawToolbar(Graphics2D g2) {
 			String s1 = "<F1>:Help, Line:" + ptEdit.getLinesize() + ", Doc:"
-					+ editor.pages.size() + ", byte:" + size + ", " + encoding
+					+ editor.pages.size() + ", byte:" +PlainPage.this.size + ", " + encoding
 					+ ", X:" + (cx + 1) + ", his:" + history.size() + ", " + fn;
 			g2.setColor(Color.WHITE);
 			g2.drawString(s1, 2, lineHeight + 2);
@@ -962,10 +962,10 @@ public class PlainPage {
 				} else {
 					int w = g2.getFontMetrics().stringWidth(msg);
 					g2.setColor(new Color(0xee6666));
-					g2.fillRect(size.width - w, 0, size.width, lineHeight
+					g2.fillRect(dim.width - w, 0, dim.width, lineHeight
 							+ lineGap);
 					g2.setColor(Color.YELLOW);
-					g2.drawString(msg, size.width - w, lineHeight);
+					g2.drawString(msg, dim.width - w, lineHeight);
 					U.repaintAfter(MSG_VANISH_TIME, editor);
 				}
 			}
@@ -985,7 +985,7 @@ public class PlainPage {
 
 		public void xpaint(Graphics g, Dimension size) {
 			try {
-				this.size = size;
+				this.dim = size;
 
 				if (!isCommentChecked) {// find comment pattern
 					isCommentChecked = true;
