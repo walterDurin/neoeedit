@@ -66,7 +66,7 @@ public class U {
 	}
 
 	/**
-	 * read-only stringbuffer. 
+	 * read-only stringbuffer.
 	 */
 	static class RoSb {
 
@@ -242,9 +242,9 @@ public class U {
 		}
 	}
 
-	static void doReplace(PlainPage plainPage, String text,
-			boolean ignoreCase, boolean selected2, String text2, boolean all,
-			boolean record, boolean inDir, String dir) {
+	static void doReplace(PlainPage plainPage, String text, boolean ignoreCase,
+			boolean selected2, String text2, boolean all, boolean record,
+			boolean inDir, String dir) {
 
 		plainPage.text2find = text;
 		if (plainPage.text2find != null && plainPage.text2find.length() > 0) {
@@ -276,8 +276,34 @@ public class U {
 			List<String> res = U.findInFile(f, text, ignoreCase);
 			all.addAll(res);
 		}
-		showResult(editor, all, dir, text);
+		showResult(editor, all, "dir " + dir, text);
 		editor.repaint();
+	}
+
+	static void doFindInPage(PlainPage page, String text2find,
+			boolean ignoreCase) throws Exception {
+		Edit ptEdit = page.ptEdit;
+		if (text2find != null && text2find.length() > 0) {
+			Point p = U.find(ptEdit, text2find, 0, 0, ignoreCase);
+			if (p == null) {
+				page.message("string not found");
+			} else {
+				List<String> all = new ArrayList<String>();
+				while (true) {
+					all.add(String
+							.format("%s:%s", p.y + 1, ptEdit.getline(p.y)));
+					Point p2 = U.find(ptEdit, text2find, p.x, p.y + 1,
+							ignoreCase);
+					if (p2 == null || p2.y < p.y) {
+						break;
+					} else {
+						p = p2;
+					}
+				}
+				showResult(page.editor, all, "file " + page.fn, text2find);
+				page.editor.repaint();
+			}
+		}
 	}
 
 	static void doReplaceAll(PlainPage page, String text, boolean ignoreCase,
@@ -286,8 +312,8 @@ public class U {
 		if (inDir) {
 			U.doReplaceInDir(page, text, ignoreCase, text2, inDir, dir);
 		} else {
-			U.doReplace(page, text, ignoreCase, selected2, text2, true,
-					record, inDir, dir);
+			U.doReplace(page, text, ignoreCase, selected2, text2, true, record,
+					inDir, dir);
 		}
 	}
 
@@ -318,7 +344,7 @@ public class U {
 			}
 
 		}
-		showResult(editor, all, dir, text);
+		showResult(editor, all, "dir " + dir, text);
 		editor.repaint();
 	}
 
@@ -555,7 +581,7 @@ public class U {
 
 	static Point replace(PlainPage page, String s, int x, int y, String s2,
 			boolean all, boolean ignoreCase, boolean record) {// TODO:record
-		Edit ptEdit=page.ptEdit;
+		Edit ptEdit = page.ptEdit;
 		if (ignoreCase) {
 			s = s.toLowerCase();
 		}
@@ -565,9 +591,9 @@ public class U {
 		while (true) {
 			p1 = ptEdit.getline(y).toString(ignoreCase).indexOf(s, p1);
 			if (p1 >= 0) {
-				found = true;		
-				ptEdit.deleteInLine(y, p1, p1+s.length());
-				ptEdit.insertInLine(y,p1,s2);
+				found = true;
+				ptEdit.deleteInLine(y, p1, p1 + s.length());
+				ptEdit.insertInLine(y, p1, s2);
 				if (!all) {
 					return new Point(p1, y);
 				}
@@ -585,16 +611,15 @@ public class U {
 			}
 			p1 = 0;
 			while (true) {
-				p1 = ptEdit.getline(fy).toString(ignoreCase).indexOf(s,
-						p1);
+				p1 = ptEdit.getline(fy).toString(ignoreCase).indexOf(s, p1);
 				if (p1 >= 0) {
 					found = true;
-					ptEdit.deleteInLine(fy, p1, p1+s.length());
-					ptEdit.insertInLine(fy,p1,s2);
+					ptEdit.deleteInLine(fy, p1, p1 + s.length());
+					ptEdit.insertInLine(fy, p1, s2);
 					if (!all) {
 						return new Point(p1 + s2.length(), fy);
 					}
-					p1 = p1 + + s2.length();
+					p1 = p1 + +s2.length();
 				} else {
 					break;
 				}
@@ -607,12 +632,12 @@ public class U {
 		}
 		p1 = 0;
 		while (true) {
-			p1 = ptEdit.getline(fy).toString(ignoreCase)
-					.substring(0, x).indexOf(s, p1);
+			p1 = ptEdit.getline(fy).toString(ignoreCase).substring(0, x)
+					.indexOf(s, p1);
 			if (p1 >= 0) {
 				found = true;
-				ptEdit.deleteInLine(fy, p1, p1+s.length());
-				ptEdit.insertInLine(fy,p1,s2);
+				ptEdit.deleteInLine(fy, p1, p1 + s.length());
+				ptEdit.insertInLine(fy, p1, s2);
 				if (!all) {
 					return new Point(p1 + s2.length(), fy);
 				}
@@ -628,7 +653,7 @@ public class U {
 		}
 	}
 
-	static void saveAs(PlainPage page) throws Exception {		
+	static void saveAs(PlainPage page) throws Exception {
 		EditWindow editor = page.editor;
 		JFileChooser chooser = new JFileChooser(page.fn);
 		int returnVal = chooser.showSaveDialog(editor);
@@ -708,12 +733,14 @@ public class U {
 
 	static void showResult(EditWindow editor, List<String> all, String dir,
 			String text) throws Exception {
-		PlainPage p2 = editor.newEmptyFile(editor.getWorkPath());
+		PlainPage p2 = editor.newFileInNewWindow();
+		p2.ptEdit.removeLine(0);
 		p2.ptEdit.appendMsgLine(p2, String.format(
-				"find %s results in dir %s for '%s'", all.size(), dir, text));
+				"find %s results in %s for '%s'", all.size(), dir, text));
 		for (Object o : all) {
 			p2.ptEdit.appendMsgLine(p2, o.toString());
 		}
+		p2.history.clear();
 	}
 
 	static List<String> split(String s) {
@@ -756,15 +783,19 @@ public class U {
 			}
 			return w;
 		}
-	}		static int drawTwoColor(Graphics2D g2, String s, int x, int y,
-			Color c1, Color c2) {
+	}
+
+	static int drawTwoColor(Graphics2D g2, String s, int x, int y, Color c1,
+			Color c2) {
 		g2.setColor(c2);
 		g2.drawString(s, x + 1, y + 1);
 		g2.setColor(c1);
 		g2.drawString(s, x, y);
 		return g2.getFontMetrics().stringWidth(s);
 
-	}/**
+	}
+
+	/**
 	 * quick find how much char can be shown in width
 	 * 
 	 * @param width
@@ -790,10 +821,12 @@ public class U {
 				i = i / 2;
 			}
 		}
-	}	static void guessComment(PlainPage page) {
-		String comment=null;
-		String[] commentchars = { "#", "%", "'", "//", "!", ";", "--",
-				"/*", "<!--" };
+	}
+
+	static void guessComment(PlainPage page) {
+		String comment = null;
+		String[] commentchars = { "#", "%", "'", "//", "!", ";", "--", "/*",
+				"<!--" };
 		int[] cnts = new int[commentchars.length];
 		for (int i = 0; i < page.ptEdit.getLinesize(); i++) {
 			RoSb sb = page.ptEdit.getline(i);
@@ -815,7 +848,7 @@ public class U {
 			for (int j = 0; j < cnts.length; j++) {
 				if (cnts[j] > 0) {
 					comment = commentchars[j];
-					
+
 					break;
 				}
 			}
@@ -830,7 +863,7 @@ public class U {
 			if (k2 == 1) {
 				for (int j = 0; j < cnts.length; j++) {
 					if (cnts[j] > lv2) {
-						comment = commentchars[j];								
+						comment = commentchars[j];
 						break;
 					}
 				}
@@ -838,12 +871,14 @@ public class U {
 		}
 		if (comment == null) {
 			page.message("no comment found" + Arrays.toString(cnts));
-		}else{
+		} else {
 			page.message("comment found:" + comment);
 		}
-		page.ui.comment=comment;
+		page.ui.comment = comment;
 		page.editor.repaint();
-	}static  void findchar(Edit ptEdit, char ch, int inc, int[] c1, char chx) {
+	}
+
+	static void findchar(Edit ptEdit, char ch, int inc, int[] c1, char chx) {
 		int cx1 = c1[0];
 		int cy1 = c1[1];
 		RoSb csb = ptEdit.getline(cy1);
@@ -906,6 +941,7 @@ public class U {
 			}
 		}
 	}
+
 	static Point find(Edit ptEdit, String s, int x, int y, boolean ignoreCase) {
 		if (ignoreCase) {
 			s = s.toLowerCase();
@@ -932,13 +968,13 @@ public class U {
 		if (fy >= ptEdit.getLinesize()) {
 			fy = 0;
 		}
-		p1 = ptEdit.getline(fy).toString(ignoreCase).substring(0, x)
-				.indexOf(s);
+		p1 = ptEdit.getline(fy).toString(ignoreCase).substring(0, x).indexOf(s);
 		if (p1 >= 0) {
 			return new Point(p1, fy);
 		}
 		return null;
 	}
+
 	static String subs(RoSb sb, int a, int b) {
 		return subs(sb.toString(), a, b);
 	}

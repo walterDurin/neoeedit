@@ -33,6 +33,7 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 	private JTextField jtadir;
 	private JCheckBox jcb2;
 	private JCheckBox jcb3;
+	private JButton jb4;
 
 	public FindReplaceWindow(JFrame f, PlainPage page) {
 		this.page = page;
@@ -52,6 +53,7 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 		s.add(jrb2 = new JRadioButton("RegularExpression"));
 		s.newline();
 		s.add(jb1 = new JButton("Find"));
+		s.add(jb4 = new JButton("FindAll"));
 		s.add(jb2 = new JButton("Replace"));
 		s.add(jb3 = new JButton("Replace All"));
 		s.newline();
@@ -65,9 +67,11 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 		jb1.setActionCommand("find");
 		jb2.setActionCommand("replace");
 		jb3.setActionCommand("replaceall");
+		jb4.setActionCommand("findall");
 		jb1.addActionListener(this);
 		jb2.addActionListener(this);
 		jb3.addActionListener(this);
+		jb4.addActionListener(this);
 		jcb2.setEnabled(false);
 		jcb3.setEnabled(false);
 		dialog.pack();
@@ -95,13 +99,15 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 		page.history.beginAtom();
 		try {
 			String command = ae.getActionCommand();
-			if (command == "find") {
+			if (command.equals("find")) {
 				page.ptFind.doFind(jta1.getText(), jrb1.isSelected(), jrb2
 						.isSelected(), jcb1.isSelected(), jtadir.getText());
-			} else if (command == "replace") {
+			} else if (command.equals("findall")) {
+				U.doFindInPage(page, jta1.getText(), jrb1.isSelected());
+			} else if (command.equals("replace")) {
 				U.doReplace(page, jta1.getText(), jrb1.isSelected(), jrb2
 						.isSelected(), jta2.getText(), true, true, false, null);
-			} else if (command == "replaceall") {
+			} else if (command.equals("replaceall")) {
 				U.doReplaceAll(page, jta1.getText(), jrb1.isSelected(), jrb2
 						.isSelected(), jta2.getText(), true, jcb1.isSelected(),
 						jtadir.getText());

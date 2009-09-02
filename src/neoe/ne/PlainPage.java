@@ -430,6 +430,7 @@ public class PlainPage {
 		}
 
 		public void clear() {
+			atom.clear();
 			data.clear();
 			p = 0;
 		}
