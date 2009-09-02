@@ -1327,6 +1327,7 @@ public class PlainPage {
 					while (cx > 0 && U.isSkipChar(line.charAt(cx), ch1)) {
 						cx--;
 					}
+					cmoved = true;
 				} else if (kc == KeyEvent.VK_RIGHT) {
 					RoSb line = ptEdit.getline(cy);
 					cx = Math.min(line.length(), cx + 1);
@@ -1337,10 +1338,13 @@ public class PlainPage {
 							cx++;
 						}
 					}
+					cmoved = true;
 				} else if (kc == KeyEvent.VK_UP) {
 					sy = Math.max(0, sy - 1);
+					cmoved = true;
 				} else if (kc == KeyEvent.VK_DOWN) {
 					sy = Math.min(sy + 1, ptEdit.getLinesize() - 1);
+					cmoved = true;
 				}
 			} else {
 				if (kc == KeyEvent.VK_LEFT) {
