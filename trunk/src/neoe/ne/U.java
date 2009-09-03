@@ -4,6 +4,9 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Point;
+import java.awt.Toolkit;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -25,7 +28,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
-import neoe.ne.PlainPage.Edit;
+import neoe.ne.PlainPage.BasicEdit;
 import neoe.util.FileIterator;
 
 /**
@@ -242,27 +245,28 @@ public class U {
 		}
 	}
 
-	static void doReplace(PlainPage plainPage, String text, boolean ignoreCase,
-			boolean selected2, String text2, boolean all, boolean record,
-			boolean inDir, String dir) {
+	static void doReplace(PlainPage page, String text, boolean ignoreCase,
+			boolean selected2, String text2, boolean all, boolean inDir,
+			String dir) {
 
-		plainPage.text2find = text;
-		if (plainPage.text2find != null && plainPage.text2find.length() > 0) {
-			Point p = replace(plainPage, plainPage.text2find, plainPage.cx,
-					plainPage.cy, text2, all, ignoreCase, record);
+		page.text2find = text;
+		if (page.text2find != null && page.text2find.length() > 0) {
+			Point p = replace(page, page.text2find, page.cx,
+					page.cy, text2, all, ignoreCase);
 			if (p == null) {
-				plainPage.message("string not found");
+				page.message("string not found");
 			} else {
-				plainPage.cx = p.x;
-				plainPage.cy = p.y;
-				plainPage.selectstartx = plainPage.cx;
-				plainPage.selectstarty = plainPage.cy;
-				plainPage.selectstopx = plainPage.cx + text2.length();
-				plainPage.selectstopy = plainPage.cy;
-				plainPage.focusCursor();
+				page.cx = p.x;
+				page.cy = p.y;
+//				page.selectstartx = page.cx;
+//				page.selectstarty = page.cy;
+//				page.selectstopx = page.cx + text2.length();
+//				page.selectstopy = page.cy;
+				page.focusCursor();
+				page.ptSelection.cancelSelect();
 			}
 		}
-		plainPage.editor.repaint();
+		page.editor.repaint();
 	}
 
 	static void doFindInDir(EditWindow editor, String text, boolean ignoreCase,
@@ -282,18 +286,17 @@ public class U {
 
 	static void doFindInPage(PlainPage page, String text2find,
 			boolean ignoreCase) throws Exception {
-		Edit ptEdit = page.ptEdit;
 		if (text2find != null && text2find.length() > 0) {
-			Point p = U.find(ptEdit, text2find, 0, 0, ignoreCase);
+			Point p = U.find(page, text2find, 0, 0, ignoreCase);
 			if (p == null) {
 				page.message("string not found");
 			} else {
 				List<String> all = new ArrayList<String>();
 				while (true) {
-					all.add(String
-							.format("%s:%s", p.y + 1, ptEdit.getline(p.y)));
-					Point p2 = U.find(ptEdit, text2find, p.x, p.y + 1,
-							ignoreCase);
+					all.add(String.format("%s:%s", p.y + 1, page.roLines
+							.getline(p.y)));
+					Point p2 = U
+							.find(page, text2find, p.x, p.y + 1, ignoreCase);
 					if (p2 == null || p2.y < p.y) {
 						break;
 					} else {
@@ -307,13 +310,13 @@ public class U {
 	}
 
 	static void doReplaceAll(PlainPage page, String text, boolean ignoreCase,
-			boolean selected2, String text2, boolean record, boolean inDir,
-			String dir) throws Exception {
+			boolean selected2, String text2, boolean inDir, String dir)
+			throws Exception {
 		if (inDir) {
 			U.doReplaceInDir(page, text, ignoreCase, text2, inDir, dir);
 		} else {
-			U.doReplace(page, text, ignoreCase, selected2, text2, true, record,
-					inDir, dir);
+			U.doReplace(page, text, ignoreCase, selected2, text2, true, inDir,
+					dir);
 		}
 	}
 
@@ -334,7 +337,7 @@ public class U {
 					PlainPage pi = editor.openFile(f.getAbsolutePath());
 
 					if (pi != null) {
-						doReplaceAll(pi, text, ignoreCase2, false, text2, true,
+						doReplaceAll(pi, text, ignoreCase2, false, text2,
 								false, null);
 					}
 				}
@@ -393,8 +396,8 @@ public class U {
 	}
 
 	public static void gc() {
-		System.out.println(km(Runtime.getRuntime().freeMemory()) + "/"
-				+ km(Runtime.getRuntime().totalMemory()));
+		System.out.print(km(Runtime.getRuntime().freeMemory()) + "/"
+				+ km(Runtime.getRuntime().totalMemory())+" -> ");
 		Runtime.getRuntime().gc();
 		System.out.println(km(Runtime.getRuntime().freeMemory()) + "/"
 				+ km(Runtime.getRuntime().totalMemory()));
@@ -477,7 +480,7 @@ public class U {
 		if (v > m) {
 			return String.format("%.1fMB", v / m);
 		} else if (v > 1024) {
-			return String.format("%.1fKB", v / 1024);
+			return String.format("%.1fKB", v / 1024f);
 		}
 		return "" + v;
 	}
@@ -552,15 +555,15 @@ public class U {
 		return lines;
 	}
 
-	static void removeTrailingSpace(Edit ptEdit) {
-		for (int i = 0; i < ptEdit.getLinesize(); i++) {
-			RoSb sb = ptEdit.getline(i);
+	static void removeTrailingSpace(PlainPage page) {
+		for (int i = 0; i < page.roLines.getLinesize(); i++) {
+			RoSb sb = page.roLines.getline(i);
 			int p = sb.length() - 1;
 			while (p >= 0 && "\r\n\t ".indexOf(sb.charAt(p)) >= 0) {
 				p--;
 			}
 			if (p < sb.length() - 1) {
-				ptEdit.deleteInLine(i, p + 1, sb.length());
+				page.editRec.deleteInLine(i, p + 1, sb.length());
 			}
 		}
 	}
@@ -580,20 +583,21 @@ public class U {
 	}
 
 	static Point replace(PlainPage page, String s, int x, int y, String s2,
-			boolean all, boolean ignoreCase, boolean record) {// TODO:record
-		Edit ptEdit = page.ptEdit;
+			boolean all, boolean ignoreCase) {
+		int cnt=0;
+		BasicEdit editRec = page.editRec;
 		if (ignoreCase) {
 			s = s.toLowerCase();
 		}
 		// first half row
-		boolean found = false;
+
 		int p1 = x;
 		while (true) {
-			p1 = ptEdit.getline(y).toString(ignoreCase).indexOf(s, p1);
+			p1 = page.roLines.getline(y).toString(ignoreCase).indexOf(s, p1);
 			if (p1 >= 0) {
-				found = true;
-				ptEdit.deleteInLine(y, p1, p1 + s.length());
-				ptEdit.insertInLine(y, p1, s2);
+				cnt++;
+				editRec.deleteInLine(y, p1, p1 + s.length());
+				editRec.insertInLine(y, p1, s2);
 				if (!all) {
 					return new Point(p1, y);
 				}
@@ -604,18 +608,20 @@ public class U {
 		}
 		// middle rows
 		int fy = y;
-		for (int i = 0; i < ptEdit.getLinesize() - 1; i++) {
+		for (int i = 0; i < page.roLines.getLinesize() - 1; i++) {
 			fy += 1;
-			if (fy >= ptEdit.getLinesize()) {
+			if (fy >= page.roLines.getLinesize()) {
 				fy = 0;
 			}
 			p1 = 0;
 			while (true) {
-				p1 = ptEdit.getline(fy).toString(ignoreCase).indexOf(s, p1);
+				p1 = page.roLines.getline(fy).toString(ignoreCase).indexOf(s,
+						p1);
 				if (p1 >= 0) {
-					found = true;
-					ptEdit.deleteInLine(fy, p1, p1 + s.length());
-					ptEdit.insertInLine(fy, p1, s2);
+
+					cnt++;
+					editRec.deleteInLine(fy, p1, p1 + s.length());
+					editRec.insertInLine(fy, p1, s2);
 					if (!all) {
 						return new Point(p1 + s2.length(), fy);
 					}
@@ -627,17 +633,17 @@ public class U {
 		}
 		// last half row
 		fy += 1;
-		if (fy >= ptEdit.getLinesize()) {
+		if (fy >= page.roLines.getLinesize()) {
 			fy = 0;
 		}
 		p1 = 0;
 		while (true) {
-			p1 = ptEdit.getline(fy).toString(ignoreCase).substring(0, x)
+			p1 = page.roLines.getline(fy).toString(ignoreCase).substring(0, x)
 					.indexOf(s, p1);
 			if (p1 >= 0) {
-				found = true;
-				ptEdit.deleteInLine(fy, p1, p1 + s.length());
-				ptEdit.insertInLine(fy, p1, s2);
+				cnt++;
+				editRec.deleteInLine(fy, p1, p1 + s.length());
+				editRec.insertInLine(fy, p1, s2);
 				if (!all) {
 					return new Point(p1 + s2.length(), fy);
 				}
@@ -646,7 +652,8 @@ public class U {
 				break;
 			}
 		}
-		if (found) {
+		if (cnt>0) {
+			page.message("replaced "+cnt+" places");
 			return new Point(x, y);
 		} else {
 			return null;
@@ -707,8 +714,8 @@ public class U {
 		}
 		BufferedWriter out = new BufferedWriter(new OutputStreamWriter(
 				new FileOutputStream(page.fn), page.encoding));
-		for (int i = 0; i < page.ptEdit.getLinesize(); i++) {
-			out.write(page.ptEdit.getline(i).toString());
+		for (int i = 0; i < page.roLines.getLinesize(); i++) {
+			out.write(page.roLines.getline(i).toString());
 			out.write("\n");
 		}
 		out.close();
@@ -734,13 +741,14 @@ public class U {
 	static void showResult(EditWindow editor, List<String> all, String dir,
 			String text) throws Exception {
 		PlainPage p2 = editor.newFileInNewWindow();
-		p2.ptEdit.removeLine(0);
-		p2.ptEdit.appendMsgLine(p2, String.format(
-				"find %s results in %s for '%s'", all.size(), dir, text));
+		List<StringBuffer> sbs = new ArrayList<StringBuffer>();
+		sbs.add(new StringBuffer(String.format(
+				"find %s results in %s for '%s'", all.size(), dir, text)));
 		for (Object o : all) {
-			p2.ptEdit.appendMsgLine(p2, o.toString());
+			sbs.add(new StringBuffer(o.toString()));
 		}
-		p2.history.clear();
+		p2.ptEdit.setLines(sbs);
+		gc();
 	}
 
 	static List<String> split(String s) {
@@ -828,8 +836,8 @@ public class U {
 		String[] commentchars = { "#", "%", "'", "//", "!", ";", "--", "/*",
 				"<!--" };
 		int[] cnts = new int[commentchars.length];
-		for (int i = 0; i < page.ptEdit.getLinesize(); i++) {
-			RoSb sb = page.ptEdit.getline(i);
+		for (int i = 0; i < page.roLines.getLinesize(); i++) {
+			RoSb sb = page.roLines.getline(i);
 			for (int j = 0; j < cnts.length; j++) {
 				if (sb.toString().trim().startsWith(commentchars[j])) {
 					cnts[j]++;
@@ -878,10 +886,10 @@ public class U {
 		page.editor.repaint();
 	}
 
-	static void findchar(Edit ptEdit, char ch, int inc, int[] c1, char chx) {
+	static void findchar(PlainPage page, char ch, int inc, int[] c1, char chx) {
 		int cx1 = c1[0];
 		int cy1 = c1[1];
-		RoSb csb = ptEdit.getline(cy1);
+		RoSb csb = page.roLines.getline(cy1);
 		int lv = 1;
 		while (true) {
 			if (inc == -1) {
@@ -893,7 +901,7 @@ public class U {
 						c1[1] = -1;
 						return;
 					} else {
-						csb = ptEdit.getline(cy1);
+						csb = page.roLines.getline(cy1);
 						cx1 = csb.length() - 1;
 						if (cx1 < 0) {
 							continue;
@@ -915,12 +923,12 @@ public class U {
 				cx1++;
 				if (cx1 >= csb.length()) {
 					cy1++;
-					if (cy1 >= ptEdit.getLinesize()) {
+					if (cy1 >= page.roLines.getLinesize()) {
 						c1[0] = -1;
 						c1[1] = -1;
 						return;
 					} else {
-						csb = ptEdit.getline(cy1);
+						csb = page.roLines.getline(cy1);
 						cx1 = 0;
 						if (cx1 >= csb.length()) {
 							continue;
@@ -942,33 +950,34 @@ public class U {
 		}
 	}
 
-	static Point find(Edit ptEdit, String s, int x, int y, boolean ignoreCase) {
+	static Point find(PlainPage page, String s, int x, int y, boolean ignoreCase) {
 		if (ignoreCase) {
 			s = s.toLowerCase();
 		}
 		// first half row
-		int p1 = ptEdit.getline(y).toString(ignoreCase).indexOf(s, x);
+		int p1 = page.roLines.getline(y).toString(ignoreCase).indexOf(s, x);
 		if (p1 >= 0) {
 			return new Point(p1, y);
 		}
 		// middle rows
 		int fy = y;
-		for (int i = 0; i < ptEdit.getLinesize() - 1; i++) {
+		for (int i = 0; i < page.roLines.getLinesize() - 1; i++) {
 			fy += 1;
-			if (fy >= ptEdit.getLinesize()) {
+			if (fy >= page.roLines.getLinesize()) {
 				fy = 0;
 			}
-			p1 = ptEdit.getline(fy).toString(ignoreCase).indexOf(s);
+			p1 = page.roLines.getline(fy).toString(ignoreCase).indexOf(s);
 			if (p1 >= 0) {
 				return new Point(p1, fy);
 			}
 		}
 		// last half row
 		fy += 1;
-		if (fy >= ptEdit.getLinesize()) {
+		if (fy >= page.roLines.getLinesize()) {
 			fy = 0;
 		}
-		p1 = ptEdit.getline(fy).toString(ignoreCase).substring(0, x).indexOf(s);
+		p1 = page.roLines.getline(fy).toString(ignoreCase).substring(0, x)
+				.indexOf(s);
 		if (p1 >= 0) {
 			return new Point(p1, fy);
 		}
@@ -993,5 +1002,27 @@ public class U {
 			b = sb.length();
 		}
 		return sb.substring(a, b);
+	}
+
+	static String getClipBoard() {
+		String s;
+		try {
+			s = Toolkit.getDefaultToolkit().getSystemClipboard().getData(
+					DataFlavor.stringFlavor).toString();
+		} catch (Exception e) {
+			s = "";
+		}
+		return s;
+	}
+
+	static void setClipBoard(String s) {
+		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(
+				new StringSelection(s), null);
+	}
+
+	public static String spaces(int cx) {
+		StringBuffer sb=new StringBuffer(cx);
+		sb.setLength(cx);
+		return sb.toString();
 	}
 }
