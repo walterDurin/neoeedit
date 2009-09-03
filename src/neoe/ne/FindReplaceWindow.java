@@ -106,10 +106,10 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 				U.doFindInPage(page, jta1.getText(), jrb1.isSelected());
 			} else if (command.equals("replace")) {
 				U.doReplace(page, jta1.getText(), jrb1.isSelected(), jrb2
-						.isSelected(), jta2.getText(), true, true, false, null);
+						.isSelected(), jta2.getText(), true,  false, null);
 			} else if (command.equals("replaceall")) {
 				U.doReplaceAll(page, jta1.getText(), jrb1.isSelected(), jrb2
-						.isSelected(), jta2.getText(), true, jcb1.isSelected(),
+						.isSelected(), jta2.getText(),  jcb1.isSelected(),
 						jtadir.getText());
 			} else {
 				return;
