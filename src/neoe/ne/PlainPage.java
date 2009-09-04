@@ -18,10 +18,16 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
 import javax.swing.JOptionPane;
+
 import neoe.ne.U.RoSb;
 
 public class PlainPage {
+	private static final String REV = "$Rev: 51 $";
+	static final String WINDOW_NAME = "neoeedit r"
+			+ REV.substring(6, REV.length() - 2);
+	
 	static enum BasicAction {
 		Delete, DeleteEmtpyLine, Insert, InsertEmptyLine, MergeLine
 	}
