@@ -21,14 +21,12 @@ public class EditWindow extends JComponent implements MouseMotionListener,
 		MouseListener, MouseWheelListener, KeyListener {
 
 	private static final long serialVersionUID = -1667283144475200365L;
-	private static final String REV = "$Rev$";
-	private static final String WINDOW_NAME = "neoeedit r"
-			+ REV.substring(6, REV.length() - 2);
+
 	private boolean debugFPS = false;
 
 	public EditWindow() {
 		pages = new ArrayList<PlainPage>();
-		frame = new JFrame(WINDOW_NAME);
+		frame = new JFrame(PlainPage.WINDOW_NAME);
 		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		frame.setSize(new Dimension(800, 600));
 		frame.getContentPane().add(this);
@@ -208,9 +206,9 @@ public class EditWindow extends JComponent implements MouseMotionListener,
 		String fn = pages.get(pageNo).fn;
 		if (fn != null) {
 			frame.setTitle(new File(fn).getName() + " "
-					+ new File(fn).getParent() + " - " + WINDOW_NAME);
+					+ new File(fn).getParent() + " - " + PlainPage.WINDOW_NAME);
 		} else {
-			frame.setTitle(WINDOW_NAME);
+			frame.setTitle(PlainPage.WINDOW_NAME);
 		}
 	}
 
