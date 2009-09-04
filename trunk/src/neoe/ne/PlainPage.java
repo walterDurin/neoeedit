@@ -369,9 +369,9 @@ public class PlainPage {
 			String[] ss = U.split(s,"\n");
 			
 			if (rectSelectMode) {
-				int iy = selectstarty;
+				int iy = cy;
 				for (String s1 : ss) {
-					editRec.insertInLine(iy, selectstartx, s1);
+					editRec.insertInLine(iy, cx, s1);
 					iy++;
 				}
 			} else {
