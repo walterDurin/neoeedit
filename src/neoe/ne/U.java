@@ -352,8 +352,8 @@ public class U {
 	}
 
 	public static String f(String s) {
-		if (s.endsWith("\r")) {
-			return s.substring(0, s.length() - 1);
+		while (s.endsWith("\r")) {
+			s= s.substring(0, s.length() - 1);
 		}
 		return s;
 	}
@@ -1024,5 +1024,21 @@ public class U {
 		StringBuffer sb=new StringBuffer(cx);
 		sb.setLength(cx);
 		return sb.toString();
+	}
+
+	public static String[] split(String s, String sep) {
+		List<String> s1=new ArrayList<String>();
+		int p1=0;
+		while(true){
+			int p2=s.indexOf(sep,p1);
+			if (p2<0){
+				s1.add(U.f(s.substring(p1)));
+				break;
+			}else{
+				s1.add(U.f(s.substring(p1,p2)));
+				p1=p2+1;
+			}
+		}
+		return (String[]) s1.toArray(new String[s1.size()]);
 	}
 }

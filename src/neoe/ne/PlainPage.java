@@ -75,7 +75,7 @@ public class PlainPage {
 
 		void insertInLine(int y, int x, String s) {
 			if (s.indexOf("\n") >= 0 || s.indexOf("\r") >= 0) {
-				throw new RuntimeException("cannot contains line-seperator");
+				throw new RuntimeException("cannot contains line-seperator:["+s+"]"+s.indexOf("\n"));
 			}
 			if (y == page.roLines.getLinesize()) {
 				page.editRec.insertEmptyLine(y);
@@ -360,17 +360,18 @@ public class PlainPage {
 		}
 
 		void insertString(String s) {
-			String[] ss = s.split("\n");
+			String[] ss = U.split(s,"\n");
+			
 			if (rectSelectMode) {
 				int iy = selectstarty;
 				for (String s1 : ss) {
-					editRec.insertInLine(iy, selectstartx, U.f(s1));
+					editRec.insertInLine(iy, selectstartx, s1);
 					iy++;
 				}
 			} else {
 				if (ss.length == 1) {
-					editRec.insertInLine(cy, cx, s);
-					cx += s.length();
+					editRec.insertInLine(cy, cx, ss[0]);
+					cx += ss[0].length();
 				} else {
 					String rem = roLines.getInLine(cy, cx, Integer.MAX_VALUE);
 					editRec.deleteInLine(cy, cx, Integer.MAX_VALUE);
