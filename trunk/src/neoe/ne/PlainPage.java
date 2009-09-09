@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import javax.swing.JOptionPane;
 
@@ -1363,13 +1364,30 @@ public class PlainPage {
 					g2.fillRect(w, (cy - sy) * (lineHeight + lineGap), 2,
 							lineHeight);
 				}
+				
+				if(noise){
+					paintNoise(g2);
+				}
 			} catch (Throwable th) {
 				th.printStackTrace();
 				message("Bug:" + th);
 			}
 		}
+		
+		void paintNoise(Graphics2D g2) {
+			int cnt=1000;
+			int w=dim.width;
+			int h=dim.height;
+			Color c=Color.BLACK;
+			g2.setColor(c);
+			for (int i=0;i<cnt;i++){
+				int x=random.nextInt(w);
+				int y=random.nextInt(h);
+				g2.drawLine(x, y, x+1, y);
+			}			
+		}
 	}
-
+	static Random random=new Random();
 	static final int MAX_SHOW_CHARS_IN_LINE = 300;
 	private static final long MSG_VANISH_TIME = 3000;
 	Cursor cursor = new Cursor();
@@ -1405,7 +1423,7 @@ public class PlainPage {
 	private int toolbarHeight = 40;
 	UI ui = new UI();
 	public String workPath;
-
+	boolean noise=false;
 	public PlainPage(EditWindow editor, String fn) throws Exception {
 		this.editor = editor;
 		this.fn = fn;
@@ -1417,7 +1435,23 @@ public class PlainPage {
 		history = new History(this);
 		U.readFile(this, fn);
 		findWindow = new FindReplaceWindow(editor.frame, this);
+		new Thread() {
+			public void run() {
+				try {//noise thread
+					while (true){
+						if (noise){
+							PlainPage.this.editor.repaint();
+						}
+						Thread.sleep(500);
+					}
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}.start();
 	}
+
+	
 
 	void focusCursor() {
 		if (cy < sy) {
@@ -1481,6 +1515,8 @@ public class PlainPage {
 					focusCursor();
 				} else if (kc == KeyEvent.VK_BACK_SLASH) {
 					rectSelectMode = !rectSelectMode;
+				} else if (kc == KeyEvent.VK_N) {
+					noise=true;
 				}
 			} else if (env.isControlDown()) {
 				if (kc == KeyEvent.VK_C) {
