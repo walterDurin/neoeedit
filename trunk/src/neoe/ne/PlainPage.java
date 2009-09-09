@@ -10,6 +10,8 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
@@ -28,7 +30,7 @@ public class PlainPage {
 	private static final String REV = "$Rev$";
 	static final String WINDOW_NAME = "neoeedit r"
 			+ REV.substring(6, REV.length() - 2);
-	
+
 	static enum BasicAction {
 		Delete, DeleteEmtpyLine, Insert, InsertEmptyLine, MergeLine
 	}
@@ -82,7 +84,8 @@ public class PlainPage {
 
 		void insertInLine(int y, int x, String s) {
 			if (s.indexOf("\n") >= 0 || s.indexOf("\r") >= 0) {
-				throw new RuntimeException("cannot contains line-seperator:["+s+"]"+s.indexOf("\n"));
+				throw new RuntimeException("cannot contains line-seperator:["
+						+ s + "]" + s.indexOf("\n"));
 			}
 			if (y == page.roLines.getLinesize()) {
 				page.editRec.insertEmptyLine(y);
@@ -189,8 +192,8 @@ public class PlainPage {
 			if (cy >= roLines.getLinesize()) {
 				if (rectSelectMode) {
 					String SP = U.spaces(cx);
-					int cnt= cy - roLines.getLinesize() + 1;
-					int p=roLines.getLinesize();
+					int cnt = cy - roLines.getLinesize() + 1;
+					int p = roLines.getLinesize();
 					for (int i = 0; i < cnt; i++) {
 						editRec.insertEmptyLine(p);
 						if (cx > 0) {
@@ -273,7 +276,7 @@ public class PlainPage {
 			}
 			cx = x1;
 			cy = y1;
-			if(y2-y1>400){
+			if (y2 - y1 > 400) {
 				U.gc();
 			}
 			focusCursor();
@@ -367,8 +370,8 @@ public class PlainPage {
 		}
 
 		void insertString(String s) {
-			String[] ss = U.split(s,"\n");
-			
+			String[] ss = U.split(s, "\n");
+
 			if (rectSelectMode) {
 				int iy = cy;
 				for (String s1 : ss) {
@@ -636,7 +639,7 @@ public class PlainPage {
 		}
 
 		public void redo() {
-//			System.out.println("redo:" + toString());
+			// System.out.println("redo:" + toString());
 			switch (action) {
 			case Delete:
 				s1 = roLines().getInLine(y1, x1, x2);
@@ -680,7 +683,7 @@ public class PlainPage {
 		}
 
 		public void undo() {
-//			System.out.println("undo:" + toString());
+			// System.out.println("undo:" + toString());
 			switch (action) {
 			case Delete:
 				editNoRec().insertInLine(y1, x1, s1);
@@ -1288,6 +1291,11 @@ public class PlainPage {
 					my = 0;
 					ptSelection.mouseSelection(sb);
 				}
+				g2.setColor(bkColor);
+				g2.fillRect(0, 0, size.width, size.height);
+				if (noise) {
+					paintNoise(g2);
+				}
 				// draw toolbar
 				drawToolbar(g2);
 				// draw gutter
@@ -1295,8 +1303,9 @@ public class PlainPage {
 				drawGutter(g2);
 				// draw text
 				g2.translate(gutterWidth, 0);
-				g2.setColor(bkColor);
-				g2.fillRect(0, 0, size.width, size.height);
+				g2.setColor(Color.WHITE);
+				g2.drawRect(-1, -1, dim.width - gutterWidth, dim.height
+						- toolbarHeight);
 				{ // highlight current line
 					int l1 = cy - sy;
 					if (l1 >= 0 && l1 < showLineCnt) {
@@ -1364,30 +1373,28 @@ public class PlainPage {
 					g2.fillRect(w, (cy - sy) * (lineHeight + lineGap), 2,
 							lineHeight);
 				}
-				
-				if(noise){
-					paintNoise(g2);
-				}
+
 			} catch (Throwable th) {
 				th.printStackTrace();
 				message("Bug:" + th);
 			}
 		}
-		
+
 		void paintNoise(Graphics2D g2) {
-			int cnt=1000;
-			int w=dim.width;
-			int h=dim.height;
-			Color c=Color.BLACK;
-			g2.setColor(c);
-			for (int i=0;i<cnt;i++){
-				int x=random.nextInt(w);
-				int y=random.nextInt(h);
-				g2.drawLine(x, y, x+1, y);
-			}			
+			int cnt = 1000;
+			int w = dim.width;
+			int h = dim.height;
+			int cs = 0xffffff;
+			for (int i = 0; i < cnt; i++) {
+				int x = random.nextInt(w);
+				int y = random.nextInt(h);
+				g2.setColor(new Color(random.nextInt(cs)));
+				g2.drawLine(x, y, x + 1, y);
+			}
 		}
 	}
-	static Random random=new Random();
+
+	static Random random = new Random();
 	static final int MAX_SHOW_CHARS_IN_LINE = 300;
 	private static final long MSG_VANISH_TIME = 3000;
 	Cursor cursor = new Cursor();
@@ -1419,13 +1426,23 @@ public class PlainPage {
 	private int showLineCnt;
 	public long size;
 	private int sy, sx;
+	int noisesleep = 500;
 	String text2find;
 	private int toolbarHeight = 40;
 	UI ui = new UI();
 	public String workPath;
-	boolean noise=false;
+	boolean noise = false;
+	boolean closed = false;
+
 	public PlainPage(EditWindow editor, String fn) throws Exception {
 		this.editor = editor;
+
+		editor.frame.addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e) {
+				closed = true;
+			}
+		});
 		this.fn = fn;
 		if (fn != null) {
 			File f = new File(fn);
@@ -1437,12 +1454,15 @@ public class PlainPage {
 		findWindow = new FindReplaceWindow(editor.frame, this);
 		new Thread() {
 			public void run() {
-				try {//noise thread
-					while (true){
-						if (noise){
+				try {// noise thread
+					while (true) {
+						if (PlainPage.this.closed) {
+							break;
+						}
+						if (noise) {							
 							PlainPage.this.editor.repaint();
 						}
-						Thread.sleep(500);
+						Thread.sleep(noisesleep);
 					}
 				} catch (InterruptedException e) {
 					e.printStackTrace();
@@ -1450,8 +1470,6 @@ public class PlainPage {
 			}
 		}.start();
 	}
-
-	
 
 	void focusCursor() {
 		if (cy < sy) {
@@ -1516,7 +1534,7 @@ public class PlainPage {
 				} else if (kc == KeyEvent.VK_BACK_SLASH) {
 					rectSelectMode = !rectSelectMode;
 				} else if (kc == KeyEvent.VK_N) {
-					noise=true;
+					noise = !noise;
 				}
 			} else if (env.isControlDown()) {
 				if (kc == KeyEvent.VK_C) {
