@@ -953,7 +953,8 @@ public class U {
 	static Point find(PlainPage page, String s, int x, int y, boolean ignoreCase) {
 		if (ignoreCase) {
 			s = s.toLowerCase();
-		}
+		}		
+		x=Math.min(x,page.roLines.getline(y).toString(ignoreCase).length());
 		// first half row
 		int p1 = page.roLines.getline(y).toString(ignoreCase).indexOf(s, x);
 		if (p1 >= 0) {
@@ -972,11 +973,7 @@ public class U {
 			}
 		}
 		// last half row
-		fy += 1;
-		if (fy >= page.roLines.getLinesize()) {
-			fy = 0;
-		}
-		p1 = page.roLines.getline(fy).toString(ignoreCase).substring(0, x)
+		p1 = page.roLines.getline(y).toString(ignoreCase).substring(x)
 				.indexOf(s);
 		if (p1 >= 0) {
 			return new Point(p1, fy);
