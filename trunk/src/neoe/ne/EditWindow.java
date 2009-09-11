@@ -152,27 +152,17 @@ public class EditWindow extends JComponent implements MouseMotionListener,
 
 	@Override
 	public void mouseWheelMoved(MouseWheelEvent env) {
-		int amount = env.getWheelRotation() * env.getScrollAmount();
-		if (pageNo < pages.size()) {
-			pages.get(pageNo).scroll(amount);
-		}
-
+		getCurrentPage().mouseWheelMoved(env);
 	}
 
 	@Override
 	public void keyPressed(KeyEvent env) {
-		if (pageNo < pages.size()) {
-			pages.get(pageNo).keyPressed(env);
-		}
-
+		getCurrentPage().keyPressed(env);
 	}
 
 	@Override
 	public void keyReleased(KeyEvent env) {
-		if (pageNo < pages.size()) {
-			pages.get(pageNo).keyReleased(env);
-		}
-
+		getCurrentPage().keyReleased(env);
 	}
 
 	@Override
