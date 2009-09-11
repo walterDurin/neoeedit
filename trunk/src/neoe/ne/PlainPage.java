@@ -1253,10 +1253,10 @@ public class PlainPage {
 				}
 				Graphics2D g2 = (Graphics2D) g;
 				g2.setFont(font);
-				showLineCnt = (size.height - toolbarHeight)
-						/ (lineHeight + lineGap);
-				int charCntInLine = (size.width - gutterWidth) / (lineHeight)
-						* 2;
+				showLineCnt = (int) ((size.height - toolbarHeight)
+						/ (lineHeight + lineGap) / scalev);
+				int charCntInLine = (int) ((size.width - gutterWidth)
+						/ (lineHeight) * 2 / scalev);
 				// change sx if needed
 				cx = Math.min(roLines.getline(cy).length(), cx);
 				if (cx < sx) {
@@ -1284,11 +1284,16 @@ public class PlainPage {
 				} else if (my > 0 && mx >= gutterWidth && my >= toolbarHeight) {
 					mx -= gutterWidth;
 					my -= toolbarHeight;
-					cy = sy + my / (lineHeight + lineGap);
+					mx = (int) (mx / scalev);
+					my = (int) (my / scalev);
+					cy = sy + my / (lineHeight + lineGap);// (int)((sy + my /
+															// (lineHeight +
+															// lineGap))/scalev);
 					if (cy >= roLines.getLinesize()) {
 						cy = roLines.getLinesize() - 1;
 					}
 					RoSb sb = roLines.getline(cy);
+					sx = Math.min(sx, sb.length());
 					cx = sx + U.computeShowIndex(sb.substring(sx), mx, g2);
 					my = 0;
 					ptSelection.mouseSelection(sb);
@@ -1302,13 +1307,15 @@ public class PlainPage {
 				drawToolbar(g2);
 				// draw gutter
 				g2.translate(0, toolbarHeight);
+				g2.setColor(Color.WHITE);
+				g2.drawRect(gutterWidth, -1, dim.width - gutterWidth, dim.height
+						- toolbarHeight);
+				
+				g2.scale(scalev, scalev);
 				drawGutter(g2);
 				// draw text
-				g2.translate(gutterWidth, 0);
-				g2.setColor(Color.WHITE);
-				g2.drawRect(-1, -1, dim.width - gutterWidth, dim.height
-						- toolbarHeight);
-				g2.scale(scalev, scalev);
+				g2.translate(gutterWidth/scalev, 0);
+				
 				{ // highlight current line
 					int l1 = cy - sy;
 					if (l1 >= 0 && l1 < showLineCnt) {
