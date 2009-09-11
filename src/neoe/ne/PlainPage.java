@@ -10,6 +10,7 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
@@ -1061,6 +1062,7 @@ public class PlainPage {
 		private int gutterWidth = 40;
 		private int lineGap = 5;
 		private int lineHeight = 10;
+		float scalev = 1;
 
 		private void drawGutter(Graphics2D g2) {
 			g2.setColor(new Color(0x115511));
@@ -1306,6 +1308,7 @@ public class PlainPage {
 				g2.setColor(Color.WHITE);
 				g2.drawRect(-1, -1, dim.width - gutterWidth, dim.height
 						- toolbarHeight);
+				g2.scale(scalev, scalev);
 				{ // highlight current line
 					int l1 = cy - sy;
 					if (l1 >= 0 && l1 < showLineCnt) {
@@ -1459,7 +1462,7 @@ public class PlainPage {
 						if (PlainPage.this.closed) {
 							break;
 						}
-						if (noise) {							
+						if (noise) {
 							PlainPage.this.editor.repaint();
 						}
 						Thread.sleep(noisesleep);
@@ -1600,6 +1603,8 @@ public class PlainPage {
 					sy = Math.max(0, sy - 1);
 				} else if (kc == KeyEvent.VK_DOWN) {
 					sy = Math.min(sy + 1, roLines.getLinesize() - 1);
+				} else if (kc == KeyEvent.VK_0) {
+					ui.scalev = 1;
 				}
 			} else {
 				if (kc == KeyEvent.VK_LEFT) {
@@ -1707,5 +1712,23 @@ public class PlainPage {
 
 	public void xpaint(Graphics g, Dimension size) {
 		ui.xpaint(g, size);
+	}
+
+	public void mouseWheelMoved(MouseWheelEvent env) {
+		int amount = env.getWheelRotation() * env.getScrollAmount();
+		if (env.isControlDown()) {// scale
+			scale(amount);
+		} else {// scroll
+			scroll(amount);
+		}
+
+	}
+
+	private void scale(int amount) {
+		if (amount > 0) {
+			ui.scalev *= 1.1f;
+		} else if (amount < 0) {
+			ui.scalev *= 0.9f;
+		}
 	}
 }
