@@ -384,7 +384,7 @@ public class U {
 									PlainPage.MAX_SHOW_CHARS_IN_LINE)
 									+ "...";
 						}
-						a.add(String.format("[%s]%s:%s", fn, lineno, oline));
+						a.add(String.format("%s|%s:%s", fn, lineno, oline));
 					}
 				}
 
@@ -1038,4 +1038,5 @@ public class U {
 		}
 		return (String[]) s1.toArray(new String[s1.size()]);
 	}
+
 }

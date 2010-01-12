@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Random;
 
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 
 import neoe.ne.U.RoSb;
 
@@ -1612,6 +1613,8 @@ public class PlainPage {
 					sy = Math.min(sy + 1, roLines.getLinesize() - 1);
 				} else if (kc == KeyEvent.VK_0) {
 					ui.scalev = 1;
+				}else if (kc == KeyEvent.VK_G) {
+					gotoFileLine();
 				}
 			} else {
 				if (kc == KeyEvent.VK_LEFT) {
@@ -1658,6 +1661,38 @@ public class PlainPage {
 			e.printStackTrace();
 		}
 		history.endAtom();
+	}
+
+	private void gotoFileLine() throws Exception {
+		if (cy<lines.size()){
+			StringBuffer sb=lines.get(cy);
+			int p1,p2;
+			if ((p1=sb.indexOf("|"))>=0){
+				if ((p2=sb.indexOf(":",p1))>=0){
+					String fn=sb.substring(0,p1);
+					int line=-1;
+					try {
+						line=Integer.parseInt(sb.substring(p1+1,p2));
+					} catch (Exception e) {
+					}
+					if (line>=0){
+						openFile(fn,line);
+					}
+				}
+			}
+		}
+		
+	}
+
+	private void openFile(String fn, int line) throws Exception{
+			final PlainPage pp= editor.openFileInNewWindow(fn);	
+			if (pp!=null&& pp.lines.size()>0){
+				line-=1;
+				pp.cx=0;
+				pp.cy=Math.min(line, pp.lines.size()-1);
+				pp.sy=Math.max(0, pp.cy-3);
+				pp.editor.repaint();
+			}
 	}
 
 	public void keyReleased(KeyEvent env) {

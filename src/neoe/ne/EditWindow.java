@@ -66,16 +66,18 @@ public class EditWindow extends JComponent implements MouseMotionListener,
 	int pageNo;
 	JFrame frame;
 
-	public void openFileInNewWindow(String fn) throws Exception {
+	public PlainPage openFileInNewWindow(String fn) throws Exception {
 		File f = new File(fn);
 		if (f.exists() && f.isFile()) {
 			long size = f.length();
 			U.log(String.format("open %s(%s)", new Object[] { fn, size }));
 			EditWindow ed = new EditWindow();
-			ed.openFile(fn);
+			PlainPage pp=ed.openFile(fn);
 			ed.show(true);
+			return pp;
 		} else {
 			U.log("cannot open " + fn);
+			return null;
 		}
 	}
 
