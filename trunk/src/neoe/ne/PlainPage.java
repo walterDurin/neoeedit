@@ -15,6 +15,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -738,8 +739,8 @@ public class PlainPage {
 				}
 			}
 		}
-
-		private void closePage() {
+		
+		private void closePage() throws IOException {
 			EditWindow editor = page.editor;
 			if (page.history.size() != 0) {
 				if (JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(
@@ -747,6 +748,9 @@ public class PlainPage {
 						JOptionPane.YES_NO_OPTION)) {
 					return;
 				}
+			}
+			if (page.fn!=null){
+				U.saveFileHistory(page.fn, page.cy);
 			}
 			editor.pages.remove(editor.pageNo);
 			if (editor.pageNo >= editor.pages.size()) {
@@ -1615,6 +1619,8 @@ public class PlainPage {
 					ui.scalev = 1;
 				}else if (kc == KeyEvent.VK_G) {
 					gotoFileLine();
+				}else if (kc == KeyEvent.VK_H) {
+					openFileHistory(editor);
 				}
 			} else {
 				if (kc == KeyEvent.VK_LEFT) {
@@ -1772,5 +1778,12 @@ public class PlainPage {
 		} else if (amount < 0) {
 			ui.scalev *= 0.9f;
 		}
+	}
+	private static void openFileHistory(EditWindow ed) throws Exception {
+		File fhn = U.getFileHistoryName();
+		PlainPage pp=ed.openFileInNewWindow(fhn.getAbsolutePath());
+		pp.cy=Math.max(0,pp.lines.size()-1);
+		pp.sy=Math.max(0,pp.cy-5);
+		pp.editor.repaint();			
 	}
 }

@@ -12,8 +12,11 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -251,17 +254,17 @@ public class U {
 
 		page.text2find = text;
 		if (page.text2find != null && page.text2find.length() > 0) {
-			Point p = replace(page, page.text2find, page.cx,
-					page.cy, text2, all, ignoreCase);
+			Point p = replace(page, page.text2find, page.cx, page.cy, text2,
+					all, ignoreCase);
 			if (p == null) {
 				page.message("string not found");
 			} else {
 				page.cx = p.x;
 				page.cy = p.y;
-//				page.selectstartx = page.cx;
-//				page.selectstarty = page.cy;
-//				page.selectstopx = page.cx + text2.length();
-//				page.selectstopy = page.cy;
+				// page.selectstartx = page.cx;
+				// page.selectstarty = page.cy;
+				// page.selectstopx = page.cx + text2.length();
+				// page.selectstopy = page.cy;
 				page.focusCursor();
 				page.ptSelection.cancelSelect();
 			}
@@ -353,7 +356,7 @@ public class U {
 
 	public static String f(String s) {
 		while (s.endsWith("\r")) {
-			s= s.substring(0, s.length() - 1);
+			s = s.substring(0, s.length() - 1);
 		}
 		return s;
 	}
@@ -397,7 +400,7 @@ public class U {
 
 	public static void gc() {
 		System.out.print(km(Runtime.getRuntime().freeMemory()) + "/"
-				+ km(Runtime.getRuntime().totalMemory())+" -> ");
+				+ km(Runtime.getRuntime().totalMemory()) + " -> ");
 		Runtime.getRuntime().gc();
 		System.out.println(km(Runtime.getRuntime().freeMemory()) + "/"
 				+ km(Runtime.getRuntime().totalMemory()));
@@ -584,7 +587,7 @@ public class U {
 
 	static Point replace(PlainPage page, String s, int x, int y, String s2,
 			boolean all, boolean ignoreCase) {
-		int cnt=0;
+		int cnt = 0;
 		BasicEdit editRec = page.editRec;
 		if (ignoreCase) {
 			s = s.toLowerCase();
@@ -652,8 +655,8 @@ public class U {
 				break;
 			}
 		}
-		if (cnt>0) {
-			page.message("replaced "+cnt+" places");
+		if (cnt > 0) {
+			page.message("replaced " + cnt + " places");
 			return new Point(x, y);
 		} else {
 			return null;
@@ -953,8 +956,8 @@ public class U {
 	static Point find(PlainPage page, String s, int x, int y, boolean ignoreCase) {
 		if (ignoreCase) {
 			s = s.toLowerCase();
-		}		
-		x=Math.min(x,page.roLines.getline(y).toString(ignoreCase).length());
+		}
+		x = Math.min(x, page.roLines.getline(y).toString(ignoreCase).length());
 		// first half row
 		int p1 = page.roLines.getline(y).toString(ignoreCase).indexOf(s, x);
 		if (p1 >= 0) {
@@ -973,8 +976,8 @@ public class U {
 			}
 		}
 		// last half row
-		p1 = page.roLines.getline(y).toString(ignoreCase).substring(x)
-				.indexOf(s);
+		p1 = page.roLines.getline(y).toString(ignoreCase).substring(x).indexOf(
+				s);
 		if (p1 >= 0) {
 			return new Point(p1, fy);
 		}
@@ -1018,25 +1021,46 @@ public class U {
 	}
 
 	public static String spaces(int cx) {
-		StringBuffer sb=new StringBuffer(cx);
+		StringBuffer sb = new StringBuffer(cx);
 		sb.setLength(cx);
 		return sb.toString();
 	}
 
 	public static String[] split(String s, String sep) {
-		List<String> s1=new ArrayList<String>();
-		int p1=0;
-		while(true){
-			int p2=s.indexOf(sep,p1);
-			if (p2<0){
+		List<String> s1 = new ArrayList<String>();
+		int p1 = 0;
+		while (true) {
+			int p2 = s.indexOf(sep, p1);
+			if (p2 < 0) {
 				s1.add(U.f(s.substring(p1)));
 				break;
-			}else{
-				s1.add(U.f(s.substring(p1,p2)));
-				p1=p2+1;
+			} else {
+				s1.add(U.f(s.substring(p1, p2)));
+				p1 = p2 + 1;
 			}
 		}
 		return (String[]) s1.toArray(new String[s1.size()]);
+	}
+
+	public static void saveFileHistory(String fn, int line) throws IOException {
+		File fhn = getFileHistoryName();
+		if (fhn.getAbsoluteFile().equals(new File(fn).getAbsoluteFile()))
+			return;
+		OutputStream out = new FileOutputStream(fhn, true);
+		out.write(String.format("\n%s|%s:", fn, line).getBytes("utf8"));
+		out.close();
+	}
+
+	static File getFileHistoryName() throws IOException {
+		String home = System.getProperty("user.home");
+		File dir = new File(home, ".neoeedit");
+		dir.mkdirs();
+
+		File f = new File(dir, "fh.txt");
+		if (!f.exists()) {
+			new FileOutputStream(f).close();
+		}
+		return f;
 	}
 
 }
