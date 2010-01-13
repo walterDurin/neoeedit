@@ -15,7 +15,6 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -25,7 +24,6 @@ import java.util.Map;
 import java.util.Random;
 
 import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
 
 import neoe.ne.U.RoSb;
 
@@ -741,6 +739,7 @@ public class PlainPage {
 		}
 
 		private void closePage() throws Exception {
+		
 			EditWindow editor = page.editor;
 			if (page.history.size() != 0) {
 				if (JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(
@@ -748,16 +747,18 @@ public class PlainPage {
 						JOptionPane.YES_NO_OPTION)) {
 					return;
 				}
-			}
-			U.saveFile(page);
+			}			
 			if (page.fn != null) {
+				U.saveFile(page);
 				U.saveFileHistory(page.fn, page.cy);
 			}
 			editor.pages.remove(editor.pageNo);
 			if (editor.pageNo >= editor.pages.size()) {
 				editor.pageNo = editor.pages.size() - 1;
 			}
+			page.closed=true;
 			if (editor.pages.size() == 0) {
+				// window closing event not fire	
 				editor.frame.dispose();
 				return;
 			}
@@ -1452,9 +1453,7 @@ public class PlainPage {
 
 	public PlainPage(EditWindow editor, String fn) throws Exception {
 		this.editor = editor;
-
 		editor.frame.addWindowListener(new WindowAdapter() {
-			@Override
 			public void windowClosing(WindowEvent e) {
 				closed = true;
 			}
@@ -1468,18 +1467,22 @@ public class PlainPage {
 		history = new History(this);
 		U.readFile(this, fn);
 		findWindow = new FindReplaceWindow(editor.frame, this);
+		
+	}
+	private void startNoiseThread(){
 		new Thread() {
 			public void run() {
 				try {// noise thread
 					while (true) {
-						if (PlainPage.this.closed) {
-							break;
-						}
-						if (noise) {
+						if (noise&&!closed) {
 							PlainPage.this.editor.repaint();
-						}
-						Thread.sleep(noisesleep);
+							//System.out.println("paint noise");
+							Thread.sleep(noisesleep);
+						}else{
+							break;
+						}						
 					}
+					System.out.println("noise stopped");
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -1551,6 +1554,9 @@ public class PlainPage {
 					rectSelectMode = !rectSelectMode;
 				} else if (kc == KeyEvent.VK_N) {
 					noise = !noise;
+					if (noise){
+						startNoiseThread();
+					}
 				} else if (kc == KeyEvent.VK_S) {
 					if (lineSep.equals("\n"))
 						lineSep = "\r\n";
