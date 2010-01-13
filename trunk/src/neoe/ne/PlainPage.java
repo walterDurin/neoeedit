@@ -739,7 +739,7 @@ public class PlainPage {
 				}
 			}
 		}
-		
+
 		private void closePage() throws IOException {
 			EditWindow editor = page.editor;
 			if (page.history.size() != 0) {
@@ -749,7 +749,7 @@ public class PlainPage {
 					return;
 				}
 			}
-			if (page.fn!=null){
+			if (page.fn != null) {
 				U.saveFileHistory(page.fn, page.cy);
 			}
 			editor.pages.remove(editor.pageNo);
@@ -1211,7 +1211,7 @@ public class PlainPage {
 		private void drawToolbar(Graphics2D g2) {
 			String s1 = "<F1>:Help, Line:" + roLines.getLinesize() + ", Doc:"
 					+ editor.pages.size() + ", byte:" + PlainPage.this.size
-					+ ", " + encoding + ", X:" + (cx + 1) + ", his:"
+					+ ", " + encoding +(lineSep.equals("\n")?", U":", W")+ ", X:" + (cx + 1) + ", his:"
 					+ history.size() + ", " + (rectSelectMode ? "R, " : "")
 					+ fn;
 			g2.setColor(Color.WHITE);
@@ -1292,8 +1292,8 @@ public class PlainPage {
 					mx = (int) (mx / scalev);
 					my = (int) (my / scalev);
 					cy = sy + my / (lineHeight + lineGap);// (int)((sy + my /
-															// (lineHeight +
-															// lineGap))/scalev);
+					// (lineHeight +
+					// lineGap))/scalev);
 					if (cy >= roLines.getLinesize()) {
 						cy = roLines.getLinesize() - 1;
 					}
@@ -1313,14 +1313,14 @@ public class PlainPage {
 				// draw gutter
 				g2.translate(0, toolbarHeight);
 				g2.setColor(Color.WHITE);
-				g2.drawRect(gutterWidth, -1, dim.width - gutterWidth, dim.height
-						- toolbarHeight);
-				
+				g2.drawRect(gutterWidth, -1, dim.width - gutterWidth,
+						dim.height - toolbarHeight);
+
 				g2.scale(scalev, scalev);
 				drawGutter(g2);
 				// draw text
-				g2.translate(gutterWidth/scalev, 0);
-				
+				g2.translate(gutterWidth / scalev, 0);
+
 				{ // highlight current line
 					int l1 = cy - sy;
 					if (l1 >= 0 && l1 < showLineCnt) {
@@ -1425,7 +1425,7 @@ public class PlainPage {
 	boolean ignoreCase = true;
 	private boolean isCommentChecked = false;
 	private List<StringBuffer> lines;
-	private String lineSep = "\n";
+	public String lineSep = "\n";
 	private int mcount;
 	private String msg;
 	private long msgtime;
@@ -1550,6 +1550,11 @@ public class PlainPage {
 					rectSelectMode = !rectSelectMode;
 				} else if (kc == KeyEvent.VK_N) {
 					noise = !noise;
+				} else if (kc == KeyEvent.VK_S) {
+					if (lineSep.equals("\n"))
+						lineSep = "\r\n";
+					else
+						lineSep = "\n";
 				}
 			} else if (env.isControlDown()) {
 				if (kc == KeyEvent.VK_C) {
@@ -1617,9 +1622,9 @@ public class PlainPage {
 					sy = Math.min(sy + 1, roLines.getLinesize() - 1);
 				} else if (kc == KeyEvent.VK_0) {
 					ui.scalev = 1;
-				}else if (kc == KeyEvent.VK_G) {
+				} else if (kc == KeyEvent.VK_G) {
 					gotoFileLine();
-				}else if (kc == KeyEvent.VK_H) {
+				} else if (kc == KeyEvent.VK_H) {
 					openFileHistory(editor);
 				}
 			} else {
@@ -1670,35 +1675,35 @@ public class PlainPage {
 	}
 
 	private void gotoFileLine() throws Exception {
-		if (cy<lines.size()){
-			StringBuffer sb=lines.get(cy);
-			int p1,p2;
-			if ((p1=sb.indexOf("|"))>=0){
-				if ((p2=sb.indexOf(":",p1))>=0){
-					String fn=sb.substring(0,p1);
-					int line=-1;
+		if (cy < lines.size()) {
+			StringBuffer sb = lines.get(cy);
+			int p1, p2;
+			if ((p1 = sb.indexOf("|")) >= 0) {
+				if ((p2 = sb.indexOf(":", p1)) >= 0) {
+					String fn = sb.substring(0, p1);
+					int line = -1;
 					try {
-						line=Integer.parseInt(sb.substring(p1+1,p2));
+						line = Integer.parseInt(sb.substring(p1 + 1, p2));
 					} catch (Exception e) {
 					}
-					if (line>=0){
-						openFile(fn,line);
+					if (line >= 0) {
+						openFile(fn, line);
 					}
 				}
 			}
 		}
-		
+
 	}
 
-	private void openFile(String fn, int line) throws Exception{
-			final PlainPage pp= editor.openFileInNewWindow(fn);	
-			if (pp!=null&& pp.lines.size()>0){
-				line-=1;
-				pp.cx=0;
-				pp.cy=Math.min(line, pp.lines.size()-1);
-				pp.sy=Math.max(0, pp.cy-3);
-				pp.editor.repaint();
-			}
+	private void openFile(String fn, int line) throws Exception {
+		final PlainPage pp = editor.openFileInNewWindow(fn);
+		if (pp != null && pp.lines.size() > 0) {
+			line -= 1;
+			pp.cx = 0;
+			pp.cy = Math.min(line, pp.lines.size() - 1);
+			pp.sy = Math.max(0, pp.cy - 3);
+			pp.editor.repaint();
+		}
 	}
 
 	public void keyReleased(KeyEvent env) {
@@ -1779,11 +1784,12 @@ public class PlainPage {
 			ui.scalev *= 0.9f;
 		}
 	}
+
 	private static void openFileHistory(EditWindow ed) throws Exception {
 		File fhn = U.getFileHistoryName();
-		PlainPage pp=ed.openFileInNewWindow(fhn.getAbsolutePath());
-		pp.cy=Math.max(0,pp.lines.size()-1);
-		pp.sy=Math.max(0,pp.cy-5);
-		pp.editor.repaint();			
+		PlainPage pp = ed.openFileInNewWindow(fhn.getAbsolutePath());
+		pp.cy = Math.max(0, pp.lines.size() - 1);
+		pp.sy = Math.max(0, pp.cy - 5);
+		pp.editor.repaint();
 	}
 }
