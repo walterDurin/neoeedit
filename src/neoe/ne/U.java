@@ -719,7 +719,7 @@ public class U {
 				new FileOutputStream(page.fn), page.encoding));
 		for (int i = 0; i < page.roLines.getLinesize(); i++) {
 			out.write(page.roLines.getline(i).toString());
-			out.write("\n");
+			out.write(page.lineSep);
 		}
 		out.close();
 
