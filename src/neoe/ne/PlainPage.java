@@ -740,15 +740,16 @@ public class PlainPage {
 			}
 		}
 
-		private void closePage() throws IOException {
+		private void closePage() throws Exception {
 			EditWindow editor = page.editor;
 			if (page.history.size() != 0) {
 				if (JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(
-						editor, "Are you sure to close?", "Changes made",
+						editor, "Are you sure to SAVE and close?", "Changes made",
 						JOptionPane.YES_NO_OPTION)) {
 					return;
 				}
 			}
+			U.saveFile(page);
 			if (page.fn != null) {
 				U.saveFileHistory(page.fn, page.cy);
 			}
