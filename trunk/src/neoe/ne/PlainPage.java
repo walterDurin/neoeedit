@@ -15,6 +15,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -1451,21 +1452,28 @@ public class PlainPage {
 	boolean noise = false;
 	boolean closed = false;
 
-	public PlainPage(EditWindow editor, String fn) throws Exception {
+	public PlainPage(EditWindow editor, String filename) throws Exception {
 		this.editor = editor;
 		editor.frame.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
 				closed = true;
+				if(fn!=null){
+					try {
+						U.saveFileHistory(fn, cy);
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
+				}
 			}
 		});
-		this.fn = fn;
-		if (fn != null) {
-			File f = new File(fn);
+		this.fn = filename;
+		if (filename != null) {
+			File f = new File(filename);
 			this.workPath = f.getParent();
 			this.size = f.length();
 		}
 		history = new History(this);
-		U.readFile(this, fn);
+		U.readFile(this, filename);
 		findWindow = new FindReplaceWindow(editor.frame, this);
 		
 	}
@@ -1707,7 +1715,7 @@ public class PlainPage {
 		if (pp != null && pp.lines.size() > 0) {
 			line -= 1;
 			pp.cx = 0;
-			pp.cy = Math.min(line, pp.lines.size() - 1);
+			pp.cy = Math.max(0, Math.min(line, pp.lines.size() - 1));
 			pp.sy = Math.max(0, pp.cy - 3);
 			pp.editor.repaint();
 		}
