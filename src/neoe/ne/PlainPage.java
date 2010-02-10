@@ -29,14 +29,9 @@ import javax.swing.JOptionPane;
 import neoe.ne.U.RoSb;
 
 public class PlainPage {
-    private static final String REV = "$Rev$";
-    static final String WINDOW_NAME = "neoeedit r"
-            + REV.substring(6, REV.length() - 2);
-
     static enum BasicAction {
         Delete, DeleteEmtpyLine, Insert, InsertEmptyLine, MergeLine
     }
-
     static class BasicEdit {
         boolean record;
         private PlainPage page;
@@ -75,6 +70,10 @@ public class PlainPage {
             }
         }
 
+        private History history() {
+            return page.history;
+        }
+
         void insertEmptyLine(int y) {
             lines().add(y, new StringBuffer());
             if (record) {
@@ -104,6 +103,10 @@ public class PlainPage {
             }
         }
 
+        private List<StringBuffer> lines() {
+            return page.lines;
+        }
+
         void mergeLine(int y) {
             StringBuffer sb1 = lines().get(y);
             StringBuffer sb2 = lines().get(y + 1);
@@ -116,22 +119,9 @@ public class PlainPage {
                                 null));
             }
         }
-
-        private History history() {
-            return page.history;
-        }
-
-        private List<StringBuffer> lines() {
-            return page.lines;
-        }
     }
 
     class Cursor {
-        public void setSafePos(int x, int y) {
-            cy = Math.max(0, Math.min(roLines.getLinesize() - 1, y));
-            cx = Math.max(0, Math.min(roLines.getline(cy).length(), x));
-        }
-
         public void moveDown() {
             cy += 1;
             if (cy >= roLines.getLinesize()) {
@@ -171,7 +161,7 @@ public class PlainPage {
         public void moveLeft() {
             cx -= 1;
             if (cx < 0) {
-                if (cy > 0) {
+                if (cy > 0 && !isRectSelecting()) {
                     cy -= 1;
                     cx = roLines.getline(cy).length();
                 } else {
@@ -217,7 +207,11 @@ public class PlainPage {
 
         public void moveRight() {
             cx += 1;
-            if (cx > roLines.getline(cy).length()
+            if (isRectSelecting()) {
+                if (cx > roLines.getline(cy).length()) {
+                    ptEdit.setLength(cy, cx);
+                }
+            } else if (cx > roLines.getline(cy).length()
                     && cy < roLines.getLinesize() - 1) {
                 cy += 1;
                 cx = 0;
@@ -240,6 +234,11 @@ public class PlainPage {
             if (cy < 0) {
                 cy = 0;
             }
+        }
+
+        public void setSafePos(int x, int y) {
+            cy = Math.max(0, Math.min(roLines.getLinesize() - 1, y));
+            cx = Math.max(0, Math.min(roLines.getline(cy).length(), x));
         }
     }
 
@@ -437,12 +436,17 @@ public class PlainPage {
             U.readFile(PlainPage.this, fn);
         }
 
+        public void setLength(int cy, int cx) {
+            int oldLen = roLines.getline(cy).length();
+            if (cx - oldLen>0)editRec.insertInLine(cy, oldLen, U.spaces(cx - oldLen));
+        }
+
         void setLines(List<StringBuffer> newLines) {
             lines = newLines;
             history.clear();
         }
 
-        void wrapLines(int cx) {            
+        void wrapLines(int cx) {
             int lineLen = 0;
             {
                 int len = 0;
@@ -452,7 +456,7 @@ public class PlainPage {
                 }
                 lineLen = Math.max(10, len);
             }
-            message("wrapLine at "+lineLen);
+            message("wrapLine at " + lineLen);
             if (ptSelection.isSelected()) {
                 ptSelection.cancelSelect();
             }
@@ -537,27 +541,6 @@ public class PlainPage {
         private LinkedList<List<HistoryCell>> data;
         private int p;
         private PlainPage page;
-
-        void redo() throws Exception {
-            List<HistoryCell> os = getRedo();
-            if (os == null) {
-                return;
-            }
-            for (HistoryCell o : os) {
-                o.redo();
-            }
-        }
-
-        void undo() throws Exception {
-            List<HistoryCell> os = get();
-            if (os == null) {
-                return;
-            }
-            for (int i = os.size() - 1; i >= 0; i--) {
-                HistoryCell o = os.get(i);
-                o.undo();
-            }
-        }
 
         public History(PlainPage page) {
             data = new LinkedList<List<HistoryCell>>();
@@ -649,8 +632,29 @@ public class PlainPage {
             }
         }
 
+        void redo() throws Exception {
+            List<HistoryCell> os = getRedo();
+            if (os == null) {
+                return;
+            }
+            for (HistoryCell o : os) {
+                o.redo();
+            }
+        }
+
         public int size() {
             return p;
+        }
+
+        void undo() throws Exception {
+            List<HistoryCell> os = get();
+            if (os == null) {
+                return;
+            }
+            for (int i = os.size() - 1; i >= 0; i--) {
+                HistoryCell o = os.get(i);
+                o.undo();
+            }
         }
     }
 
@@ -678,6 +682,10 @@ public class PlainPage {
             || (last.action == BasicAction.Insert
                     && this.action == BasicAction.Insert && // 
             ((last.x1 == this.x1 || last.x2 == this.x1) && last.y1 == this.y1)));
+        }
+
+        private BasicEdit editNoRec() {
+            return page.editNoRec;
         }
 
         public void redo() {
@@ -708,10 +716,6 @@ public class PlainPage {
             default:
                 throw new RuntimeException("unkown action " + action);
             }
-        }
-
-        private BasicEdit editNoRec() {
-            return page.editNoRec;
         }
 
         private ReadonlyLines roLines() {
@@ -1288,6 +1292,19 @@ public class PlainPage {
             return 0;
         }
 
+        void paintNoise(Graphics2D g2) {
+            int cnt = 1000;
+            int w = dim.width;
+            int h = dim.height;
+            int cs = 0xffffff;
+            for (int i = 0; i < cnt; i++) {
+                int x = random.nextInt(w);
+                int y = random.nextInt(h);
+                g2.setColor(new Color(random.nextInt(cs)));
+                g2.drawLine(x, y, x + 1, y);
+            }
+        }
+
         public void xpaint(Graphics g, Dimension size) {
             try {
                 this.dim = size;
@@ -1306,7 +1323,11 @@ public class PlainPage {
                 int charCntInLine = (int) ((size.width - gutterWidth)
                         / (lineHeight) * 2 / scalev);
                 // change sx if needed
-                cx = Math.min(roLines.getline(cy).length(), cx);
+                if (isRectSelecting()) {
+                    ptEdit.setLength(cy, cx);
+                } else {
+                    cx = Math.min(roLines.getline(cy).length(), cx);
+                }
                 if (cx < sx) {
                     sx = Math.max(0, cx - charCntInLine / 2);
                 } else {
@@ -1437,24 +1458,24 @@ public class PlainPage {
                 message("Bug:" + th);
             }
         }
-
-        void paintNoise(Graphics2D g2) {
-            int cnt = 1000;
-            int w = dim.width;
-            int h = dim.height;
-            int cs = 0xffffff;
-            for (int i = 0; i < cnt; i++) {
-                int x = random.nextInt(w);
-                int y = random.nextInt(h);
-                g2.setColor(new Color(random.nextInt(cs)));
-                g2.drawLine(x, y, x + 1, y);
-            }
-        }
     }
 
+    private static final String REV = "$Rev$";
+
+    static final String WINDOW_NAME = "neoeedit r"
+            + REV.substring(6, REV.length() - 2);
+
     static Random random = new Random();
+
     static final int MAX_SHOW_CHARS_IN_LINE = 300;
     private static final long MSG_VANISH_TIME = 3000;
+    private static void openFileHistory(EditWindow ed) throws Exception {
+        File fhn = U.getFileHistoryName();
+        PlainPage pp = ed.openFileInNewWindow(fhn.getAbsolutePath());
+        pp.cy = Math.max(0, pp.lines.size() - 1);
+        pp.sy = Math.max(0, pp.cy - 5);
+        pp.editor.repaint();
+    }
     Cursor cursor = new Cursor();
     int cx;
     int cy;
@@ -1518,27 +1539,6 @@ public class PlainPage {
 
     }
 
-    private void startNoiseThread() {
-        new Thread() {
-            public void run() {
-                try {// noise thread
-                    while (true) {
-                        if (noise && !closed) {
-                            PlainPage.this.editor.repaint();
-                            // System.out.println("paint noise");
-                            Thread.sleep(noisesleep);
-                        } else {
-                            break;
-                        }
-                    }
-                    System.out.println("noise stopped");
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }.start();
-    }
-
     void focusCursor() {
         if (cy < sy) {
             sy = Math.max(0, cy - showLineCnt / 2 + 1);
@@ -1548,6 +1548,27 @@ public class PlainPage {
                 sy = Math.max(0, cy - showLineCnt / 2 + 1);
             }
         }
+    }
+
+    private void gotoFileLine() throws Exception {
+        if (cy < lines.size()) {
+            StringBuffer sb = lines.get(cy);
+            int p1, p2;
+            if ((p1 = sb.indexOf("|")) >= 0) {
+                if ((p2 = sb.indexOf(":", p1)) >= 0) {
+                    String fn = sb.substring(0, p1);
+                    int line = -1;
+                    try {
+                        line = Integer.parseInt(sb.substring(p1 + 1, p2));
+                    } catch (Exception e) {
+                    }
+                    if (line >= 0) {
+                        openFile(fn, line);
+                    }
+                }
+            }
+        }
+
     }
 
     void gotoLine() {
@@ -1576,9 +1597,14 @@ public class PlainPage {
         message("visit " + url + " for more info.(url copied)");
     }
 
+    private boolean isRectSelecting() {
+        return mshift && rectSelectMode;
+    }
+
     public void keyPressed(KeyEvent env) {
         history.beginAtom();
         try {
+            mshift = env.isShiftDown();
             // System.out.println("press " + env.getKeyChar());
             int ocx = cx;
             int ocy = cy;
@@ -1733,38 +1759,6 @@ public class PlainPage {
         history.endAtom();
     }
 
-    private void gotoFileLine() throws Exception {
-        if (cy < lines.size()) {
-            StringBuffer sb = lines.get(cy);
-            int p1, p2;
-            if ((p1 = sb.indexOf("|")) >= 0) {
-                if ((p2 = sb.indexOf(":", p1)) >= 0) {
-                    String fn = sb.substring(0, p1);
-                    int line = -1;
-                    try {
-                        line = Integer.parseInt(sb.substring(p1 + 1, p2));
-                    } catch (Exception e) {
-                    }
-                    if (line >= 0) {
-                        openFile(fn, line);
-                    }
-                }
-            }
-        }
-
-    }
-
-    private void openFile(String fn, int line) throws Exception {
-        final PlainPage pp = editor.openFileInNewWindow(fn);
-        if (pp != null && pp.lines.size() > 0) {
-            line -= 1;
-            pp.cx = 0;
-            pp.cy = Math.max(0, Math.min(line, pp.lines.size() - 1));
-            pp.sy = Math.max(0, pp.cy - 3);
-            pp.editor.repaint();
-        }
-    }
-
     public void keyReleased(KeyEvent env) {
     }
 
@@ -1811,6 +1805,35 @@ public class PlainPage {
         // System.out.println("m press");
     }
 
+    public void mouseWheelMoved(MouseWheelEvent env) {
+        int amount = env.getWheelRotation() * env.getScrollAmount();
+        if (env.isControlDown()) {// scale
+            scale(amount);
+        } else {// scroll
+            scroll(amount);
+        }
+
+    }
+
+    private void openFile(String fn, int line) throws Exception {
+        final PlainPage pp = editor.openFileInNewWindow(fn);
+        if (pp != null && pp.lines.size() > 0) {
+            line -= 1;
+            pp.cx = 0;
+            pp.cy = Math.max(0, Math.min(line, pp.lines.size() - 1));
+            pp.sy = Math.max(0, pp.cy - 3);
+            pp.editor.repaint();
+        }
+    }
+
+    private void scale(int amount) {
+        if (amount > 0) {
+            ui.scalev *= 1.1f;
+        } else if (amount < 0) {
+            ui.scalev *= 0.9f;
+        }
+    }
+
     public void scroll(int amount) {
         sy += amount;
         if (sy >= roLines.getLinesize()) {
@@ -1822,33 +1845,28 @@ public class PlainPage {
         editor.repaint();
     }
 
+    private void startNoiseThread() {
+        new Thread() {
+            public void run() {
+                try {// noise thread
+                    while (true) {
+                        if (noise && !closed) {
+                            PlainPage.this.editor.repaint();
+                            // System.out.println("paint noise");
+                            Thread.sleep(noisesleep);
+                        } else {
+                            break;
+                        }
+                    }
+                    System.out.println("noise stopped");
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }.start();
+    }
+
     public void xpaint(Graphics g, Dimension size) {
         ui.xpaint(g, size);
-    }
-
-    public void mouseWheelMoved(MouseWheelEvent env) {
-        int amount = env.getWheelRotation() * env.getScrollAmount();
-        if (env.isControlDown()) {// scale
-            scale(amount);
-        } else {// scroll
-            scroll(amount);
-        }
-
-    }
-
-    private void scale(int amount) {
-        if (amount > 0) {
-            ui.scalev *= 1.1f;
-        } else if (amount < 0) {
-            ui.scalev *= 0.9f;
-        }
-    }
-
-    private static void openFileHistory(EditWindow ed) throws Exception {
-        File fhn = U.getFileHistoryName();
-        PlainPage pp = ed.openFileInNewWindow(fhn.getAbsolutePath());
-        pp.cy = Math.max(0, pp.lines.size() - 1);
-        pp.sy = Math.max(0, pp.cy - 5);
-        pp.editor.repaint();
     }
 }
