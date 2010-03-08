@@ -8,6 +8,8 @@ import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
@@ -24,14 +26,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import javax.swing.JButton;
+import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 
 import neoe.ne.U.RoSb;
+import neoe.ne.U.SimpleLayout;
 
 public class PlainPage {
     static enum BasicAction {
         Delete, DeleteEmtpyLine, Insert, InsertEmptyLine, MergeLine
     }
+
     static class BasicEdit {
         boolean record;
         private PlainPage page;
@@ -438,7 +447,8 @@ public class PlainPage {
 
         public void setLength(int cy, int cx) {
             int oldLen = roLines.getline(cy).length();
-            if (cx - oldLen>0)editRec.insertInLine(cy, oldLen, U.spaces(cx - oldLen));
+            if (cx - oldLen > 0)
+                editRec.insertInLine(cy, oldLen, U.spaces(cx - oldLen));
         }
 
         void setLines(List<StringBuffer> newLines) {
@@ -1469,6 +1479,7 @@ public class PlainPage {
 
     static final int MAX_SHOW_CHARS_IN_LINE = 300;
     private static final long MSG_VANISH_TIME = 3000;
+
     private static void openFileHistory(EditWindow ed) throws Exception {
         File fhn = U.getFileHistoryName();
         PlainPage pp = ed.openFileInNewWindow(fhn.getAbsolutePath());
@@ -1476,6 +1487,7 @@ public class PlainPage {
         pp.sy = Math.max(0, pp.cy - 5);
         pp.editor.repaint();
     }
+
     Cursor cursor = new Cursor();
     int cx;
     int cy;
@@ -1640,6 +1652,8 @@ public class PlainPage {
                 } else if (kc == KeyEvent.VK_W) {
                     ptEdit.wrapLines(cx);
                     focusCursor();
+                } else if (kc == KeyEvent.VK_J) {
+                    runScript();
                 }
             } else if (env.isControlDown()) {
                 if (kc == KeyEvent.VK_C) {
@@ -1757,6 +1771,46 @@ public class PlainPage {
             e.printStackTrace();
         }
         history.endAtom();
+    }
+
+    private void runScript() throws Exception {
+        final JFrame sf = new JFrame("Javascript");
+        JPanel p = new JPanel();
+        sf.getContentPane().add(p);
+        SimpleLayout s = new SimpleLayout(p);
+        final JTextArea jta = new JTextArea(20, 80);
+        String sample = "var i=0; \nfunction run(s,current,total){//lineString,currentLineNo(from 0),totalLineCount\n//example\n"
+                + "if (current==1) {return;}// 1 line to 0 line\n"
+                + "if (current==0) {return ['vvvvv','fasdfa',233];}// 1 line to multi line\n"
+                + "return current+'/'+total+':'+s;// just return something\n}";
+        jta.setText(sample);
+        s.add(new JScrollPane(jta));
+        s.newline();
+        JButton jb1 = new JButton("run");
+        JButton jb2 = new JButton("cancel");
+        s.add(jb1);
+        s.add(jb2);
+        s.newline();
+        jb1.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                List<StringBuffer> newLines = JS.run(lines, jta.getText());
+                try {
+                    PlainPage pp = editor.newFileInNewWindow();
+                    pp.ptEdit.setLines(newLines);                    
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                    message("Error:" + e1);
+                }
+                sf.dispose();
+            }
+        });
+        jb2.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                sf.dispose();
+            }
+        });
+        sf.pack();
+        sf.setVisible(true);
     }
 
     public void keyReleased(KeyEvent env) {
