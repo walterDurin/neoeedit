@@ -19,3 +19,5 @@ if (current==0) {return ['vvvvv','fasdfa',233];}// 1 line to multi line
 return current+'/'+total+':'+s;// just return something
 }
 }}}
+
+So you can use complicated javascript macro on original text whatever you can image.
