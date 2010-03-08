@@ -1,0 +1,21 @@
+#summary One-sentence summary of this page.
+
+= Introduction =
+
+JavaScript Macro in neoeedit
+
+
+= Details =
+
+use javascript engine in jdk 6.0+.
+
+for example:
+{{{
+var i=0; 
+function run(s,current,total){//lineString,currentLineNo(from 0),totalLineCount
+//example
+if (current==1) {return;}// 1 line to 0 line
+if (current==0) {return ['vvvvv','fasdfa',233];}// 1 line to multi line
+return current+'/'+total+':'+s;// just return something
+}
+}}}
