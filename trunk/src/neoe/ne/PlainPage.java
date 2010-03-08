@@ -13,11 +13,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -30,8 +27,6 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
 
 import neoe.ne.U.RoSb;
 import neoe.ne.U.SimpleLayout;
@@ -537,6 +532,7 @@ public class PlainPage {
             if (t.length() == 0 && text2find != null) {
                 t = text2find;
             }
+            getFindWindow();
             if (t.length() > 0) {
                 findWindow.jta1.setText(t);
             }
@@ -1353,6 +1349,8 @@ public class PlainPage {
                         }
                     }
                 }
+                if (my > 0)
+                    editor.grabFocus();
                 // apply mouse click position
                 if (my > 0 && my < toolbarHeight) {
                     if (fn != null) {
@@ -1527,18 +1525,7 @@ public class PlainPage {
 
     public PlainPage(EditWindow editor, String filename) throws Exception {
         this.editor = editor;
-        editor.frame.addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
-                closed = true;
-                if (fn != null) {
-                    try {
-                        U.saveFileHistory(fn, cy);
-                    } catch (IOException e1) {
-                        e1.printStackTrace();
-                    }
-                }
-            }
-        });
+
         this.fn = filename;
         if (filename != null) {
             File f = new File(filename);
@@ -1547,8 +1534,12 @@ public class PlainPage {
         }
         history = new History(this);
         U.readFile(this, filename);
-        findWindow = new FindReplaceWindow(editor.frame, this);
 
+    }
+
+    void getFindWindow() {
+        if (findWindow == null)
+            findWindow = new FindReplaceWindow(editor.frame, this);
     }
 
     void focusCursor() {
@@ -1778,39 +1769,79 @@ public class PlainPage {
         JPanel p = new JPanel();
         sf.getContentPane().add(p);
         SimpleLayout s = new SimpleLayout(p);
-        final JTextArea jta = new JTextArea(20, 80);
+        final EditWindow ed = new EditWindow();
+        final PlainPage pp1 = ed.newEmptyFile(ed.getWorkPath());
         String sample = "var i=0; \nfunction run(s,current,total){//lineString,currentLineNo(from 0),totalLineCount\n//example\n"
                 + "if (current==1) {return;}// 1 line to 0 line\n"
                 + "if (current==0) {return ['vvvvv','fasdfa',233];}// 1 line to multi line\n"
                 + "return current+'/'+total+':'+s;// just return something\n}";
-        jta.setText(sample);
-        s.add(new JScrollPane(jta));
+        pp1.setText(sample);
+        s.add(pp1.editor);
         s.newline();
         JButton jb1 = new JButton("run");
-        JButton jb2 = new JButton("cancel");
+        JButton jb2 = new JButton("close");        
         s.add(jb1);
         s.add(jb2);
         s.newline();
         jb1.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                List<StringBuffer> newLines = JS.run(lines, jta.getText());
                 try {
+                    ed.grabFocus();
+                    List<StringBuffer> newLines = JS.run(lines, pp1.getText());
                     PlainPage pp = editor.newFileInNewWindow();
                     pp.ptEdit.setLines(newLines);                    
                 } catch (Exception e1) {
-                    e1.printStackTrace();
-                    message("Error:" + e1);
+                    System.out.println(e1);
+                    String s1=""+e1;
+                    String expect="javax.script.ScriptException: sun.org.mozilla.javascript.internal.EvaluatorException:";
+                    if(s1.startsWith(expect))s1=s1.substring(expect.length());
+                    pp1.append("\n//Error:" + s1+"\n");
+                    ed.repaint();
                 }
-                sf.dispose();
+
             }
         });
         jb2.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
+                if (pp1.history.size() != 0) {
+                    if (JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(
+                            ed, "Are you sure to close?",
+                            "Changes made", JOptionPane.YES_NO_OPTION)) {
+                        ed.grabFocus();
+                        return;
+                    }
+                }
                 sf.dispose();
             }
         });
-        sf.pack();
+        sf.setSize(new Dimension(800, 600));
         sf.setVisible(true);
+    }
+
+    protected void append(String s) {
+        cy = roLines.getLinesize() - 1;
+        cx = roLines.getline(cy).length();
+        ptEdit.insertString(s);
+    }
+
+    protected String getText() {
+        StringBuffer sb = new StringBuffer();
+        int len = roLines.getLinesize();
+        for (int i = 0; i < len; i++) {
+            if (i > 0)
+                sb.append(lineSep);
+            sb.append(roLines.getline(i).toString());
+        }
+        return sb.toString();
+    }
+
+    private void setText(String s) {
+        String[] ss = s.split("\n");
+        List<StringBuffer> lines = new ArrayList<StringBuffer>();
+        for (int i = 0; i < ss.length; i++) {
+            lines.add(new StringBuffer(ss[i]));
+        }
+        ptEdit.setLines(lines);
     }
 
     public void keyReleased(KeyEvent env) {
@@ -1900,7 +1931,7 @@ public class PlainPage {
     }
 
     private void startNoiseThread() {
-        new Thread() {
+        Thread t = new Thread() {
             public void run() {
                 try {// noise thread
                     while (true) {
@@ -1917,7 +1948,9 @@ public class PlainPage {
                     e.printStackTrace();
                 }
             }
-        }.start();
+        };
+        t.setDaemon(true);
+        t.start();
     }
 
     public void xpaint(Graphics g, Dimension size) {
