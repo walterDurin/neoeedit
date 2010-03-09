@@ -371,7 +371,7 @@ public class PlainPage {
             if (!rectSelectMode) {
                 ptSelection.cancelSelect();
             }
-            editor.repaint();
+            uiComp.repaint();
         }
 
         void insertString(String s) {
@@ -499,9 +499,9 @@ public class PlainPage {
                 PlainPage.this.text2find = text;
                 PlainPage.this.ignoreCase = ignoreCase;
                 findNext();
-                editor.repaint();
+                uiComp.repaint();
             } else {
-                U.doFindInDir(editor, text, ignoreCase, selected2, inDir, dir);
+                U.doFindInDir(uiComp, text, ignoreCase, selected2, inDir, dir);
             }
         }
 
@@ -768,65 +768,22 @@ public class PlainPage {
         }
     }
 
-    static class PageTabs {
-        private PlainPage page;
-
-        PageTabs(PlainPage page) {
-            this.page = page;
-        }
-
-        private void changePage() {
-            EditWindow editor = page.editor;
-            Object[] possibilities = editor.pages.toArray();
-            PlainPage p = (PlainPage) JOptionPane.showInputDialog(editor,
-                    "Select Document:", "Select Document",
-                    JOptionPane.QUESTION_MESSAGE, null, possibilities, null);
-            if (p != null) {
-                int i = editor.pages.indexOf(p);
-                if (i >= 0) {
-                    editor.changePage(i);
-                }
-            }
-        }
-
-        private void closePage() throws Exception {
-
-            EditWindow editor = page.editor;
-            if (page.history.size() != 0) {
-                if (JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(
-                        editor, "Are you sure to SAVE and close?",
-                        "Changes made", JOptionPane.YES_NO_OPTION)) {
-                    return;
-                }
-            }
-            if (page.fn != null) {
-                U.saveFile(page);
-                U.saveFileHistory(page.fn, page.cy);
-            }
-            editor.pages.remove(editor.pageNo);
-            if (editor.pageNo >= editor.pages.size()) {
-                editor.pageNo = editor.pages.size() - 1;
-            }
-            page.closed = true;
-            if (editor.pages.size() == 0) {
-                // window closing event not fire
-                editor.frame.dispose();
+    private void closePage() throws Exception {
+        PlainPage page = this;
+        EditPanel editor = page.uiComp;
+        if (page.history.size() != 0) {
+            if (JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(editor,
+                    "Are you sure to SAVE and close?", "Changes made",
+                    JOptionPane.YES_NO_OPTION)) {
                 return;
             }
-            editor.changePage(editor.pageNo);
         }
-
-        private void saveAllFiles() throws Exception {
-            EditWindow editor = page.editor;
-            int total = 0;
-            for (PlainPage pi : editor.pages) {
-                if (U.saveFile(pi)) {
-                    total++;
-                }
-            }
-            System.out.println(total + " files saved");
-            page.message(total + " files saved");
+        if (page.fn != null) {
+            U.saveFile(page);
+            U.saveFileHistory(page.fn, page.cy);
         }
+        page.closed = true;
+        editor.frame.dispose();
     }
 
     static class ReadonlyLines {
@@ -1262,10 +1219,10 @@ public class PlainPage {
         }
 
         private void drawToolbar(Graphics2D g2) {
-            String s1 = "<F1>:Help, Line:" + roLines.getLinesize() + ", Doc:"
-                    + editor.pages.size() + ", byte:" + PlainPage.this.size
-                    + ", " + encoding + (lineSep.equals("\n") ? ", U" : ", W")
-                    + ", X:" + (cx + 1) + ", his:" + history.size() + ", "
+            String s1 = "<F1>:Help, Line:" + roLines.getLinesize() + ", byte:"
+                    + PlainPage.this.size + ", " + encoding
+                    + (lineSep.equals("\n") ? ", U" : ", W") + ", X:"
+                    + (cx + 1) + ", his:" + history.size() + ", "
                     + (rectSelectMode ? "R, " : "") + fn;
             g2.setColor(Color.WHITE);
             g2.drawString(s1, 2, lineHeight + 2);
@@ -1281,7 +1238,7 @@ public class PlainPage {
                             + lineGap);
                     g2.setColor(Color.YELLOW);
                     g2.drawString(msg, dim.width - w, lineHeight);
-                    U.repaintAfter(MSG_VANISH_TIME, editor);
+                    U.repaintAfter(MSG_VANISH_TIME, uiComp);
                 }
             }
         }
@@ -1350,7 +1307,7 @@ public class PlainPage {
                     }
                 }
                 if (my > 0)
-                    editor.grabFocus();
+                    uiComp.grabFocus();
                 // apply mouse click position
                 if (my > 0 && my < toolbarHeight) {
                     if (fn != null) {
@@ -1478,19 +1435,20 @@ public class PlainPage {
     static final int MAX_SHOW_CHARS_IN_LINE = 300;
     private static final long MSG_VANISH_TIME = 3000;
 
-    private static void openFileHistory(EditWindow ed) throws Exception {
+    private static void openFileHistory(EditPanel ed) throws Exception {
         File fhn = U.getFileHistoryName();
-        PlainPage pp = ed.openFileInNewWindow(fhn.getAbsolutePath());
+        PlainPage pp = new EditPanel(fhn).page;
         pp.cy = Math.max(0, pp.lines.size() - 1);
         pp.sy = Math.max(0, pp.cy - 5);
-        pp.editor.repaint();
+        pp.uiComp.openWindow();
+        pp.uiComp.repaint();
     }
 
     Cursor cursor = new Cursor();
     int cx;
     int cy;
     BasicEdit editNoRec = new BasicEdit(false, this);
-    EditWindow editor;
+    EditPanel uiComp;
     BasicEdit editRec = new BasicEdit(true, this);
     String encoding;
     private FindReplaceWindow findWindow;
@@ -1507,7 +1465,6 @@ public class PlainPage {
     private int mx, my;
     EasyEdit ptEdit = new EasyEdit();
     FindAndReplace ptFind = new FindAndReplace();
-    PageTabs ptPages = new PageTabs(this);
     Selection ptSelection = new Selection();
     private boolean rectSelectMode = false;
     ReadonlyLines roLines = new ReadonlyLines(this);
@@ -1523,23 +1480,24 @@ public class PlainPage {
     boolean noise = false;
     boolean closed = false;
 
-    public PlainPage(EditWindow editor, String filename) throws Exception {
-        this.editor = editor;
-
-        this.fn = filename;
-        if (filename != null) {
-            File f = new File(filename);
-            this.workPath = f.getParent();
-            this.size = f.length();
-        }
+    public PlainPage(EditPanel editor, File f) throws Exception {
+        this.uiComp = editor;
+        this.fn = f.getAbsolutePath();
+        this.workPath = f.getParent();
+        this.size = f.length();
         history = new History(this);
-        U.readFile(this, filename);
+        U.readFile(this, f.getAbsolutePath());
+    }
 
+    public PlainPage(EditPanel editor, String text) throws Exception {
+        this.uiComp = editor;
+        history = new History(this);
+        setText(text);
     }
 
     void getFindWindow() {
         if (findWindow == null)
-            findWindow = new FindReplaceWindow(editor.frame, this);
+            findWindow = new FindReplaceWindow(uiComp.frame, this);
     }
 
     void focusCursor() {
@@ -1668,9 +1626,10 @@ public class PlainPage {
                 } else if (kc == KeyEvent.VK_O) {
                     U.openFile(this);
                 } else if (kc == KeyEvent.VK_N) {
-                    editor.newFileInNewWindow();
-                } else if (kc == KeyEvent.VK_S && env.isShiftDown()) {
-                    ptPages.saveAllFiles();
+                    EditPanel ep = new EditPanel("empty");
+                    ep.openWindow();
+                    ep.page.workPath = this.workPath;
+                    ep.page.ptSelection.selectAll();
                 } else if (kc == KeyEvent.VK_S) {
                     if (U.saveFile(this)) {
                         System.out.println("saved");
@@ -1682,12 +1641,10 @@ public class PlainPage {
                     history.undo();
                 } else if (kc == KeyEvent.VK_F) {
                     ptFind.showFindDialog();
-                } else if (kc == KeyEvent.VK_TAB) {
-                    ptPages.changePage();
                 } else if (kc == KeyEvent.VK_Y) {
                     history.redo();
                 } else if (kc == KeyEvent.VK_W) {
-                    ptPages.closePage();
+                    closePage();
                 } else if (kc == KeyEvent.VK_E) {
                     U.setEncodingByUser(this);
                 } else if (kc == KeyEvent.VK_PAGE_UP) {
@@ -1715,7 +1672,7 @@ public class PlainPage {
                 } else if (kc == KeyEvent.VK_G) {
                     gotoFileLine();
                 } else if (kc == KeyEvent.VK_H) {
-                    openFileHistory(editor);
+                    openFileHistory(uiComp);
                 }
             } else {
                 if (kc == KeyEvent.VK_LEFT) {
@@ -1756,7 +1713,7 @@ public class PlainPage {
                     ptSelection.cancelSelect();
                 }
             }
-            editor.repaint();
+            uiComp.repaint();
         } catch (Exception e) {
             message("err:" + e);
             e.printStackTrace();
@@ -1766,20 +1723,22 @@ public class PlainPage {
 
     private void runScript() throws Exception {
         final JFrame sf = new JFrame("Javascript");
+        sf.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         JPanel p = new JPanel();
         sf.getContentPane().add(p);
         SimpleLayout s = new SimpleLayout(p);
-        final EditWindow ed = new EditWindow();
-        final PlainPage pp1 = ed.newEmptyFile(ed.getWorkPath());
         String sample = "var i=0; \nfunction run(s,current,total){//lineString,currentLineNo(from 0),totalLineCount\n//example\n"
-                + "if (current==1) {return;}// 1 line to 0 line\n"
+                + "if (current==1) {return s.split('\\t').join('|');}// 1 line to 0 line\n"
                 + "if (current==0) {return ['vvvvv','fasdfa',233];}// 1 line to multi line\n"
                 + "return current+'/'+total+':'+s;// just return something\n}";
-        pp1.setText(sample);
-        s.add(pp1.editor);
+        final EditPanel ed = new EditPanel(sample);
+        final PlainPage pp1 = ed.page;
+        ed.frame = sf;
+        pp1.workPath = this.workPath;
+        s.add(pp1.uiComp);
         s.newline();
         JButton jb1 = new JButton("run");
-        JButton jb2 = new JButton("close");        
+        JButton jb2 = new JButton("close");
         s.add(jb1);
         s.add(jb2);
         s.newline();
@@ -1788,14 +1747,17 @@ public class PlainPage {
                 try {
                     ed.grabFocus();
                     List<StringBuffer> newLines = JS.run(lines, pp1.getText());
-                    PlainPage pp = editor.newFileInNewWindow();
-                    pp.ptEdit.setLines(newLines);                    
+                    PlainPage pp = new EditPanel("").page;
+                    pp.workPath = pp1.workPath;
+                    pp.ptEdit.setLines(newLines);
+                    pp.uiComp.openWindow();
                 } catch (Exception e1) {
                     System.out.println(e1);
-                    String s1=""+e1;
-                    String expect="javax.script.ScriptException: sun.org.mozilla.javascript.internal.EvaluatorException:";
-                    if(s1.startsWith(expect))s1=s1.substring(expect.length());
-                    pp1.append("\n//Error:" + s1+"\n");
+                    String s1 = "" + e1;
+                    String expect = "javax.script.ScriptException: sun.org.mozilla.javascript.internal.EvaluatorException:";
+                    if (s1.startsWith(expect))
+                        s1 = s1.substring(expect.length());
+                    pp1.append("\n//Error:" + s1 + "\n");
                     ed.repaint();
                 }
 
@@ -1804,9 +1766,9 @@ public class PlainPage {
         jb2.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 if (pp1.history.size() != 0) {
-                    if (JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(
-                            ed, "Are you sure to close?",
-                            "Changes made", JOptionPane.YES_NO_OPTION)) {
+                    if (JOptionPane.YES_OPTION != JOptionPane
+                            .showConfirmDialog(ed, "Are you sure to close?",
+                                    "Changes made", JOptionPane.YES_NO_OPTION)) {
                         ed.grabFocus();
                         return;
                     }
@@ -1841,7 +1803,13 @@ public class PlainPage {
         for (int i = 0; i < ss.length; i++) {
             lines.add(new StringBuffer(ss[i]));
         }
-        ptEdit.setLines(lines);
+        if (lines.size() == 0) {
+            lines.add(new StringBuffer("empty"));
+            ptEdit.setLines(lines);
+            ptSelection.selectAll();
+        } else {
+            ptEdit.setLines(lines);
+        }
     }
 
     public void keyReleased(KeyEvent env) {
@@ -1878,7 +1846,7 @@ public class PlainPage {
         mx = env.getX();
         my = env.getY();
         mshift = true;
-        editor.repaint();
+        uiComp.repaint();
     }
 
     public void mousePressed(MouseEvent env) {
@@ -1886,7 +1854,7 @@ public class PlainPage {
         my = env.getY();
         mshift = env.isShiftDown();
         mcount = env.getClickCount();
-        editor.repaint();
+        uiComp.repaint();
         // System.out.println("m press");
     }
 
@@ -1901,13 +1869,14 @@ public class PlainPage {
     }
 
     private void openFile(String fn, int line) throws Exception {
-        final PlainPage pp = editor.openFileInNewWindow(fn);
+        final PlainPage pp = new EditPanel(new File(fn)).page;
         if (pp != null && pp.lines.size() > 0) {
             line -= 1;
             pp.cx = 0;
             pp.cy = Math.max(0, Math.min(line, pp.lines.size() - 1));
             pp.sy = Math.max(0, pp.cy - 3);
-            pp.editor.repaint();
+            pp.uiComp.openWindow();
+            pp.uiComp.repaint();
         }
     }
 
@@ -1927,7 +1896,7 @@ public class PlainPage {
         if (sy < 0) {
             sy = 0;
         }
-        editor.repaint();
+        uiComp.repaint();
     }
 
     private void startNoiseThread() {
@@ -1936,7 +1905,7 @@ public class PlainPage {
                 try {// noise thread
                     while (true) {
                         if (noise && !closed) {
-                            PlainPage.this.editor.repaint();
+                            PlainPage.this.uiComp.repaint();
                             // System.out.println("paint noise");
                             Thread.sleep(noisesleep);
                         } else {

@@ -268,10 +268,10 @@ public class U {
                 page.ptSelection.cancelSelect();
             }
         }
-        page.editor.repaint();
+        page.uiComp.repaint();
     }
 
-    static void doFindInDir(EditWindow editor, String text, boolean ignoreCase,
+    static void doFindInDir(EditPanel editor, String text, boolean ignoreCase,
             boolean selected2, boolean inDir, String dir) throws Exception {
         Iterable<File> it = new FileIterator(dir);
         List<String> all = new ArrayList<String>();
@@ -305,8 +305,8 @@ public class U {
                         p = p2;
                     }
                 }
-                showResult(page.editor, all, "file " + page.fn, text2find);
-                page.editor.repaint();
+                showResult(page.uiComp, all, "file " + page.fn, text2find);
+                page.uiComp.repaint();
             }
         }
     }
@@ -325,7 +325,7 @@ public class U {
     static void doReplaceInDir(PlainPage page, String text,
             boolean ignoreCase2, String text2, boolean inDir, String dir)
             throws Exception {
-        EditWindow editor = page.editor;
+        EditPanel editor = page.uiComp;
         Iterable<File> it = new FileIterator(dir);
         List<String> all = new ArrayList<String>();
         for (File f : it) {
@@ -335,13 +335,12 @@ public class U {
             try {
                 List<String> res = U.findInFile(f, text, page.ignoreCase);
                 if (res.size() > 0) {
-
-                    PlainPage pi = editor.openFile(f.getAbsolutePath());
-
+                    PlainPage pi = new EditPanel(f).page;
                     if (pi != null) {
                         doReplaceAll(pi, text, ignoreCase2, false, text2,
                                 false, null);
                     }
+                    pi.uiComp.openWindow();
                 }
                 all.addAll(res);
             } catch (Exception e) {
@@ -515,23 +514,16 @@ public class U {
             // set
             // correctly
         }
-        int returnVal = chooser.showOpenDialog(page.editor);
+        int returnVal = chooser.showOpenDialog(page.uiComp);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
-            String fn = chooser.getSelectedFile().getAbsolutePath();
             System.out.println("You chose to open this file: "
                     + chooser.getSelectedFile().getAbsolutePath());
-            page.editor.openFileInNewWindow(fn);
+            new EditPanel(chooser.getSelectedFile()).openWindow();
         }
 
     }
 
     static void readFile(PlainPage page, String fn) {
-        if (fn == null) {
-            List<StringBuffer> lines = new ArrayList<StringBuffer>();
-            lines.add(new StringBuffer("edit here..."));
-            page.ptEdit.setLines(lines);
-            return;
-        }
         if (page.encoding == null) {
             page.encoding = U.guessEncodingForEditor(fn);
         }
@@ -539,22 +531,32 @@ public class U {
     }
 
     static List<StringBuffer> readFileForEditor(String fn, String encoding) {
-        List<StringBuffer> lines = new ArrayList<StringBuffer>();
         try {
-            BufferedReader in = new BufferedReader(new InputStreamReader(
-                    new FileInputStream(fn), encoding));
-            String line;
-            while ((line = in.readLine()) != null) {
-                lines.add(new StringBuffer(line));
+            List<StringBuffer> lines = new ArrayList<StringBuffer>();
+            try {
+                BufferedReader in = new BufferedReader(new InputStreamReader(
+                        new FileInputStream(fn), encoding));
+                String line;
+                while ((line = in.readLine()) != null) {
+                    lines.add(new StringBuffer(line));
+                }
+                in.close();
+            } catch (OutOfMemoryError e) {
+                lines = new ArrayList<StringBuffer>();
+                lines.add(new StringBuffer(e.toString()));
+                return lines;
+            } catch (Throwable e1) {
+                lines.add(new StringBuffer(e1.toString()));
             }
-            in.close();
-        } catch (Throwable e) {
+            if (lines.size() == 0) {
+                lines.add(new StringBuffer());
+            }
+            return lines;
+        } catch (OutOfMemoryError e) {
+            List<StringBuffer> lines = new ArrayList<StringBuffer>();
             lines.add(new StringBuffer(e.toString()));
+            return lines;
         }
-        if (lines.size() == 0) {
-            lines.add(new StringBuffer());
-        }
-        return lines;
     }
 
     static void removeTrailingSpace(PlainPage page) {
@@ -663,7 +665,7 @@ public class U {
     }
 
     static void saveAs(PlainPage page) throws Exception {
-        EditWindow editor = page.editor;
+        EditPanel editor = page.uiComp;
         JFileChooser chooser = new JFileChooser(page.fn);
         int returnVal = chooser.showSaveDialog(editor);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
@@ -686,12 +688,12 @@ public class U {
     static boolean saveFile(PlainPage page) throws Exception {
         if (page.fn == null) {
             JFileChooser chooser = new JFileChooser(page.workPath);
-            int returnVal = chooser.showSaveDialog(page.editor);
+            int returnVal = chooser.showSaveDialog(page.uiComp);
             if (returnVal == JFileChooser.APPROVE_OPTION) {
                 String fn = chooser.getSelectedFile().getAbsolutePath();
                 if (new File(fn).exists()) {
                     if (JOptionPane.YES_OPTION != JOptionPane
-                            .showConfirmDialog(page.editor,
+                            .showConfirmDialog(page.uiComp,
                                     "Are you sure to overwrite?",
                                     "File exists", JOptionPane.YES_NO_OPTION)) {
                         page.message("not saved");
@@ -699,7 +701,7 @@ public class U {
                     }
                 }
                 page.fn = fn;
-                page.editor.changeTitle();
+                page.uiComp.changeTitle();
 
             } else {
                 return false;
@@ -726,7 +728,7 @@ public class U {
     }
 
     static void setEncodingByUser(PlainPage plainPage) {
-        String s = JOptionPane.showInputDialog(plainPage.editor,
+        String s = JOptionPane.showInputDialog(plainPage.uiComp,
                 "Reload with Encoding:", plainPage.encoding);
         if (s == null) {
             return;
@@ -740,9 +742,11 @@ public class U {
         plainPage.encoding = s;
     }
 
-    static void showResult(EditWindow editor, List<String> all, String dir,
+    static void showResult(EditPanel editor, List<String> all, String dir,
             String text) throws Exception {
-        PlainPage p2 = editor.newFileInNewWindow();
+        EditPanel ep = new EditPanel("");
+        PlainPage p2 = ep.page;
+        p2.workPath = editor.page.workPath;
         List<StringBuffer> sbs = new ArrayList<StringBuffer>();
         sbs.add(new StringBuffer(String.format(
                 "find %s results in %s for '%s'", all.size(), dir, text)));
@@ -750,6 +754,7 @@ public class U {
             sbs.add(new StringBuffer(o.toString()));
         }
         p2.ptEdit.setLines(sbs);
+        ep.openWindow();
         gc();
     }
 
@@ -885,7 +890,7 @@ public class U {
             page.message("comment found:" + comment);
         }
         page.ui.comment = comment;
-        page.editor.repaint();
+        page.uiComp.repaint();
     }
 
     static void findchar(PlainPage page, char ch, int inc, int[] c1, char chx) {
@@ -1022,9 +1027,10 @@ public class U {
     public static String spaces(int cx) {
         if (cx <= 0)
             return "";
-        StringBuffer sb = new StringBuffer(cx);        
+        StringBuffer sb = new StringBuffer(cx);
         sb.setLength(cx);
-        for (int i=0;i<cx;i++)sb.setCharAt(i, ' ');
+        for (int i = 0; i < cx; i++)
+            sb.setCharAt(i, ' ');
         return sb.toString();
     }
 
