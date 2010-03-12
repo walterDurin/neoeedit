@@ -459,6 +459,33 @@ public class U {
         }
     }
 
+    static String guessLineSepForEditor(String fn) {
+        try {
+            // S/ystem.out.println("guessing encoding");
+            FileInputStream in = new FileInputStream(fn);
+            final int defsize = 4096;
+            int len = Math.min(defsize, (int) new File(fn).length());
+            try {
+                // S/ystem.out.println("len:" + len);
+                byte[] buf = new byte[len];
+                len = in.read(buf);
+                // S/ystem.out.println("len2:" + len);
+                if (len != defsize) {
+                    byte[] b2 = new byte[len];
+                    System.arraycopy(buf, 0, b2, 0, len);
+                    buf = b2;
+                }
+                return new String(buf, "iso8859-1").indexOf("\r\n") >= 0 ? "\r\n"
+                        : "\n";
+            } finally {
+                in.close();
+            }
+        } catch (Exception e) {
+            return "\n";
+        }
+
+    }
+
     static boolean isAllDigital(String s) {
         for (char c : s.toCharArray()) {
             if (!Character.isDigit(c)) {
@@ -527,6 +554,7 @@ public class U {
         if (page.encoding == null) {
             page.encoding = U.guessEncodingForEditor(fn);
         }
+        page.lineSep = U.guessLineSepForEditor(fn);
         page.ptEdit.setLines(U.readFileForEditor(fn, page.encoding));
     }
 
