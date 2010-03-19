@@ -1,4 +1,4 @@
-#js marco on dir
+#summary macro on file iterators in a directory.
 
 = Introduction =
 
