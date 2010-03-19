@@ -8,7 +8,8 @@ JavaScript Macro in neoeedit
 = Details =
 
 use javascript engine in jdk 6.0+.
-it has the goodness of script language and joint well with the java world.
+
+[http://java.sun.com/javase/6/docs/technotes/guides/scripting/programmer_guide/index.html it has the goodness of script language and joint well with the java world.]
 
 for example:
 {{{
