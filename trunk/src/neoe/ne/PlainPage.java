@@ -1603,6 +1603,8 @@ public class PlainPage {
                     focusCursor();
                 } else if (kc == KeyEvent.VK_J) {
                     runScript();
+                } else if (kc == KeyEvent.VK_D) {
+                    runScriptOnDir();
                 }
             } else if (env.isControlDown()) {
                 if (kc == KeyEvent.VK_C) {
@@ -1747,6 +1749,61 @@ public class PlainPage {
                 try {
                     ed.grabFocus();
                     List<StringBuffer> newLines = JS.run(lines, pp1.getText());
+                    PlainPage pp = new EditPanel("").page;
+                    pp.workPath = pp1.workPath;
+                    pp.ptEdit.setLines(newLines);
+                    pp.uiComp.openWindow();
+                } catch (Exception e1) {
+                    System.out.println(e1);
+                    String s1 = "" + e1;
+                    String expect = "javax.script.ScriptException: sun.org.mozilla.javascript.internal.EvaluatorException:";
+                    if (s1.startsWith(expect))
+                        s1 = s1.substring(expect.length());
+                    pp1.append("\n//Error:" + s1 + "\n");
+                    ed.repaint();
+                }
+
+            }
+        });
+        jb2.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                if (pp1.history.size() != 0) {
+                    if (JOptionPane.YES_OPTION != JOptionPane
+                            .showConfirmDialog(ed, "Are you sure to close?",
+                                    "Changes made", JOptionPane.YES_NO_OPTION)) {
+                        ed.grabFocus();
+                        return;
+                    }
+                }
+                sf.dispose();
+            }
+        });
+        sf.setSize(new Dimension(800, 600));
+        sf.setVisible(true);
+    }
+    private void runScriptOnDir() throws Exception {
+        final JFrame sf = new JFrame("Javascript On dir");
+        sf.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        JPanel p = new JPanel();
+        sf.getContentPane().add(p);
+        SimpleLayout s = new SimpleLayout(p);
+        String sample = "var dir=\"d:/tmp\";\nfunction onFile(f){\n  return f.getAbsolutePath()+'\t'+f.length();\n}\n";
+        final EditPanel ed = new EditPanel(sample);
+        final PlainPage pp1 = ed.page;
+        ed.frame = sf;
+        pp1.workPath = this.workPath;
+        s.add(pp1.uiComp);
+        s.newline();
+        JButton jb1 = new JButton("run");
+        JButton jb2 = new JButton("close");
+        s.add(jb1);
+        s.add(jb2);
+        s.newline();
+        jb1.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    ed.grabFocus();
+                    List<StringBuffer> newLines = JS.runOnDir(pp1.getText());
                     PlainPage pp = new EditPanel("").page;
                     pp.workPath = pp1.workPath;
                     pp.ptEdit.setLines(newLines);
