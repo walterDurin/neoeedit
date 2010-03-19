@@ -1809,7 +1809,7 @@ public class PlainPage {
                     pp.ptEdit.setLines(newLines);
                     pp.uiComp.openWindow();
                 } catch (Exception e1) {
-                    System.out.println(e1);
+                    e1.printStackTrace();
                     String s1 = "" + e1;
                     String expect = "javax.script.ScriptException: sun.org.mozilla.javascript.internal.EvaluatorException:";
                     if (s1.startsWith(expect))
