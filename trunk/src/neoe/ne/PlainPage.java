@@ -62,6 +62,8 @@ public class PlainPage {
 
         void deleteInLine(int y, int x1, int x2) {
             StringBuffer sb = lines().get(y);
+            if (x1 >= sb.length())
+                return;
             x2 = Math.min(x2, sb.length());
             String d = sb.substring(x1, x2);
             if (d.length() > 0) {
@@ -1781,6 +1783,7 @@ public class PlainPage {
         sf.setSize(new Dimension(800, 600));
         sf.setVisible(true);
     }
+
     private void runScriptOnDir() throws Exception {
         final JFrame sf = new JFrame("Javascript On dir");
         sf.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);

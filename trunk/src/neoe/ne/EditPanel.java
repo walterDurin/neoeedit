@@ -38,7 +38,7 @@ public class EditPanel extends JComponent implements MouseMotionListener,
 
     public EditPanel(File f) throws Exception {
         this();
-        page = new PlainPage(this, f);        
+        page = new PlainPage(this, f);
     }
 
     public EditPanel(String text) throws Exception {
@@ -134,22 +134,38 @@ public class EditPanel extends JComponent implements MouseMotionListener,
 
     @Override
     public void mouseWheelMoved(MouseWheelEvent env) {
-        page.mouseWheelMoved(env);
+        try {
+            page.mouseWheelMoved(env);
+        } catch (Exception e) {
+            page.message("err:" + e);
+        }
     }
 
     @Override
     public void keyPressed(KeyEvent env) {
-        page.keyPressed(env);
+        try {
+            page.keyPressed(env);
+        } catch (Exception e) {
+            page.message("err:" + e);
+        }
     }
 
     @Override
     public void keyReleased(KeyEvent env) {
-        page.keyReleased(env);
+        try {
+            page.keyReleased(env);
+        } catch (Exception e) {
+            page.message("err:" + e);
+        }
     }
 
     @Override
     public void keyTyped(KeyEvent env) {
-        page.keyTyped(env);
+        try {
+            page.keyTyped(env);
+        } catch (Exception e) {
+            page.message("err:" + e);
+        }
     }
 
     String getWorkPath() {
