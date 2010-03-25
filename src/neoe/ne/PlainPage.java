@@ -249,6 +249,7 @@ public class PlainPage {
     }
 
     class EasyEdit {
+
         public void deleteLine(int cy) {
             cx = 0;
             int len = roLines.getline(cy).length();
@@ -380,10 +381,20 @@ public class PlainPage {
             String[] ss = U.split(s, "\n");
 
             if (rectSelectMode) {
-                int iy = cy;
-                for (String s1 : ss) {
+                Rectangle rect = ptSelection.getSelectRect();
+                int pi = 0;
+                for (int iy = rect.y; iy <= rect.height; iy++) {
+                    String s1 = ss[pi];
                     editRec.insertInLine(iy, cx, s1);
-                    iy++;
+                    pi++;
+                    if (pi >= ss.length)
+                        pi = 0;
+                }
+                if (ss.length == 1) {
+                    selectstartx += ss[0].length();
+                    selectstopx += ss[0].length();
+                    cx += ss[0].length();
+                    saveSelectionCancel = true;
                 }
             } else {
                 if (ss.length == 1) {
@@ -1433,7 +1444,7 @@ public class PlainPage {
             + REV.substring(6, REV.length() - 2);
 
     static Random random = new Random();
-
+    private boolean saveSelectionCancel;
     static final int MAX_SHOW_CHARS_IN_LINE = 300;
     private static final long MSG_VANISH_TIME = 3000;
 
@@ -1714,7 +1725,11 @@ public class PlainPage {
                     selectstopx = cx;
                     selectstopy = cy;
                 } else {
-                    ptSelection.cancelSelect();
+                    if (saveSelectionCancel) {
+                        saveSelectionCancel = false;
+                    } else {
+                        ptSelection.cancelSelect();
+                    }
                 }
             }
             uiComp.repaint();
