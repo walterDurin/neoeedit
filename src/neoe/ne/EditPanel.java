@@ -104,8 +104,8 @@ public class EditPanel extends JComponent implements MouseMotionListener,
     }
 
     @Override
-    public void mouseClicked(MouseEvent arg0) {
-        // TODO Auto-generated method stub
+    public void mouseClicked(MouseEvent evt) {
+        page.mouseClicked(evt);
 
     }
 
@@ -122,8 +122,8 @@ public class EditPanel extends JComponent implements MouseMotionListener,
     }
 
     @Override
-    public void mousePressed(MouseEvent env) {
-        page.mousePressed(env);
+    public void mousePressed(MouseEvent evt) {
+        page.mousePressed(evt);
     }
 
     @Override
