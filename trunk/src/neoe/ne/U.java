@@ -15,7 +15,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -1009,6 +1008,7 @@ public class U {
 	}
 
 	static Point find(PlainPage page, String s, int x, int y, boolean ignoreCase) {
+		if (y>=page.roLines.getLinesize())return null;
 		if (ignoreCase) {
 			s = s.toLowerCase();
 		}
