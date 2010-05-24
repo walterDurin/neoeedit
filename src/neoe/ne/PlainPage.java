@@ -1675,6 +1675,12 @@ public class PlainPage {
 					runScript();
 				} else if (kc == KeyEvent.VK_D) {
 					runScriptOnDir();
+				}else if (kc == KeyEvent.VK_PAGE_UP) {					
+					cx = Math.max(0, cx-uiComp.getWidth()/10);
+					focusCursor();
+				} else if (kc == KeyEvent.VK_PAGE_DOWN) {
+					cx =  cx+uiComp.getWidth()/10;
+					focusCursor();
 				}
 			} else if (env.isControlDown()) {
 				if (kc == KeyEvent.VK_C) {
@@ -1994,6 +2000,8 @@ public class PlainPage {
 		int amount = env.getWheelRotation() * env.getScrollAmount();
 		if (env.isControlDown()) {// scale
 			scale(amount);
+		}else if (env.isAltDown()) {// horizon scroll
+			scrollHorizon(amount);
 		} else {// scroll
 			scroll(amount);
 		}
@@ -2028,6 +2036,11 @@ public class PlainPage {
 		if (sy < 0) {
 			sy = 0;
 		}
+		uiComp.repaint();
+	}
+	public void scrollHorizon(int amount) {
+		sx += amount;
+		if (sx<0)sx=0;
 		uiComp.repaint();
 	}
 
