@@ -1091,6 +1091,55 @@ public class PlainPage {
 		private int lineGap = 5;
 		private int lineHeight = 10;
 		float scalev = 1;
+		private boolean aboutOn;
+		private BufferedImage aboutImg;
+		private int aboutY;
+
+		private void showAbout() {
+			if (aboutImg != null)
+				return;
+			new Thread() {
+				public void run() {
+					try {
+						int w = uiComp.getWidth();
+						int h = 60;
+						aboutImg = new BufferedImage(w, h,
+								BufferedImage.TYPE_INT_ARGB);
+						Graphics2D gi = aboutImg.createGraphics();
+						gi.setColor(Color.BLUE);
+						gi.fillRect(0, 0, w, h);
+						gi.setColor(Color.CYAN);
+						gi.setFont(new Font("Arial",  Font.BOLD, 40));						
+						gi.drawString("NeoeEdit", 6, h - 20);
+						gi.setColor(Color.YELLOW);
+						gi.setFont(new Font("Arial",  Font.PLAIN, 16));
+						String url = "http://code.google.com/p/neoeedit/";						
+						gi.drawString("visit " + url + " for more info.(url copied)", 6, h - 6);
+						U.setClipBoard(url);
+						gi.dispose();
+						aboutY = -h;
+						aboutOn = true;
+						for (int i = -h; i <= 0; i++) {
+							aboutY = i;
+							uiComp.repaint();
+							Thread.sleep(1000 / h);							
+						}
+						Thread.sleep(3000);
+						for (int i = 0; i >= -h; i--) {
+							aboutY = i;
+							uiComp.repaint();
+							Thread.sleep(1000 / h);
+						}
+					} catch (Exception e) {
+						e.printStackTrace();
+					} finally {
+						aboutOn = false;
+						aboutImg = null;
+					}
+				}
+			}.start();
+
+		}
 
 		private void drawGutter(Graphics2D g2) {
 			g2.setColor(new Color(0x115511));
@@ -1363,7 +1412,9 @@ public class PlainPage {
 				drawGutter(g2);
 				// draw text
 				g2.translate(gutterWidth / scalev, 0);
-
+				g2.setClip(0, 0, dim.width - gutterWidth,
+						dim.height - toolbarHeight);
+				
 				{ // highlight current line
 					int l1 = cy - sy;
 					if (l1 >= 0 && l1 < showLineCnt) {
@@ -1431,6 +1482,12 @@ public class PlainPage {
 					g2.fillRect(w, (cy - sy) * (lineHeight + lineGap), 2,
 							lineHeight);
 				}
+				
+				if (aboutOn) {// about info
+					g.setPaintMode();
+					g.drawImage(aboutImg, 0, aboutY, null);
+				}
+
 
 			} catch (Throwable th) {
 				th.printStackTrace();
@@ -1567,9 +1624,8 @@ public class PlainPage {
 	}
 
 	private void help() {
-		String url = "http://code.google.com/p/neoeedit/";
-		U.setClipBoard(url);
-		message("visit " + url + " for more info.(url copied)");
+		
+		ui.showAbout();
 	}
 
 	private boolean isRectSelecting() {
@@ -2009,7 +2065,7 @@ public class PlainPage {
 				U.setClipBoard(fn);
 				message("filename copied");
 				my = 0;
-			   uiComp.repaint();
+				uiComp.repaint();
 			}
 		}
 	}
