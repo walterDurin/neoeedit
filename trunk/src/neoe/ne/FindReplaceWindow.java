@@ -117,7 +117,7 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 			dialog.setVisible(false);
 		} catch (Exception e) {
 			e.printStackTrace();
-			page.message(e.toString());
+			page.ui.message(e.toString());
 		}
 		page.history.endAtom();
 	}

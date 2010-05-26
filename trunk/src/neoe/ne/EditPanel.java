@@ -137,7 +137,7 @@ public class EditPanel extends JComponent implements MouseMotionListener,
         try {
             page.mouseWheelMoved(env);
         } catch (Exception e) {
-            page.message("err:" + e);
+            page.ui.message("err:" + e);
         }
     }
 
@@ -146,7 +146,7 @@ public class EditPanel extends JComponent implements MouseMotionListener,
         try {
             page.keyPressed(env);
         } catch (Exception e) {
-            page.message("err:" + e);
+            page.ui.message("err:" + e);
         }
     }
 
@@ -155,7 +155,7 @@ public class EditPanel extends JComponent implements MouseMotionListener,
         try {
             page.keyReleased(env);
         } catch (Exception e) {
-            page.message("err:" + e);
+            page.ui.message("err:" + e);
         }
     }
 
@@ -164,7 +164,7 @@ public class EditPanel extends JComponent implements MouseMotionListener,
         try {
             page.keyTyped(env);
         } catch (Exception e) {
-            page.message("err:" + e);
+            page.ui.message("err:" + e);
         }
     }
 
