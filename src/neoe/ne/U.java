@@ -257,7 +257,7 @@ public class U {
 			Point p = replace(page, page.text2find, page.cx, page.cy, text2,
 					all, ignoreCase);
 			if (p == null) {
-				page.message("string not found");
+				page.ui.message("string not found");
 			} else {
 				page.cx = p.x;
 				page.cy = p.y;
@@ -292,7 +292,7 @@ public class U {
 		if (text2find != null && text2find.length() > 0) {
 			Point p = U.find(page, text2find, 0, 0, ignoreCase);
 			if (p == null) {
-				page.message("string not found");
+				page.ui.message("string not found");
 			} else {
 				List<String> all = new ArrayList<String>();
 				while (true) {
@@ -686,7 +686,7 @@ public class U {
 			}
 		}
 		if (cnt > 0) {
-			page.message("replaced " + cnt + " places");
+			page.ui.message("replaced " + cnt + " places");
 			return new Point(x, y);
 		} else {
 			return null;
@@ -703,13 +703,13 @@ public class U {
 				if (JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(
 						editor, "file exists, are you sure to overwrite?",
 						"save as...", JOptionPane.YES_NO_OPTION)) {
-					page.message("not renamed");
+					page.ui.message("not renamed");
 					return;
 				}
 			}
 			page.fn = fn;
 			editor.changeTitle();
-			page.message("file renamed");
+			page.ui.message("file renamed");
 			savePageToFile(page);
 		}
 	}
@@ -725,7 +725,7 @@ public class U {
 							.showConfirmDialog(page.uiComp,
 									"Are you sure to overwrite?",
 									"File exists", JOptionPane.YES_NO_OPTION)) {
-						page.message("not saved");
+						page.ui.message("not saved");
 						return false;
 					}
 				}
@@ -765,7 +765,7 @@ public class U {
 		try {
 			"a".getBytes(s);
 		} catch (Exception e) {
-			plainPage.message("bad encoding:" + s);
+			plainPage.ui.message("bad encoding:" + s);
 			return;
 		}
 		plainPage.encoding = s;
@@ -914,9 +914,9 @@ public class U {
 			}
 		}
 		if (comment == null) {
-			page.message("no comment found" + Arrays.toString(cnts));
+			page.ui.message("no comment found" + Arrays.toString(cnts));
 		} else {
-			page.message("comment found:" + comment);
+			page.ui.message("comment found:" + comment);
 		}
 		page.ui.comment = comment;
 		page.uiComp.repaint();
@@ -1121,5 +1121,4 @@ public class U {
 		}
 		return f;
 	}
-
 }

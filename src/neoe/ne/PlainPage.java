@@ -5,7 +5,6 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
@@ -17,10 +16,8 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
 import javax.swing.JButton;
@@ -37,8 +34,8 @@ public class PlainPage {
 	}
 
 	static class BasicEdit {
+		PlainPage page;
 		boolean record;
-		private PlainPage page;
 
 		BasicEdit(boolean record, PlainPage page) {
 			this.record = record;
@@ -76,7 +73,7 @@ public class PlainPage {
 			}
 		}
 
-		private History history() {
+		History history() {
 			return page.history;
 		}
 
@@ -109,7 +106,7 @@ public class PlainPage {
 			}
 		}
 
-		private List<StringBuffer> lines() {
+		List<StringBuffer> lines() {
 			return page.lines;
 		}
 
@@ -128,6 +125,47 @@ public class PlainPage {
 	}
 
 	class Cursor {
+		void gotoFileLine() throws Exception {
+			if (cy < lines.size()) {
+				StringBuffer sb = lines.get(cy);
+				int p1, p2;
+				if ((p1 = sb.indexOf("|")) >= 0) {
+					if ((p2 = sb.indexOf(":", p1)) >= 0) {
+						String fn = sb.substring(0, p1);
+						int line = -1;
+						try {
+							line = Integer.parseInt(sb.substring(p1 + 1, p2));
+						} catch (Exception e) {
+						}
+						if (line >= 0) {
+							openFile(fn, line);
+						}
+					}
+				}
+			}
+
+		}
+
+		void gotoLine() {
+			String s = JOptionPane.showInputDialog("Goto Line");
+			int line = -1;
+			try {
+				line = Integer.parseInt(s);
+			} catch (Exception e) {
+				line = -1;
+			}
+			if (line > roLines.getLinesize()) {
+				line = -1;
+			}
+			if (line > 0) {
+				line -= 1;
+				sy = Math.max(0, line - showLineCnt / 2 + 1);
+				cy = line;
+				cx = 0;
+				focusCursor();
+			}
+		}
+
 		public void moveDown() {
 			cy += 1;
 			if (cy >= roLines.getLinesize()) {
@@ -167,7 +205,7 @@ public class PlainPage {
 		public void moveLeft() {
 			cx -= 1;
 			if (cx < 0) {
-				if (cy > 0 && !isRectSelecting()) {
+				if (cy > 0 && !ptSelection.isRectSelecting()) {
 					cy -= 1;
 					cx = roLines.getline(cy).length();
 				} else {
@@ -213,7 +251,7 @@ public class PlainPage {
 
 		public void moveRight() {
 			cx += 1;
-			if (isRectSelecting()) {
+			if (ptSelection.isRectSelecting()) {
 				if (cx > roLines.getline(cy).length()) {
 					ptEdit.setLength(cy, cx);
 				}
@@ -242,6 +280,24 @@ public class PlainPage {
 			}
 		}
 
+		public void scroll(int amount) {
+			sy += amount;
+			if (sy >= roLines.getLinesize()) {
+				sy = roLines.getLinesize() - 1;
+			}
+			if (sy < 0) {
+				sy = 0;
+			}
+			uiComp.repaint();
+		}
+
+		public void scrollHorizon(int amount) {
+			sx += amount;
+			if (sx < 0)
+				sx = 0;
+			uiComp.repaint();
+		}
+
 		public void setSafePos(int x, int y) {
 			cy = Math.max(0, Math.min(roLines.getLinesize() - 1, y));
 			cx = Math.max(0, Math.min(roLines.getline(cy).length(), x));
@@ -249,6 +305,11 @@ public class PlainPage {
 	}
 
 	class EasyEdit {
+		void append(String s) {
+			cy = roLines.getLinesize() - 1;
+			cx = roLines.getline(cy).length();
+			ptEdit.insertString(s);
+		}
 
 		public void deleteLine(int cy) {
 			cx = 0;
@@ -446,7 +507,7 @@ public class PlainPage {
 
 		void reloadWithEncodingByUser() {
 			if (fn == null) {
-				message("file not saved.");
+				ui.message("file not saved.");
 				return;
 			}
 			U.setEncodingByUser(PlainPage.this);
@@ -464,6 +525,21 @@ public class PlainPage {
 			history.clear();
 		}
 
+		void setText(String s) {
+			String[] ss = s.split("\n");
+			List<StringBuffer> lines = new ArrayList<StringBuffer>();
+			for (int i = 0; i < ss.length; i++) {
+				lines.add(new StringBuffer(ss[i]));
+			}
+			if (lines.size() == 0) {
+				lines.add(new StringBuffer("empty"));
+				ptEdit.setLines(lines);
+				ptSelection.selectAll();
+			} else {
+				ptEdit.setLines(lines);
+			}
+		}
+
 		void wrapLines(int cx) {
 			int lineLen = 0;
 			{
@@ -474,7 +550,7 @@ public class PlainPage {
 				}
 				lineLen = Math.max(10, len);
 			}
-			message("wrapLine at " + lineLen);
+			ui.message("wrapLine at " + lineLen);
 			if (ptSelection.isSelected()) {
 				ptSelection.cancelSelect();
 			}
@@ -523,7 +599,7 @@ public class PlainPage {
 				Point p = U.find(PlainPage.this, text2find, cx + 1, cy,
 						ignoreCase);
 				if (p == null) {
-					message("string not found");
+					ui.message("string not found");
 				} else {
 					cx = p.x;
 					cy = p.y;
@@ -556,10 +632,10 @@ public class PlainPage {
 
 	static class History {
 		public static int MAXSIZE = 200;
-		private List<HistoryCell> atom;
-		private LinkedList<List<HistoryCell>> data;
-		private int p;
-		private PlainPage page;
+		List<HistoryCell> atom;
+		LinkedList<List<HistoryCell>> data;
+		int p;
+		PlainPage page;
 
 		public History(PlainPage page) {
 			data = new LinkedList<List<HistoryCell>>();
@@ -568,7 +644,7 @@ public class PlainPage {
 			this.page = page;
 		}
 
-		private void add(List<HistoryCell> o) {
+		void add(List<HistoryCell> o) {
 			if (p < data.size() && p >= 0) {
 				for (int i = 0; i < data.size() - p; i++) {
 					data.removeLast();
@@ -597,7 +673,7 @@ public class PlainPage {
 		/**
 		 * try to append this change to the last ones
 		 */
-		private boolean append(List<HistoryCell> lasts, List<HistoryCell> os) {
+		boolean append(List<HistoryCell> lasts, List<HistoryCell> os) {
 			if (lasts == null) {
 				return false;
 			}
@@ -679,9 +755,9 @@ public class PlainPage {
 
 	static class HistoryCell {
 		BasicAction action;
+		PlainPage page;
 		String s1;
 		int x1, x2, y1, y2;
-		PlainPage page;
 
 		public HistoryCell(BasicAction action, int x1, int x2, int y1, int y2,
 				String s1) {
@@ -703,7 +779,7 @@ public class PlainPage {
 			((last.x1 == this.x1 || last.x2 == this.x1) && last.y1 == this.y1)));
 		}
 
-		private BasicEdit editNoRec() {
+		BasicEdit editNoRec() {
 			return page.editNoRec;
 		}
 
@@ -737,7 +813,7 @@ public class PlainPage {
 			}
 		}
 
-		private ReadonlyLines roLines() {
+		ReadonlyLines roLines() {
 			return page.roLines;
 		}
 
@@ -781,26 +857,8 @@ public class PlainPage {
 		}
 	}
 
-	private void closePage() throws Exception {
-		PlainPage page = this;
-		EditPanel editor = page.uiComp;
-		if (page.history.size() != 0) {
-			if (JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(editor,
-					"Are you sure to SAVE and close?", "Changes made",
-					JOptionPane.YES_NO_OPTION)) {
-				return;
-			}
-		}
-		if (page.fn != null) {
-			U.saveFile(page);
-			U.saveFileHistory(page.fn, page.cy);
-		}
-		page.closed = true;
-		editor.frame.dispose();
-	}
-
 	static class ReadonlyLines {
-		private PlainPage page;
+		PlainPage page;
 
 		ReadonlyLines(PlainPage page) {
 			this.page = page;
@@ -866,7 +924,7 @@ public class PlainPage {
 		void copySelected() {
 			String s = getSelected();
 			U.setClipBoard(s);
-			message("copied " + s.length());
+			ui.message("copied " + s.length());
 		}
 
 		void cutSelected() {
@@ -914,6 +972,10 @@ public class PlainPage {
 				}
 			}
 			return new Rectangle(x1, y1, x2, y2);
+		}
+
+		boolean isRectSelecting() {
+			return mshift && rectSelectMode;
 		}
 
 		boolean isSelected() {
@@ -974,44 +1036,8 @@ public class PlainPage {
 	}
 
 	class UI {
-		class CacheMode {
-			private Map<Integer, Image> lineCache;
-			U.PriorityList lineCacheKey;
-
-			// private int notHit;
-			public CacheMode() {
-				lineCache = new HashMap<Integer, Image>();
-				lineCacheKey = new U.PriorityList(lineCache);
-			}
-
-			Image createLineImage(Graphics2D g3, String s, int x, int y,
-					int lineno) {
-				BufferedImage im = new BufferedImage(
-						ui.dim.width - gutterWidth, lineHeight + lineGap,
-						BufferedImage.TYPE_INT_ARGB);
-				Graphics2D g2 = (Graphics2D) im.getGraphics();
-				g2.setFont(g3.getFont());
-				y = lineHeight;
-				ui.drawStringLine(g2, s, x, y);
-				g2.dispose();
-				return im;
-			}
-
-			void drawStringLine(Graphics2D g2, String s, int x, int y,
-					int lineno) {
-				Image im = lineCache.get(lineno);
-				if (im == null) {
-					im = createLineImage(g2, s, x, y, lineno);
-					lineCache.put(lineno, im);
-					// notHit = 1;
-				}
-				lineCacheKey.touch(lineno);
-				g2.drawImage(im, x, y - lineHeight, null);
-			}
-		}
-
 		class Comment {
-			private void markBox(Graphics2D g2, int x, int y) {
+			void markBox(Graphics2D g2, int x, int y) {
 				if (y >= sy && y <= sy + showLineCnt && x >= sx) {
 					RoSb sb = roLines.getline(y);
 					int w1 = x > 0 ? U.strWidth(g2, sb.substring(sx, x)) : 0;
@@ -1028,7 +1054,7 @@ public class PlainPage {
 				}
 			}
 
-			private void markGutLine(Graphics2D g2, int y1, int y2) {
+			void markGutLine(Graphics2D g2, int y1, int y2) {
 				if (y1 > y2) {
 					int t = y1;
 					y1 = y2;
@@ -1061,8 +1087,8 @@ public class PlainPage {
 				}
 			}
 
-			private void pairMark(Graphics2D g2, int cx2, int cy2, char ch,
-					char ch2, int inc) {
+			void pairMark(Graphics2D g2, int cx2, int cy2, char ch, char ch2,
+					int inc) {
 				int[] c1 = new int[] { cx2, cy2 };
 				U.findchar(PlainPage.this, ch, inc, c1, ch2);
 				if (c1[0] >= 0) {// found
@@ -1075,73 +1101,26 @@ public class PlainPage {
 			}
 		}
 
-		private Color bkColor = new Color(0xe0e0f0);
+		BufferedImage aboutImg;
+		boolean aboutOn;
+		int aboutY;
+		Color bkColor = new Color(0xe0e0f0);
 		/** 3d char */
 		Color c1 = new Color(200, 80, 50);
 		/** 3d char */
 		Color c2 = Color.WHITE;
-		private CacheMode cacheMode = null;// disabled because slower.
-		private Color color = Color.BLACK;
+		Color color = Color.BLACK;
 		String comment = null;
 		Comment commentor = new Comment();
-		private Color currentLineColor = new Color(0xF0F0F0);
-		private Dimension dim;
-		private Font font = new Font("Monospaced", Font.PLAIN, 12);
-		private int gutterWidth = 40;
-		private int lineGap = 5;
-		private int lineHeight = 10;
+		Color currentLineColor = new Color(0xF0F0F0);
+		Dimension dim;
+		Font font = new Font("Monospaced", Font.PLAIN, 12);
+		int gutterWidth = 40;
+		int lineGap = 5;
+		int lineHeight = 10;
 		float scalev = 1;
-		private boolean aboutOn;
-		private BufferedImage aboutImg;
-		private int aboutY;
 
-		private void showAbout() {
-			if (aboutImg != null)
-				return;
-			new Thread() {
-				public void run() {
-					try {
-						int w = uiComp.getWidth();
-						int h = 60;
-						aboutImg = new BufferedImage(w, h,
-								BufferedImage.TYPE_INT_ARGB);
-						Graphics2D gi = aboutImg.createGraphics();
-						gi.setColor(Color.BLUE);
-						gi.fillRect(0, 0, w, h);
-						gi.setColor(Color.CYAN);
-						gi.setFont(new Font("Arial",  Font.BOLD, 40));						
-						gi.drawString("NeoeEdit", 6, h - 20);
-						gi.setColor(Color.YELLOW);
-						gi.setFont(new Font("Arial",  Font.PLAIN, 16));
-						String url = "http://code.google.com/p/neoeedit/";						
-						gi.drawString("visit " + url + " for more info.(url copied)", 6, h - 6);
-						U.setClipBoard(url);
-						gi.dispose();
-						aboutY = -h;
-						aboutOn = true;
-						for (int i = -h; i <= 0; i++) {
-							aboutY = i;
-							uiComp.repaint();
-							Thread.sleep(1000 / h);							
-						}
-						Thread.sleep(3000);
-						for (int i = 0; i >= -h; i--) {
-							aboutY = i;
-							uiComp.repaint();
-							Thread.sleep(1000 / h);
-						}
-					} catch (Exception e) {
-						e.printStackTrace();
-					} finally {
-						aboutOn = false;
-						aboutImg = null;
-					}
-				}
-			}.start();
-
-		}
-
-		private void drawGutter(Graphics2D g2) {
+		void drawGutter(Graphics2D g2) {
 			g2.setColor(new Color(0x115511));
 			for (int i = 0; i < showLineCnt; i++) {
 				if (sy + i + 1 > roLines.getLinesize()) {
@@ -1152,13 +1131,13 @@ public class PlainPage {
 			}
 		}
 
-		private void drawReturn(Graphics2D g2, int w, int py) {
+		void drawReturn(Graphics2D g2, int w, int py) {
 			g2.setColor(Color.red);
 			g2.drawLine(w, py - lineHeight + font.getSize(), w + 3, py
 					- lineHeight + font.getSize());
 		}
 
-		private void drawSelect(Graphics2D g2, int y1, int x1, int x2) {
+		void drawSelect(Graphics2D g2, int y1, int x1, int x2) {
 			int scry = y1 - sy;
 			if (scry < showLineCnt) {
 				String s = roLines.getline(y1).toString();
@@ -1193,7 +1172,7 @@ public class PlainPage {
 			}
 		}
 
-		private void drawStringLine(Graphics2D g2, String s, int x, int y) {
+		void drawStringLine(Graphics2D g2, String s, int x, int y) {
 			int commentPos = comment == null ? -1 : s.indexOf(comment);
 			if (commentPos >= 0) {
 				String s1 = s.substring(0, commentPos);
@@ -1207,18 +1186,12 @@ public class PlainPage {
 			}
 		}
 
-		private int drawStringLine(Graphics2D g2, String s, int x, int y,
-				int lineno) {
-			if (cacheMode != null) {
-				cacheMode.drawStringLine(g2, s, x, y, lineno);
-			} else {
-				drawStringLine(g2, s, x, y);
-			}
+		int drawStringLine(Graphics2D g2, String s, int x, int y, int lineno) {
+			drawStringLine(g2, s, x, y);
 			return 0;
 		}
 
-		private int drawText(Graphics2D g2, String s, int x, int y,
-				boolean isComment) {
+		int drawText(Graphics2D g2, String s, int x, int y, boolean isComment) {
 			int w = 0;
 			if (isComment) {
 				String[] ws = s.split("\t");
@@ -1253,7 +1226,7 @@ public class PlainPage {
 			return w;
 		}
 
-		private void drawTextLines(Graphics2D g2, int charCntInLine) {
+		void drawTextLines(Graphics2D g2, int charCntInLine) {
 			int y = sy;
 			int py = lineHeight;
 			int notHit = 0;
@@ -1275,12 +1248,9 @@ public class PlainPage {
 				y += 1;
 				py += lineHeight + lineGap;
 			}
-			if (cacheMode != null) {
-				System.out.println("not hit lines=" + notHit);
-			}
 		}
 
-		private void drawToolbar(Graphics2D g2) {
+		void drawToolbar(Graphics2D g2) {
 			String s1 = "<F1>:Help, Line:" + roLines.getLinesize() + ", byte:"
 					+ PlainPage.this.size + ", " + encoding
 					+ (lineSep.equals("\n") ? ", U" : ", W") + ", X:"
@@ -1305,7 +1275,7 @@ public class PlainPage {
 			}
 		}
 
-		private int getHighLightID(String s, Graphics2D g2) {
+		int getHighLightID(String s, Graphics2D g2) {
 			if (Arrays.binarySearch(U.kws, s) >= 0
 					|| Arrays.binarySearch(U.kws, s.toLowerCase()) >= 0) {
 				g2.setColor(Color.BLUE);
@@ -1315,6 +1285,15 @@ public class PlainPage {
 				g2.setColor(color);
 			}
 			return 0;
+		}
+
+		void help() {
+			ui.showAbout();
+		}
+
+		public void message(String s) {
+			msg = s;
+			msgtime = System.currentTimeMillis();
 		}
 
 		void paintNoise(Graphics2D g2) {
@@ -1328,6 +1307,61 @@ public class PlainPage {
 				g2.setColor(new Color(random.nextInt(cs)));
 				g2.drawLine(x, y, x + 1, y);
 			}
+		}
+
+		void scale(int amount) {
+			if (amount > 0) {
+				ui.scalev *= 1.1f;
+			} else if (amount < 0) {
+				ui.scalev *= 0.9f;
+			}
+		}
+
+		void showAbout() {
+			if (aboutImg != null)
+				return;
+			new Thread() {
+				public void run() {
+					try {
+						int w = uiComp.getWidth();
+						int h = 60;
+						aboutImg = new BufferedImage(w, h,
+								BufferedImage.TYPE_INT_ARGB);
+						Graphics2D gi = aboutImg.createGraphics();
+						gi.setColor(Color.BLUE);
+						gi.fillRect(0, 0, w, h);
+						gi.setColor(Color.CYAN);
+						gi.setFont(new Font("Arial", Font.BOLD, 40));
+						gi.drawString("NeoeEdit", 6, h - 20);
+						gi.setColor(Color.YELLOW);
+						gi.setFont(new Font("Arial", Font.PLAIN, 16));
+						String url = "http://code.google.com/p/neoeedit/";
+						gi.drawString("visit " + url
+								+ " for more info.(url copied)", 6, h - 6);
+						U.setClipBoard(url);
+						gi.dispose();
+						aboutY = -h;
+						aboutOn = true;
+						for (int i = -h; i <= 0; i++) {
+							aboutY = i;
+							uiComp.repaint();
+							Thread.sleep(1000 / h);
+						}
+						Thread.sleep(3000);
+						for (int i = 0; i >= -h; i--) {
+							aboutY = i;
+							uiComp.repaint();
+							Thread.sleep(1000 / h);
+						}
+					} catch (Exception e) {
+						e.printStackTrace();
+					} finally {
+						aboutOn = false;
+						aboutImg = null;
+					}
+				}
+			}.start();
+
 		}
 
 		public void xpaint(Graphics g, Dimension size) {
@@ -1354,7 +1388,7 @@ public class PlainPage {
 					}
 				}
 				// change sx if needed
-				if (isRectSelecting()) {
+				if (ptSelection.isRectSelecting()) {
 					ptEdit.setLength(cy, cx);
 				} else {
 					cx = Math.min(roLines.getline(cy).length(), cx);
@@ -1412,9 +1446,9 @@ public class PlainPage {
 				drawGutter(g2);
 				// draw text
 				g2.translate(gutterWidth / scalev, 0);
-				g2.setClip(0, 0, dim.width - gutterWidth,
-						dim.height - toolbarHeight);
-				
+				g2.setClip(0, 0, dim.width - gutterWidth, dim.height
+						- toolbarHeight);
+
 				{ // highlight current line
 					int l1 = cy - sy;
 					if (l1 >= 0 && l1 < showLineCnt) {
@@ -1482,31 +1516,30 @@ public class PlainPage {
 					g2.fillRect(w, (cy - sy) * (lineHeight + lineGap), 2,
 							lineHeight);
 				}
-				
+
 				if (aboutOn) {// about info
 					g.setPaintMode();
 					g.drawImage(aboutImg, 0, aboutY, null);
 				}
 
-
 			} catch (Throwable th) {
 				th.printStackTrace();
-				message("Bug:" + th);
+				ui.message("Bug:" + th);
 			}
 		}
 	}
 
-	private static final String REV = "$Rev$";
+	static final int MAX_SHOW_CHARS_IN_LINE = 300;
 
+	static final long MSG_VANISH_TIME = 3000;
+
+	static Random random = new Random();
+
+	static final String REV = "$Rev$";
 	static final String WINDOW_NAME = "neoeedit r"
 			+ REV.substring(6, REV.length() - 2);
 
-	static Random random = new Random();
-	private boolean saveSelectionCancel;
-	static final int MAX_SHOW_CHARS_IN_LINE = 300;
-	private static final long MSG_VANISH_TIME = 3000;
-
-	private static void openFileHistory(EditPanel ed) throws Exception {
+	static void openFileHistory(EditPanel ed) throws Exception {
 		File fhn = U.getFileHistoryName();
 		PlainPage pp = new EditPanel(fhn).page;
 		pp.cy = Math.max(0, pp.lines.size() - 1);
@@ -1515,41 +1548,44 @@ public class PlainPage {
 		pp.uiComp.repaint();
 	}
 
+	boolean closed = false;
+
 	Cursor cursor = new Cursor();
+
 	int cx;
 	int cy;
 	BasicEdit editNoRec = new BasicEdit(false, this);
-	EditPanel uiComp;
 	BasicEdit editRec = new BasicEdit(true, this);
 	String encoding;
-	private FindReplaceWindow findWindow;
+	FindReplaceWindow findWindow;
 	public String fn;
 	History history;
 	boolean ignoreCase = true;
-	private boolean isCommentChecked = false;
-	private List<StringBuffer> lines;
+	boolean isCommentChecked = false;
+	List<StringBuffer> lines;
 	public String lineSep = "\n";
-	private int mcount;
-	private String msg;
-	private long msgtime;
-	private boolean mshift;
-	private int mx, my;
+	int mcount;
+	String msg;
+	long msgtime;
+	boolean mshift;
+	int mx, my;
+	boolean noise = false;
+	int noisesleep = 500;
 	EasyEdit ptEdit = new EasyEdit();
 	FindAndReplace ptFind = new FindAndReplace();
 	Selection ptSelection = new Selection();
-	private boolean rectSelectMode = false;
+	boolean rectSelectMode = false;
 	ReadonlyLines roLines = new ReadonlyLines(this);
+	boolean saveSelectionCancel;
 	int selectstartx, selectstarty, selectstopx, selectstopy;
-	private int showLineCnt;
+	int showLineCnt;
 	public long size;
-	private int sy, sx;
-	int noisesleep = 500;
+	int sy, sx;
 	String text2find;
-	private int toolbarHeight = 40;
+	int toolbarHeight = 40;
 	UI ui = new UI();
+	EditPanel uiComp;
 	public String workPath;
-	boolean noise = false;
-	boolean closed = false;
 
 	public PlainPage(EditPanel editor, File f) throws Exception {
 		this.uiComp = editor;
@@ -1563,12 +1599,25 @@ public class PlainPage {
 	public PlainPage(EditPanel editor, String text) throws Exception {
 		this.uiComp = editor;
 		history = new History(this);
-		setText(text);
+		ptEdit.setText(text);
 	}
 
-	void getFindWindow() {
-		if (findWindow == null)
-			findWindow = new FindReplaceWindow(uiComp.frame, this);
+	void closePage() throws Exception {
+		PlainPage page = this;
+		EditPanel editor = page.uiComp;
+		if (page.history.size() != 0) {
+			if (JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(editor,
+					"Are you sure to SAVE and close?", "Changes made",
+					JOptionPane.YES_NO_OPTION)) {
+				return;
+			}
+		}
+		if (page.fn != null) {
+			U.saveFile(page);
+			U.saveFileHistory(page.fn, page.cy);
+		}
+		page.closed = true;
+		editor.frame.dispose();
 	}
 
 	void focusCursor() {
@@ -1582,54 +1631,20 @@ public class PlainPage {
 		}
 	}
 
-	private void gotoFileLine() throws Exception {
-		if (cy < lines.size()) {
-			StringBuffer sb = lines.get(cy);
-			int p1, p2;
-			if ((p1 = sb.indexOf("|")) >= 0) {
-				if ((p2 = sb.indexOf(":", p1)) >= 0) {
-					String fn = sb.substring(0, p1);
-					int line = -1;
-					try {
-						line = Integer.parseInt(sb.substring(p1 + 1, p2));
-					} catch (Exception e) {
-					}
-					if (line >= 0) {
-						openFile(fn, line);
-					}
-				}
-			}
-		}
-
+	void getFindWindow() {
+		if (findWindow == null)
+			findWindow = new FindReplaceWindow(uiComp.frame, this);
 	}
 
-	void gotoLine() {
-		String s = JOptionPane.showInputDialog("Goto Line");
-		int line = -1;
-		try {
-			line = Integer.parseInt(s);
-		} catch (Exception e) {
-			line = -1;
+	String getText() {
+		StringBuffer sb = new StringBuffer();
+		int len = roLines.getLinesize();
+		for (int i = 0; i < len; i++) {
+			if (i > 0)
+				sb.append(lineSep);
+			sb.append(roLines.getline(i).toString());
 		}
-		if (line > roLines.getLinesize()) {
-			line = -1;
-		}
-		if (line > 0) {
-			line -= 1;
-			sy = Math.max(0, line - showLineCnt / 2 + 1);
-			cy = line;
-			cx = 0;
-			focusCursor();
-		}
-	}
-
-	private void help() {
-		
-		ui.showAbout();
-	}
-
-	private boolean isRectSelecting() {
-		return mshift && rectSelectMode;
+		return sb.toString();
 	}
 
 	public void keyPressed(KeyEvent env) {
@@ -1641,7 +1656,7 @@ public class PlainPage {
 			int ocy = cy;
 			int kc = env.getKeyCode();
 			if (kc == KeyEvent.VK_F1) {
-				help();
+				ui.help();
 			} else if (kc == KeyEvent.VK_F2) {
 				U.saveAs(this);
 			} else if (kc == KeyEvent.VK_F3) {
@@ -1675,11 +1690,11 @@ public class PlainPage {
 					runScript();
 				} else if (kc == KeyEvent.VK_D) {
 					runScriptOnDir();
-				}else if (kc == KeyEvent.VK_PAGE_UP) {					
-					cx = Math.max(0, cx-uiComp.getWidth()/10);
+				} else if (kc == KeyEvent.VK_PAGE_UP) {
+					cx = Math.max(0, cx - uiComp.getWidth() / 10);
 					focusCursor();
 				} else if (kc == KeyEvent.VK_PAGE_DOWN) {
-					cx =  cx+uiComp.getWidth()/10;
+					cx = cx + uiComp.getWidth() / 10;
 					focusCursor();
 				}
 			} else if (env.isControlDown()) {
@@ -1711,10 +1726,10 @@ public class PlainPage {
 				} else if (kc == KeyEvent.VK_S) {
 					if (U.saveFile(this)) {
 						System.out.println("saved");
-						message("saved");
+						ui.message("saved");
 					}
 				} else if (kc == KeyEvent.VK_L) {
-					gotoLine();
+					cursor.gotoLine();
 				} else if (kc == KeyEvent.VK_Z) {
 					history.undo();
 				} else if (kc == KeyEvent.VK_F) {
@@ -1748,7 +1763,7 @@ public class PlainPage {
 				} else if (kc == KeyEvent.VK_0) {
 					ui.scalev = 1;
 				} else if (kc == KeyEvent.VK_G) {
-					gotoFileLine();
+					cursor.gotoFileLine();
 				} else if (kc == KeyEvent.VK_H) {
 					openFileHistory(uiComp);
 				}
@@ -1797,13 +1812,90 @@ public class PlainPage {
 			}
 			uiComp.repaint();
 		} catch (Exception e) {
-			message("err:" + e);
+			ui.message("err:" + e);
 			e.printStackTrace();
 		}
 		history.endAtom();
 	}
 
-	private void runScript() throws Exception {
+	public void keyReleased(KeyEvent env) {
+	}
+
+	public void keyTyped(KeyEvent env) {
+		history.beginAtom();
+		char kc = env.getKeyChar();
+		if (kc == KeyEvent.VK_TAB && env.isShiftDown()) {
+			Rectangle r = ptSelection.getSelectRect();
+			if (r.y < r.height) {
+				ptEdit.moveRectLeft(r.y, r.height);
+			} else {
+				ptEdit.moveLineLeft(cy);
+			}
+		} else if (kc == KeyEvent.VK_TAB && !env.isShiftDown()
+				&& selectstarty != selectstopy && !rectSelectMode) {
+			Rectangle r = ptSelection.getSelectRect();
+			ptEdit.moveRectRight(r.y, r.height);
+		} else if (env.isControlDown() || env.isAltDown()) {
+			// ignore
+		} else {
+			ptEdit.insert(kc);
+		}
+		history.endAtom();
+	}
+
+	public void mouseClicked(MouseEvent evt) {
+		int my = evt.getY();
+		if (my > 0 && my < toolbarHeight) {
+			if (fn != null) {
+				U.setClipBoard(fn);
+				ui.message("filename copied");
+				my = 0;
+				uiComp.repaint();
+			}
+		}
+	}
+
+	public void mouseDragged(MouseEvent env) {
+		mx = env.getX();
+		my = env.getY();
+		mshift = true;
+		uiComp.repaint();
+	}
+
+	public void mousePressed(MouseEvent env) {
+		mx = env.getX();
+		my = env.getY();
+		mshift = env.isShiftDown();
+		mcount = env.getClickCount();
+		uiComp.repaint();
+		// System.out.println("m press");
+	}
+
+	public void mouseWheelMoved(MouseWheelEvent env) {
+		int amount = env.getWheelRotation() * env.getScrollAmount();
+		if (env.isControlDown()) {// scale
+			ui.scale(amount);
+		} else if (env.isAltDown()) {// horizon scroll
+			cursor.scrollHorizon(amount);
+		} else {// scroll
+			cursor.scroll(amount);
+		}
+
+	}
+
+	void openFile(String fn, int line) throws Exception {
+		final PlainPage pp = new EditPanel(new File(fn)).page;
+		if (pp != null && pp.lines.size() > 0) {
+			line -= 1;
+			pp.cx = 0;
+			pp.cy = Math.max(0, Math.min(line, pp.lines.size() - 1));
+			pp.sy = Math.max(0, pp.cy - 3);
+			pp.uiComp.openWindow();
+			pp.uiComp.repaint();
+		}
+	}
+
+	void runScript() throws Exception {
 		final JFrame sf = new JFrame("Javascript");
 		sf.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		JPanel p = new JPanel();
@@ -1839,7 +1931,7 @@ public class PlainPage {
 					String expect = "javax.script.ScriptException: sun.org.mozilla.javascript.internal.EvaluatorException:";
 					if (s1.startsWith(expect))
 						s1 = s1.substring(expect.length());
-					pp1.append("\n//Error:" + s1 + "\n");
+					pp1.ptEdit.append("\n//Error:" + s1 + "\n");
 					ed.repaint();
 				}
 
@@ -1862,7 +1954,7 @@ public class PlainPage {
 		sf.setVisible(true);
 	}
 
-	private void runScriptOnDir() throws Exception {
+	void runScriptOnDir() throws Exception {
 		final JFrame sf = new JFrame("Javascript On dir");
 		sf.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		JPanel p = new JPanel();
@@ -1895,7 +1987,7 @@ public class PlainPage {
 					String expect = "javax.script.ScriptException: sun.org.mozilla.javascript.internal.EvaluatorException:";
 					if (s1.startsWith(expect))
 						s1 = s1.substring(expect.length());
-					pp1.append("\n//Error:" + s1 + "\n");
+					pp1.ptEdit.append("\n//Error:" + s1 + "\n");
 					ed.repaint();
 				}
 
@@ -1918,133 +2010,7 @@ public class PlainPage {
 		sf.setVisible(true);
 	}
 
-	protected void append(String s) {
-		cy = roLines.getLinesize() - 1;
-		cx = roLines.getline(cy).length();
-		ptEdit.insertString(s);
-	}
-
-	protected String getText() {
-		StringBuffer sb = new StringBuffer();
-		int len = roLines.getLinesize();
-		for (int i = 0; i < len; i++) {
-			if (i > 0)
-				sb.append(lineSep);
-			sb.append(roLines.getline(i).toString());
-		}
-		return sb.toString();
-	}
-
-	private void setText(String s) {
-		String[] ss = s.split("\n");
-		List<StringBuffer> lines = new ArrayList<StringBuffer>();
-		for (int i = 0; i < ss.length; i++) {
-			lines.add(new StringBuffer(ss[i]));
-		}
-		if (lines.size() == 0) {
-			lines.add(new StringBuffer("empty"));
-			ptEdit.setLines(lines);
-			ptSelection.selectAll();
-		} else {
-			ptEdit.setLines(lines);
-		}
-	}
-
-	public void keyReleased(KeyEvent env) {
-	}
-
-	public void keyTyped(KeyEvent env) {
-		history.beginAtom();
-		char kc = env.getKeyChar();
-		if (kc == KeyEvent.VK_TAB && env.isShiftDown()) {
-			Rectangle r = ptSelection.getSelectRect();
-			if (r.y < r.height) {
-				ptEdit.moveRectLeft(r.y, r.height);
-			} else {
-				ptEdit.moveLineLeft(cy);
-			}
-		} else if (kc == KeyEvent.VK_TAB && !env.isShiftDown()
-				&& selectstarty != selectstopy && !rectSelectMode) {
-			Rectangle r = ptSelection.getSelectRect();
-			ptEdit.moveRectRight(r.y, r.height);
-		} else if (env.isControlDown() || env.isAltDown()) {
-			// ignore
-		} else {
-			ptEdit.insert(kc);
-		}
-		history.endAtom();
-	}
-
-	public void message(String s) {
-		msg = s;
-		msgtime = System.currentTimeMillis();
-	}
-
-	public void mouseDragged(MouseEvent env) {
-		mx = env.getX();
-		my = env.getY();
-		mshift = true;
-		uiComp.repaint();
-	}
-
-	public void mousePressed(MouseEvent env) {
-		mx = env.getX();
-		my = env.getY();
-		mshift = env.isShiftDown();
-		mcount = env.getClickCount();
-		uiComp.repaint();
-		// System.out.println("m press");
-	}
-
-	public void mouseWheelMoved(MouseWheelEvent env) {
-		int amount = env.getWheelRotation() * env.getScrollAmount();
-		if (env.isControlDown()) {// scale
-			scale(amount);
-		}else if (env.isAltDown()) {// horizon scroll
-			scrollHorizon(amount);
-		} else {// scroll
-			scroll(amount);
-		}
-
-	}
-
-	private void openFile(String fn, int line) throws Exception {
-		final PlainPage pp = new EditPanel(new File(fn)).page;
-		if (pp != null && pp.lines.size() > 0) {
-			line -= 1;
-			pp.cx = 0;
-			pp.cy = Math.max(0, Math.min(line, pp.lines.size() - 1));
-			pp.sy = Math.max(0, pp.cy - 3);
-			pp.uiComp.openWindow();
-			pp.uiComp.repaint();
-		}
-	}
-
-	private void scale(int amount) {
-		if (amount > 0) {
-			ui.scalev *= 1.1f;
-		} else if (amount < 0) {
-			ui.scalev *= 0.9f;
-		}
-	}
-
-	public void scroll(int amount) {
-		sy += amount;
-		if (sy >= roLines.getLinesize()) {
-			sy = roLines.getLinesize() - 1;
-		}
-		if (sy < 0) {
-			sy = 0;
-		}
-		uiComp.repaint();
-	}
-	public void scrollHorizon(int amount) {
-		sx += amount;
-		if (sx<0)sx=0;
-		uiComp.repaint();
-	}
-
-	private void startNoiseThread() {
+	void startNoiseThread() {
 		Thread t = new Thread() {
 			public void run() {
 				try {// noise thread
@@ -2069,17 +2035,5 @@ public class PlainPage {
 
 	public void xpaint(Graphics g, Dimension size) {
 		ui.xpaint(g, size);
-	}
-
-	public void mouseClicked(MouseEvent evt) {
-		int my = evt.getY();
-		if (my > 0 && my < toolbarHeight) {
-			if (fn != null) {
-				U.setClipBoard(fn);
-				message("filename copied");
-				my = 0;
-				uiComp.repaint();
-			}
-		}
 	}
 }
