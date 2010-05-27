@@ -76,7 +76,7 @@ public class EditPanel extends JComponent implements MouseMotionListener,
         frame.addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
                 PlainPage pp = page;
-                pp.closed = true;
+                pp.ui.closed = true;
                 if (pp.fn != null) {
                     try {
                         U.saveFileHistory(pp.fn, pp.cy);
@@ -87,7 +87,7 @@ public class EditPanel extends JComponent implements MouseMotionListener,
             }
         });
         frame.setVisible(true);
-        page.getFindWindow();
+        //page.getFindWindow();
         changeTitle();
         repaint();
     }
