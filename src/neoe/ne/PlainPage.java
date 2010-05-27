@@ -665,8 +665,10 @@ public class PlainPage {
 			}
 		}
 
+		long backIcon = -1;
+
 		void drawToolbar(Graphics2D g2) {
-			U.drawBackIcon(g2, 0,0,dim.width,toolbarHeight,EditPanel.icon);
+
 			long MSG_VANISH_TIME = 3000;
 			String s1 = "<F1>:Help, " + (encoding == null ? "-" : encoding)
 					+ (lineSep.equals("\n") ? ", U" : ", W") + ", Line:"
@@ -698,6 +700,7 @@ public class PlainPage {
 		}
 
 		void xpaint(Graphics g, Dimension size) {
+			long now = System.currentTimeMillis();
 			try {
 				this.dim = size;
 				if (!isCommentChecked) {// find comment pattern
@@ -767,6 +770,15 @@ public class PlainPage {
 				if (noise) {
 					U.paintNoise(g2, dim);
 				}
+
+				// back icon
+				if (backIcon == -1) {
+					backIcon = System.currentTimeMillis();
+				}
+				if (now - backIcon < 3000)
+					U.drawBackIcon(g2, 0, 0, dim.width, toolbarHeight,
+							EditPanel.icon);
+
 				// draw toolbar
 				drawToolbar(g2);
 				// draw gutter
