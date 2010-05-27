@@ -15,6 +15,7 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
 
+import javax.imageio.ImageIO;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 
@@ -66,10 +67,11 @@ public class EditPanel extends JComponent implements MouseMotionListener,
     PlainPage page;
     JFrame frame;
 
-    public void openWindow() {
+    public void openWindow() throws IOException {
         if (frame != null)
             return;
         frame = new JFrame(PlainPage.WINDOW_NAME);
+        frame.setIconImage(ImageIO.read(Class.class.getResourceAsStream("/Alien.png")));
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setSize(new Dimension(800, 600));
         frame.getContentPane().add(this);
