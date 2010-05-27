@@ -1,12 +1,17 @@
 package neoe.ne;
 
 import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -21,54 +26,455 @@ import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
+import java.util.Random;
 
 import javax.imageio.ImageIO;
 import javax.swing.BoxLayout;
+import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
+import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
-import neoe.ne.PlainPage.BasicEdit;
+import neoe.ne.PlainPage.Paint;
 import neoe.util.FileIterator;
 
 /**
  * util
  */
 public class U {
-	public static class PriorityList {
 
-		private Map<Integer, Image> cache;
-		private int cut;
-		private List<Integer> ks;
-		private int max;
+	static enum BasicAction {
+		Delete, DeleteEmtpyLine, Insert, InsertEmptyLine, MergeLine
+	}
 
-		public PriorityList(Map<Integer, Image> lineCache) {
-			this.cache = lineCache;
-			ks = new ArrayList<Integer>();
-			max = 200;
-			cut = 100;
+	static class BasicEdit {
+		PlainPage page;
+		boolean record;
+
+		BasicEdit(boolean record, PlainPage page) {
+			this.record = record;
+			this.page = page;
 		}
 
-		public void touch(Integer k) {
-			int p = ks.indexOf(k);
-			if (p >= cut) {
-				ks.remove(k);
-				ks.add(0, k);
-			} else if (p < 0) {
-				ks.add(0, k);
+		void deleteEmptyLine(int y) {
+			StringBuffer sb = lines().get(y);
+			if (sb.length() > 0) {
+				throw new RuntimeException("not a empty line " + y + ":" + sb);
 			}
-			if (ks.size() > max) {
-				for (Integer rm : ks.subList(cut, ks.size())) {
-					cache.remove(rm);
+			if (lines().size() > 1) {
+				lines().remove(y);
+				if (record) {
+					history().addOne(
+							new HistoryCell(BasicAction.DeleteEmtpyLine, -1,
+									-1, y, -1, null));
 				}
-				ks = ks.subList(0, cut);
 			}
-
 		}
 
+		void deleteInLine(int y, int x1, int x2) {
+			StringBuffer sb = lines().get(y);
+			if (x1 >= sb.length())
+				return;
+			x2 = Math.min(x2, sb.length());
+			String d = sb.substring(x1, x2);
+			if (d.length() > 0) {
+				sb.delete(x1, x2);
+				if (record) {
+					history().addOne(
+							new HistoryCell(BasicAction.Delete, x1, x2, y, -1,
+									d));
+				}
+			}
+		}
+
+		History history() {
+			return page.history;
+		}
+
+		void insertEmptyLine(int y) {
+			lines().add(y, new StringBuffer());
+			if (record) {
+				history().addOne(
+						new HistoryCell(BasicAction.InsertEmptyLine, -1, -1, y,
+								-1, null));
+			}
+		}
+
+		void insertInLine(int y, int x, String s) {
+			if (s.indexOf("\n") >= 0 || s.indexOf("\r") >= 0) {
+				throw new RuntimeException("cannot contains line-seperator:["
+						+ s + "]" + s.indexOf("\n"));
+			}
+			if (y == page.roLines.getLinesize()) {
+				page.editRec.insertEmptyLine(y);
+			}
+			StringBuffer sb = lines().get(y);
+			if (x > sb.length()) {
+				sb.setLength(x);
+			}
+			sb.insert(x, s);
+			if (record) {
+				history().addOne(
+						new HistoryCell(BasicAction.Insert, x, x + s.length(),
+								y, -1, null));
+			}
+		}
+
+		List<StringBuffer> lines() {
+			return page.lines;
+		}
+
+		void mergeLine(int y) {
+			StringBuffer sb1 = lines().get(y);
+			StringBuffer sb2 = lines().get(y + 1);
+			int x1 = sb1.length();
+			sb1.append(sb2);
+			lines().remove(y + 1);
+			if (record) {
+				history().addOne(
+						new HistoryCell(BasicAction.MergeLine, x1, -1, y, -1,
+								null));
+			}
+		}
+	}
+
+	static class FindAndReplace {
+		FindReplaceWindow findWindow;
+		private PlainPage pp;
+		String text2find;
+
+		public FindAndReplace(PlainPage plainPage) {
+			this.pp = plainPage;
+		}
+
+		void doFind(String text, boolean ignoreCase, boolean selected2,
+				boolean inDir, String dir) throws Exception {
+			if (!inDir) {
+				text2find = text;
+				pp.ignoreCase = ignoreCase;
+				findNext();
+				pp.uiComp.repaint();
+			} else {
+				doFindInDir(pp.uiComp, text, ignoreCase, selected2, inDir, dir);
+			}
+		}
+
+		void findNext() {
+			if (text2find != null && text2find.length() > 0) {
+				Point p = find(pp, text2find, pp.cx + 1, pp.cy, pp.ignoreCase);
+				if (p == null) {
+					pp.ui.message("string not found");
+				} else {
+					pp.ptSelection.selectLength(p.x, p.y, text2find.length());
+
+				}
+			}
+		}
+
+		void showFindDialog() {
+			String t = pp.ptSelection.getSelected();
+			int p1 = t.indexOf("\n");
+			if (p1 >= 0) {
+				t = t.substring(0, p1);
+			}
+			if (t.length() == 0 && text2find != null) {
+				t = text2find;
+			}
+			if (findWindow == null)
+				findWindow = new FindReplaceWindow(pp.uiComp.frame, pp);
+			if (t.length() > 0) {
+				findWindow.jta1.setText(t);
+			}
+			findWindow.show();
+			findWindow.jta1.grabFocus();
+		}
+	}
+
+	static class History {
+		public static int MAXSIZE = 200;
+		List<HistoryCell> atom;
+		LinkedList<List<HistoryCell>> data;
+		int p;
+		PlainPage page;
+
+		public History(PlainPage page) {
+			data = new LinkedList<List<HistoryCell>>();
+			p = 0;
+			atom = new ArrayList<HistoryCell>();
+			this.page = page;
+		}
+
+		void add(List<HistoryCell> o) {
+			if (p < data.size() && p >= 0) {
+				for (int i = 0; i < data.size() - p; i++) {
+					data.removeLast();
+				}
+			}
+			List<HistoryCell> last = data.peekLast();
+			// stem.out.println("last=" + last);
+			if (!append(last, o)) {
+				// System.out.println("add:" + o);
+				data.add(o);
+				if (data.size() > MAXSIZE) {
+					data.removeFirst();
+				} else {
+					p += 1;
+				}
+			} else {
+				// System.out.println("append:" + o);
+			}
+		}
+
+		public void addOne(HistoryCell historyInfo) {
+			historyInfo.page = this.page;
+			atom.add(historyInfo);
+		}
+
+		/**
+		 * try to append this change to the last ones
+		 */
+		boolean append(List<HistoryCell> lasts, List<HistoryCell> os) {
+			if (lasts == null) {
+				return false;
+			}
+			boolean ret = false;
+			if (os.size() == 1) {
+				HistoryCell o = os.get(0);
+				HistoryCell last = lasts.get(lasts.size() - 1);
+				if (o.canAppend(last)) {
+					lasts.add(o);
+					ret = true;
+				}
+			}
+			return ret;
+		}
+
+		public void beginAtom() {
+			if (atom.size() > 0) {
+				endAtom();
+			}
+		}
+
+		public void clear() {
+			atom.clear();
+			data.clear();
+			p = 0;
+		}
+
+		public void endAtom() {
+			if (atom.size() > 0) {
+				// System.out.println("end atom");
+				add(atom);
+				atom = new ArrayList<HistoryCell>();
+			}
+		}
+
+		public List<HistoryCell> get() {
+			if (p <= 0) {
+				return null;
+			}
+			p -= 1;
+			// System.out.println("undo:" + data.get(p));
+			return data.get(p);
+		}
+
+		public List<HistoryCell> getRedo() {
+			if (p < data.size()) {
+				p += 1;
+				return data.get(p - 1);
+			} else {
+				return null;
+			}
+		}
+
+		void redo() throws Exception {
+			List<HistoryCell> os = getRedo();
+			if (os == null) {
+				return;
+			}
+			for (HistoryCell o : os) {
+				o.redo();
+			}
+		}
+
+		public int size() {
+			return p;
+		}
+
+		void undo() throws Exception {
+			List<HistoryCell> os = get();
+			if (os == null) {
+				return;
+			}
+			for (int i = os.size() - 1; i >= 0; i--) {
+				HistoryCell o = os.get(i);
+				o.undo();
+			}
+		}
+	}
+
+	static class HistoryCell {
+		U.BasicAction action;
+		PlainPage page;
+		String s1;
+		int x1, x2, y1, y2;
+
+		public HistoryCell(U.BasicAction action, int x1, int x2, int y1,
+				int y2, String s1) {
+			super();
+			this.s1 = s1;
+			this.x1 = x1;
+			this.x2 = x2;
+			this.y1 = y1;
+			this.y2 = y2;
+			this.action = action;
+		}
+
+		public boolean canAppend(HistoryCell last) {
+			return ((last.action == U.BasicAction.Delete
+					&& this.action == U.BasicAction.Delete && // 
+			((last.x1 == this.x1 || last.x1 == this.x2) && last.y1 == this.y1))// 
+			|| (last.action == U.BasicAction.Insert
+					&& this.action == U.BasicAction.Insert && // 
+			((last.x1 == this.x1 || last.x2 == this.x1) && last.y1 == this.y1)));
+		}
+
+		U.BasicEdit editNoRec() {
+			return page.editNoRec;
+		}
+
+		public void redo() {
+			// System.out.println("redo:" + toString());
+			switch (action) {
+			case Delete:
+				s1 = roLines().getInLine(y1, x1, x2);
+				editNoRec().deleteInLine(y1, x1, x2);
+				page.cursor.setSafePos(x1, y1);
+				break;
+			case DeleteEmtpyLine:
+				editNoRec().deleteEmptyLine(y1);
+				page.cursor.setSafePos(0, y1);
+				break;
+			case Insert:
+				editNoRec().insertInLine(y1, x1, s1);
+				page.cursor.setSafePos(x1 + s1.length(), y1);
+				s1 = null;
+				break;
+			case InsertEmptyLine:
+				editNoRec().insertEmptyLine(y1);
+				page.cursor.setSafePos(0, y1 + 1);
+				break;
+			case MergeLine:
+				editNoRec().mergeLine(y1);
+				page.cursor.setSafePos(x1, y1);
+				break;
+			default:
+				throw new RuntimeException("unkown action " + action);
+			}
+		}
+
+		ReadonlyLines roLines() {
+			return page.roLines;
+		}
+
+		@Override
+		public String toString() {
+			return "HistoryInfo [action=" + action + ", x1=" + x1 + ", x2="
+					+ x2 + ", y1=" + y1 + ", y2=" + y2 + ", s1=" + s1 + "]\n";
+		}
+
+		public void undo() {
+			// System.out.println("undo:" + toString());
+			switch (action) {
+			case Delete:
+				editNoRec().insertInLine(y1, x1, s1);
+				page.cursor.setSafePos(x1 + s1.length(), y1);
+				s1 = null;
+				break;
+			case DeleteEmtpyLine:
+				editNoRec().insertEmptyLine(y1);
+				page.cursor.setSafePos(0, y1 + 1);
+				break;
+			case Insert:
+				s1 = roLines().getInLine(y1, x1, x2);
+				editNoRec().deleteInLine(y1, x1, x2);
+				page.cursor.setSafePos(0, y1);
+				break;
+			case InsertEmptyLine:
+				editNoRec().deleteEmptyLine(y1);
+				page.cursor.setSafePos(0, y1);
+				break;
+			case MergeLine:
+				String s2 = roLines().getInLine(y1, x1, Integer.MAX_VALUE);
+				editNoRec().deleteInLine(y1, x1, Integer.MAX_VALUE);
+				editNoRec().insertEmptyLine(y1 + 1);
+				editNoRec().insertInLine(y1 + 1, 0, s2);
+				page.cursor.setSafePos(0, y1 + 1);
+				break;
+			default:
+				throw new RuntimeException("unkown action " + action);
+			}
+		}
+	}
+
+	static class ReadonlyLines {
+		PlainPage page;
+
+		ReadonlyLines(PlainPage page) {
+			this.page = page;
+		}
+
+		String getInLine(int y, int x1, int x2) {
+			RoSb sb = getline(y);
+			if (x2 > sb.length()) {
+				x2 = sb.length();
+			}
+			if (x1 > sb.length()) {
+				x1 = sb.length();
+			}
+			return sb.substring(x1, x2);
+		}
+
+		RoSb getline(int i) {
+			return new RoSb(page.lines.get(i));
+		}
+
+		int getLinesize() {
+			return page.lines.size();
+		}
+
+		String getTextInRect(Rectangle r) {
+			int x1 = r.x;
+			int y1 = r.y;
+			int x2 = r.width;
+			int y2 = r.height;
+			StringBuffer sb = new StringBuffer();
+			if (page.rectSelectMode) {
+				for (int i = y1; i <= y2; i++) {
+					if (i != y1) {
+						sb.append(page.lineSep);
+					}
+					sb.append(getInLine(i, x1, x2));
+				}
+			} else {
+				if (y1 == y2 && x1 < x2) {
+					sb.append(getInLine(y1, x1, x2));
+				} else if (y1 < y2) {
+					sb.append(getInLine(y1, x1, Integer.MAX_VALUE));
+					for (int i = y1 + 1; i < y2; i++) {
+						sb.append(page.lineSep);
+						sb.append(getline(i));
+					}
+					sb.append(page.lineSep);
+					sb.append(getInLine(y2, 0, x2));
+				}
+			}
+			return sb.toString();
+		}
 	}
 
 	/**
@@ -95,7 +501,6 @@ public class U {
 		}
 
 		public String substring(int a, int b) {
-
 			return sb.substring(a, b);
 		}
 
@@ -234,6 +639,8 @@ public class U {
 			"vbyellow", "void", "volatile", "weekday", "weekdayname", "wend",
 			"while", "with", "xor", "xrange", "year", "yield", "zip" };
 
+	static Random random = new Random();
+
 	public static Image TabImg;
 
 	public static final int TABWIDTH = 60;
@@ -248,28 +655,49 @@ public class U {
 		}
 	}
 
-	static void doReplace(PlainPage page, String text, boolean ignoreCase,
-			boolean selected2, String text2, boolean all, boolean inDir,
-			String dir) {
-
-		page.text2find = text;
-		if (page.text2find != null && page.text2find.length() > 0) {
-			Point p = replace(page, page.text2find, page.cx, page.cy, text2,
-					all, ignoreCase);
-			if (p == null) {
-				page.ui.message("string not found");
-			} else {
-				page.cx = p.x;
-				page.cy = p.y;
-				// page.selectstartx = page.cx;
-				// page.selectstarty = page.cy;
-				// page.selectstopx = page.cx + text2.length();
-				// page.selectstopy = page.cy;
-				page.focusCursor();
-				page.ptSelection.cancelSelect();
+	static void closePage(PlainPage page) throws Exception {
+		EditPanel editor = page.uiComp;
+		if (page.history.size() != 0) {
+			if (JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(editor,
+					"Are you sure to SAVE and close?", "Changes made",
+					JOptionPane.YES_NO_OPTION)) {
+				return;
 			}
 		}
-		page.uiComp.repaint();
+		if (page.fn != null) {
+			saveFile(page);
+			saveFileHistory(page.fn, page.cy);
+		}
+		page.ui.closed = true;
+		editor.frame.dispose();
+	}
+
+	/**
+	 * quick find how much char can be shown in width
+	 * 
+	 * @param width
+	 * @param g2
+	 * @return
+	 */
+	static int computeShowIndex(String s, int width, Graphics2D g2) {
+		if (s.length() == 0) {
+			return 0;
+		}
+		if (U.strWidth(g2, s) <= width) {
+			return s.length();
+		}
+		int i = s.length() / 2;
+		while (true) {
+			if (i == 0) {
+				return 0;
+			}
+			int w = U.strWidth(g2, s.substring(0, i));
+			if (w <= width) {
+				return i + computeShowIndex(s.substring(i), width - w, g2);
+			} else {
+				i = i / 2;
+			}
+		}
 	}
 
 	static void doFindInDir(EditPanel editor, String text, boolean ignoreCase,
@@ -310,6 +738,29 @@ public class U {
 				page.uiComp.repaint();
 			}
 		}
+	}
+
+	static void doReplace(PlainPage page, String text, boolean ignoreCase,
+			boolean selected2, String text2, boolean all, boolean inDir,
+			String dir) {
+		page.ptFind.text2find = text;
+		if (text != null && text.length() > 0) {
+			Point p = replace(page, text, page.cx, page.cy, text2, all,
+					ignoreCase);
+			if (p == null) {
+				page.ui.message("string not found");
+			} else {
+				page.cx = p.x;
+				page.cy = p.y;
+				// page.selectstartx = page.cx;
+				// page.selectstarty = page.cy;
+				// page.selectstopx = page.cx + text2.length();
+				// page.selectstopy = page.cy;
+				page.focusCursor();
+				page.ptSelection.cancelSelect();
+			}
+		}
+		page.uiComp.repaint();
 	}
 
 	static void doReplaceAll(PlainPage page, String text, boolean ignoreCase,
@@ -353,6 +804,16 @@ public class U {
 		editor.repaint();
 	}
 
+	static int drawTwoColor(Graphics2D g2, String s, int x, int y, Color c1,
+			Color c2) {
+		g2.setColor(c2);
+		g2.drawString(s, x + 1, y + 1);
+		g2.setColor(c1);
+		g2.drawString(s, x, y);
+		return g2.getFontMetrics().stringWidth(s);
+
+	}
+
 	public static String f(String s) {
 		while (s.endsWith("\r")) {
 			s = s.substring(0, s.length() - 1);
@@ -360,7 +821,105 @@ public class U {
 		return s;
 	}
 
+	static Point find(PlainPage page, String s, int x, int y, boolean ignoreCase) {
+		if (y >= page.roLines.getLinesize())
+			return null;
+		if (ignoreCase) {
+			s = s.toLowerCase();
+		}
+		x = Math.min(x, page.roLines.getline(y).toString(ignoreCase).length());
+		// first half row
+		int p1 = page.roLines.getline(y).toString(ignoreCase).indexOf(s, x);
+		if (p1 >= 0) {
+			return new Point(p1, y);
+		}
+		// middle rows
+		int fy = y;
+		for (int i = 0; i < page.roLines.getLinesize() - 1; i++) {
+			fy += 1;
+			if (fy >= page.roLines.getLinesize()) {
+				fy = 0;
+			}
+			p1 = page.roLines.getline(fy).toString(ignoreCase).indexOf(s);
+			if (p1 >= 0) {
+				return new Point(p1, fy);
+			}
+		}
+		// last half row
+		p1 = page.roLines.getline(y).toString(ignoreCase).substring(x).indexOf(
+				s);
+		if (p1 >= 0) {
+			return new Point(p1, fy);
+		}
+		return null;
+	}
+
+	static void findchar(PlainPage page, char ch, int inc, int[] c1, char chx) {
+		int cx1 = c1[0];
+		int cy1 = c1[1];
+		RoSb csb = page.roLines.getline(cy1);
+		int lv = 1;
+		while (true) {
+			if (inc == -1) {
+				cx1--;
+				if (cx1 < 0) {
+					cy1--;
+					if (cy1 < 0) {
+						c1[0] = -1;
+						c1[1] = -1;
+						return;
+					} else {
+						csb = page.roLines.getline(cy1);
+						cx1 = csb.length() - 1;
+						if (cx1 < 0) {
+							continue;
+						}
+					}
+				}
+				char ch2 = csb.charAt(cx1);
+				if (ch2 == chx) {
+					lv++;
+				} else if (ch2 == ch) {
+					lv--;
+					if (lv == 0) {
+						c1[0] = cx1;
+						c1[1] = cy1;
+						return;
+					}
+				}
+			} else {
+				cx1++;
+				if (cx1 >= csb.length()) {
+					cy1++;
+					if (cy1 >= page.roLines.getLinesize()) {
+						c1[0] = -1;
+						c1[1] = -1;
+						return;
+					} else {
+						csb = page.roLines.getline(cy1);
+						cx1 = 0;
+						if (cx1 >= csb.length()) {
+							continue;
+						}
+					}
+				}
+				char ch2 = csb.charAt(cx1);
+				if (ch2 == chx) {
+					lv++;
+				} else if (ch2 == ch) {
+					lv--;
+					if (lv == 0) {
+						c1[0] = cx1;
+						c1[1] = cy1;
+						return;
+					}
+				}
+			}
+		}
+	}
+
 	static List<String> findInFile(File f, String text, boolean ignoreCase2) {
+		int MAX_SHOW_CHARS_IN_LINE = 30;
 		List<String> a = new ArrayList<String>();
 		try {
 			String enc = guessEncoding(f.getAbsolutePath());
@@ -381,9 +940,8 @@ public class U {
 					}
 
 					if (line.indexOf(text) >= 0) {
-						if (line.length() > PlainPage.MAX_SHOW_CHARS_IN_LINE) {
-							line = line.substring(0,
-									PlainPage.MAX_SHOW_CHARS_IN_LINE)
+						if (line.length() > MAX_SHOW_CHARS_IN_LINE) {
+							line = line.substring(0, MAX_SHOW_CHARS_IN_LINE)
 									+ "...";
 						}
 						a.add(String.format("%s|%s:%s", fn, lineno, oline));
@@ -405,12 +963,130 @@ public class U {
 				+ km(Runtime.getRuntime().totalMemory()));
 	}
 
+	static String getClipBoard() {
+		String s;
+		try {
+			s = Toolkit.getDefaultToolkit().getSystemClipboard().getData(
+					DataFlavor.stringFlavor).toString();
+		} catch (Exception e) {
+			s = "";
+		}
+		return s;
+	}
+
+	static File getFileHistoryName() throws IOException {
+		String home = System.getProperty("user.home");
+		File dir = new File(home, ".neoeedit");
+		dir.mkdirs();
+
+		File f = new File(dir, "fh.txt");
+		if (!f.exists()) {
+			new FileOutputStream(f).close();
+		}
+		return f;
+	}
+
+	static int getHighLightID(String s, Graphics2D g2, Color color) {
+		if (Arrays.binarySearch(kws, s) >= 0
+				|| Arrays.binarySearch(kws, s.toLowerCase()) >= 0) {
+			g2.setColor(Color.BLUE);
+		} else if (isAllDigital(s)) {
+			g2.setColor(Color.RED);
+		} else {
+			g2.setColor(color);
+		}
+		return 0;
+	}
+
 	static String getIndent(String s) {
 		int p = 0;
 		while (p < s.length() && (s.charAt(p) == ' ' || s.charAt(p) == '\t')) {
 			p += 1;
 		}
 		return s.substring(0, p);
+	}
+
+	static String getText(PlainPage pp) {
+		StringBuffer sb = new StringBuffer();
+		int len = pp.roLines.getLinesize();
+		for (int i = 0; i < len; i++) {
+			if (i > 0)
+				sb.append(pp.lineSep);
+			sb.append(pp.roLines.getline(i).toString());
+		}
+		return sb.toString();
+	}
+
+	static void gotoFileLine(String sb) throws Exception {
+		int p1, p2;
+		if ((p1 = sb.indexOf("|")) >= 0) {
+			if ((p2 = sb.indexOf(":", p1)) >= 0) {
+				String fn = sb.substring(0, p1);
+				int line = -1;
+				try {
+					line = Integer.parseInt(sb.substring(p1 + 1, p2));
+				} catch (Exception e) {
+				}
+				if (line >= 0) {
+					openFile(fn, line);
+				}
+			}
+		}
+	}
+
+	static void guessComment(PlainPage page) {
+		String comment = null;
+		String[] commentchars = { "#", "%", "'", "//", "!", ";", "--", "/*",
+				"<!--" };
+		int[] cnts = new int[commentchars.length];
+		for (int i = 0; i < page.roLines.getLinesize(); i++) {
+			RoSb sb = page.roLines.getline(i);
+			for (int j = 0; j < cnts.length; j++) {
+				if (sb.toString().trim().startsWith(commentchars[j])) {
+					cnts[j]++;
+				}
+			}
+		}
+		int kind = 0;
+		int max = 0;
+		for (int j = 0; j < cnts.length; j++) {
+			if (cnts[j] > 0) {
+				kind++;
+				max = Math.max(max, cnts[j]);
+			}
+		}
+		if (kind == 1) {
+			for (int j = 0; j < cnts.length; j++) {
+				if (cnts[j] > 0) {
+					comment = commentchars[j];
+
+					break;
+				}
+			}
+		} else {
+			int k2 = 0;
+			int lv2 = Math.max(5, max / 10);
+			for (int j = 0; j < cnts.length; j++) {
+				if (cnts[j] > lv2) {
+					k2++;
+				}
+			}
+			if (k2 == 1) {
+				for (int j = 0; j < cnts.length; j++) {
+					if (cnts[j] > lv2) {
+						comment = commentchars[j];
+						break;
+					}
+				}
+			}
+		}
+		if (comment == null) {
+			page.ui.message("no comment found" + Arrays.toString(cnts));
+		} else {
+			page.ui.message("comment found:" + comment);
+		}
+		page.ui.comment = comment;
+		page.uiComp.repaint();
 	}
 
 	static String guessEncoding(String fn) throws Exception {
@@ -551,6 +1227,40 @@ public class U {
 
 	}
 
+	static void openFile(String fn, int line) throws Exception {
+		final PlainPage pp = new EditPanel(new File(fn)).page;
+		if (pp != null && pp.lines.size() > 0) {
+			line -= 1;
+			pp.cx = 0;
+			pp.cy = Math.max(0, Math.min(line, pp.lines.size() - 1));
+			pp.sy = Math.max(0, pp.cy - 3);
+			pp.uiComp.openWindow();
+			pp.uiComp.repaint();
+		}
+	}
+
+	static void openFileHistory(EditPanel ed) throws Exception {
+		File fhn = getFileHistoryName();
+		PlainPage pp = new EditPanel(fhn).page;
+		pp.cy = Math.max(0, pp.lines.size() - 1);
+		pp.sy = Math.max(0, pp.cy - 5);
+		pp.uiComp.openWindow();
+		pp.uiComp.repaint();
+	}
+
+	static void paintNoise(Graphics2D g2, Dimension dim) {
+		int cnt = 1000;
+		int w = dim.width;
+		int h = dim.height;
+		int cs = 0xffffff;
+		for (int i = 0; i < cnt; i++) {
+			int x = random.nextInt(w);
+			int y = random.nextInt(h);
+			g2.setColor(new Color(random.nextInt(cs)));
+			g2.drawLine(x, y, x + 1, y);
+		}
+	}
+
 	static void readFile(PlainPage page, String fn) {
 		if (page.encoding == null) {
 			page.encoding = U.guessEncodingForEditor(fn);
@@ -588,6 +1298,28 @@ public class U {
 		}
 	}
 
+	public static String readString(File f, String enc) throws IOException {
+		BufferedReader in = new BufferedReader(new InputStreamReader(
+				new FileInputStream(f), enc));
+		char[] buf = new char[1000];
+		int len;
+		StringBuffer sb = new StringBuffer();
+		while ((len = in.read(buf)) > 0) {
+			sb.append(buf, 0, len);
+		}
+		in.close();
+		return sb.toString();
+	}
+
+	static void reloadWithEncodingByUser(String fn, PlainPage pp) {
+		if (fn == null) {
+			pp.ui.message("file not saved.");
+			return;
+		}
+		setEncodingByUser(pp, "Reload with Encoding:");
+		readFile(pp, fn);
+	}
+
 	static void removeTrailingSpace(PlainPage page) {
 		for (int i = 0; i < page.roLines.getLinesize(); i++) {
 			RoSb sb = page.roLines.getline(i);
@@ -618,7 +1350,7 @@ public class U {
 	static Point replace(PlainPage page, String s, int x, int y, String s2,
 			boolean all, boolean ignoreCase) {
 		int cnt = 0;
-		BasicEdit editRec = page.editRec;
+		U.BasicEdit editRec = page.editRec;
 		if (ignoreCase) {
 			s = s.toLowerCase();
 		}
@@ -693,6 +1425,130 @@ public class U {
 		}
 	}
 
+	static void runScript(final PlainPage pp) throws Exception {
+		final JFrame sf = new JFrame("Javascript");
+		sf.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		JPanel p = new JPanel();
+		sf.getContentPane().add(p);
+		SimpleLayout s = new SimpleLayout(p);
+		String sample = "var i=0; \nfunction run(s,current,total){//lineString,currentLineNo(from 0),totalLineCount\n//example\n"
+				+ "if (current==1) {return s.split('\\t').join('|');}// 1 line to 0 line\n"
+				+ "if (current==0) {return ['vvvvv','fasdfa',233];}// 1 line to multi line\n"
+				+ "return current+'/'+total+':'+s;// just return something\n}";
+		final EditPanel ed = new EditPanel(sample);
+		final PlainPage pp1 = ed.page;
+		ed.frame = sf;
+		pp1.workPath = pp.workPath;
+		s.add(pp1.uiComp);
+		s.newline();
+		JButton jb1 = new JButton("run");
+		JButton jb2 = new JButton("close");
+		s.add(jb1);
+		s.add(jb2);
+		s.newline();
+		jb1.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				try {
+					ed.grabFocus();
+					List<StringBuffer> newLines = JS
+							.run(pp.lines, getText(pp1));
+					PlainPage pp = new EditPanel("").page;
+					pp.workPath = pp1.workPath;
+					pp.ptEdit.setLines(newLines);
+					pp.uiComp.openWindow();
+				} catch (Exception e1) {
+					System.out.println(e1);
+					String s1 = "" + e1;
+					String expect = "javax.script.ScriptException: sun.org.mozilla.javascript.internal.EvaluatorException:";
+					if (s1.startsWith(expect))
+						s1 = s1.substring(expect.length());
+					pp1.ptEdit.append("\n//Error:" + s1 + "\n");
+					ed.repaint();
+				}
+
+			}
+		});
+		jb2.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if (pp1.history.size() != 0) {
+					if (JOptionPane.YES_OPTION != JOptionPane
+							.showConfirmDialog(ed, "Are you sure to close?",
+									"Changes made", JOptionPane.YES_NO_OPTION)) {
+						ed.grabFocus();
+						return;
+					}
+				}
+				sf.dispose();
+			}
+		});
+		sf.setSize(new Dimension(800, 600));
+		sf.setVisible(true);
+	}
+
+	static void runScriptOnDir(String workPath) throws Exception {
+		final JFrame sf = new JFrame("Javascript On dir");
+		sf.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		JPanel p = new JPanel();
+		sf.getContentPane().add(p);
+		SimpleLayout s = new SimpleLayout(p);
+		String sample = "var dir=\"d:/tmp\";\nfunction onFile(f){\n  return f.getAbsolutePath()+'\t'+f.length();\n}\n";
+		final EditPanel ed = new EditPanel(sample);
+		final PlainPage pp1 = ed.page;
+		ed.frame = sf;
+		pp1.workPath = workPath;
+		s.add(pp1.uiComp);
+		s.newline();
+		JButton jb1 = new JButton("run");
+		JButton jb2 = new JButton("close");
+		s.add(jb1);
+		s.add(jb2);
+		s.newline();
+		jb1.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				try {
+					ed.grabFocus();
+					List<StringBuffer> newLines = JS.runOnDir(getText(pp1));
+					PlainPage pp = new EditPanel("").page;
+					pp.workPath = pp1.workPath;
+					pp.ptEdit.setLines(newLines);
+					pp.uiComp.openWindow();
+				} catch (Exception e1) {
+					e1.printStackTrace();
+					String s1 = "" + e1;
+					String expect = "javax.script.ScriptException: sun.org.mozilla.javascript.internal.EvaluatorException:";
+					if (s1.startsWith(expect))
+						s1 = s1.substring(expect.length());
+					pp1.ptEdit.append("\n//Error:" + s1 + "\n");
+					ed.repaint();
+				}
+
+			}
+		});
+		jb2.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if (pp1.history.size() != 0) {
+					if (JOptionPane.YES_OPTION != JOptionPane
+							.showConfirmDialog(ed, "Are you sure to close?",
+									"Changes made", JOptionPane.YES_NO_OPTION)) {
+						ed.grabFocus();
+						return;
+					}
+				}
+				sf.dispose();
+			}
+		});
+		sf.setSize(new Dimension(800, 600));
+		sf.setVisible(true);
+	}
+
+	public static void save(byte[] bs, String fn) throws IOException {
+		new File(fn).getParentFile().mkdirs();
+		BufferedOutputStream out = new BufferedOutputStream(
+				new FileOutputStream(fn));
+		out.write(bs);
+		out.close();
+	}
+
 	static void saveAs(PlainPage page) throws Exception {
 		EditPanel editor = page.uiComp;
 		JFileChooser chooser = new JFileChooser(page.fn);
@@ -740,6 +1596,15 @@ public class U {
 
 	}
 
+	public static void saveFileHistory(String fn, int line) throws IOException {
+		File fhn = getFileHistoryName();
+		if (fhn.getAbsoluteFile().equals(new File(fn).getAbsoluteFile()))
+			return;
+		OutputStream out = new FileOutputStream(fhn, true);
+		out.write(String.format("\n%s|%s:", fn, line).getBytes("utf8"));
+		out.close();
+	}
+
 	static boolean savePageToFile(PlainPage page) throws Exception {
 		System.out.println("save " + page.fn);
 		if (page.encoding == null) {
@@ -756,9 +1621,22 @@ public class U {
 		return true;
 	}
 
-	static void setEncodingByUser(PlainPage plainPage) {
-		String s = JOptionPane.showInputDialog(plainPage.uiComp,
-				"Reload with Encoding:", plainPage.encoding);
+	static void scale(int amount, Paint ui) {
+		if (amount > 0) {
+			ui.scalev *= 1.1f;
+		} else if (amount < 0) {
+			ui.scalev *= 0.9f;
+		}
+	}
+
+	static void setClipBoard(String s) {
+		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(
+				new StringSelection(s), null);
+	}
+
+	static void setEncodingByUser(PlainPage plainPage, String msg) {
+		String s = JOptionPane.showInputDialog(plainPage.uiComp, msg,
+				plainPage.encoding);
 		if (s == null) {
 			return;
 		}
@@ -769,6 +1647,53 @@ public class U {
 			return;
 		}
 		plainPage.encoding = s;
+	}
+
+	static void showHelp(final Paint ui, final EditPanel uiComp) {
+		if (ui.aboutImg != null)
+			return;
+		new Thread() {
+			public void run() {
+				try {
+					int w = uiComp.getWidth();
+					int h = 60;
+					ui.aboutImg = new BufferedImage(w, h,
+							BufferedImage.TYPE_INT_ARGB);
+					Graphics2D gi = ui.aboutImg.createGraphics();
+					gi.setColor(Color.BLUE);
+					gi.fillRect(0, 0, w, h);
+					gi.setColor(Color.CYAN);
+					gi.setFont(new Font("Arial", Font.BOLD, 40));
+					gi.drawString("NeoeEdit", 6, h - 20);
+					gi.setColor(Color.YELLOW);
+					gi.setFont(new Font("Arial", Font.PLAIN, 16));
+					String url = "http://code.google.com/p/neoeedit/";
+					gi.drawString("visit " + url
+							+ " for more info.(url copied)", 6, h - 6);
+					setClipBoard(url);
+					gi.dispose();
+					ui.aboutY = -h;
+					ui.aboutOn = true;
+					for (int i = -h; i <= 0; i++) {
+						ui.aboutY = i;
+						uiComp.repaint();
+						Thread.sleep(500 / h);
+					}
+					Thread.sleep(2000);
+					for (int i = 0; i >= -h; i--) {
+						ui.aboutY = i;
+						uiComp.repaint();
+						Thread.sleep(500 / h);
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				} finally {
+					ui.aboutOn = false;
+					ui.aboutImg = null;
+				}
+			}
+		}.start();
+
 	}
 
 	static void showResult(EditPanel editor, List<String> all, String dir,
@@ -785,6 +1710,16 @@ public class U {
 		p2.ptEdit.setLines(sbs);
 		ep.openWindow();
 		gc();
+	}
+
+	public static String spaces(int cx) {
+		if (cx <= 0)
+			return "";
+		StringBuffer sb = new StringBuffer(cx);
+		sb.setLength(cx);
+		for (int i = 0; i < cx; i++)
+			sb.setCharAt(i, ' ');
+		return sb.toString();
 	}
 
 	static List<String> split(String s) {
@@ -808,6 +1743,45 @@ public class U {
 		return sl;
 	}
 
+	public static String[] split(String s, String sep) {
+		List<String> s1 = new ArrayList<String>();
+		int p1 = 0;
+		while (true) {
+			int p2 = s.indexOf(sep, p1);
+			if (p2 < 0) {
+				s1.add(U.f(s.substring(p1)));
+				break;
+			} else {
+				s1.add(U.f(s.substring(p1, p2)));
+				p1 = p2 + 1;
+			}
+		}
+		return (String[]) s1.toArray(new String[s1.size()]);
+	}
+
+	static void startNoiseThread(final Paint ui, final EditPanel uiComp) {
+		Thread t = new Thread() {
+			public void run() {
+				try {// noise thread
+					while (true) {
+						if (ui.noise && !ui.closed) {
+							uiComp.repaint();
+							// System.out.println("paint noise");
+							Thread.sleep(ui.noisesleep);
+						} else {
+							break;
+						}
+					}
+					System.out.println("noise stopped");
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		};
+		t.setDaemon(true);
+		t.start();
+	}
+
 	static int strWidth(Graphics2D g2, String s) {
 		if (s.indexOf("\t") < 0) {
 			return g2.getFontMetrics().stringWidth(s);
@@ -829,216 +1803,6 @@ public class U {
 		}
 	}
 
-	static int drawTwoColor(Graphics2D g2, String s, int x, int y, Color c1,
-			Color c2) {
-		g2.setColor(c2);
-		g2.drawString(s, x + 1, y + 1);
-		g2.setColor(c1);
-		g2.drawString(s, x, y);
-		return g2.getFontMetrics().stringWidth(s);
-
-	}
-
-	/**
-	 * quick find how much char can be shown in width
-	 * 
-	 * @param width
-	 * @param g2
-	 * @return
-	 */
-	static int computeShowIndex(String s, int width, Graphics2D g2) {
-		if (s.length() == 0) {
-			return 0;
-		}
-		if (U.strWidth(g2, s) <= width) {
-			return s.length();
-		}
-		int i = s.length() / 2;
-		while (true) {
-			if (i == 0) {
-				return 0;
-			}
-			int w = U.strWidth(g2, s.substring(0, i));
-			if (w <= width) {
-				return i + computeShowIndex(s.substring(i), width - w, g2);
-			} else {
-				i = i / 2;
-			}
-		}
-	}
-
-	static void guessComment(PlainPage page) {
-		String comment = null;
-		String[] commentchars = { "#", "%", "'", "//", "!", ";", "--", "/*",
-				"<!--" };
-		int[] cnts = new int[commentchars.length];
-		for (int i = 0; i < page.roLines.getLinesize(); i++) {
-			RoSb sb = page.roLines.getline(i);
-			for (int j = 0; j < cnts.length; j++) {
-				if (sb.toString().trim().startsWith(commentchars[j])) {
-					cnts[j]++;
-				}
-			}
-		}
-		int kind = 0;
-		int max = 0;
-		for (int j = 0; j < cnts.length; j++) {
-			if (cnts[j] > 0) {
-				kind++;
-				max = Math.max(max, cnts[j]);
-			}
-		}
-		if (kind == 1) {
-			for (int j = 0; j < cnts.length; j++) {
-				if (cnts[j] > 0) {
-					comment = commentchars[j];
-
-					break;
-				}
-			}
-		} else {
-			int k2 = 0;
-			int lv2 = Math.max(5, max / 10);
-			for (int j = 0; j < cnts.length; j++) {
-				if (cnts[j] > lv2) {
-					k2++;
-				}
-			}
-			if (k2 == 1) {
-				for (int j = 0; j < cnts.length; j++) {
-					if (cnts[j] > lv2) {
-						comment = commentchars[j];
-						break;
-					}
-				}
-			}
-		}
-		if (comment == null) {
-			page.ui.message("no comment found" + Arrays.toString(cnts));
-		} else {
-			page.ui.message("comment found:" + comment);
-		}
-		page.ui.comment = comment;
-		page.uiComp.repaint();
-	}
-
-	public static String readString(File f, String enc) throws IOException {
-		BufferedReader in = new BufferedReader(new InputStreamReader(
-				new FileInputStream(f), enc));
-		char[] buf = new char[1000];
-		int len;
-		StringBuffer sb = new StringBuffer();
-		while ((len = in.read(buf)) > 0) {
-			sb.append(buf, 0, len);
-		}
-		in.close();
-		return sb.toString();
-	}
-
-	public static void save(byte[] bs, String fn) throws IOException {
-		new File(fn).getParentFile().mkdirs();
-		BufferedOutputStream out = new BufferedOutputStream(
-				new FileOutputStream(fn));
-		out.write(bs);
-		out.close();
-	}
-
-	static void findchar(PlainPage page, char ch, int inc, int[] c1, char chx) {
-		int cx1 = c1[0];
-		int cy1 = c1[1];
-		RoSb csb = page.roLines.getline(cy1);
-		int lv = 1;
-		while (true) {
-			if (inc == -1) {
-				cx1--;
-				if (cx1 < 0) {
-					cy1--;
-					if (cy1 < 0) {
-						c1[0] = -1;
-						c1[1] = -1;
-						return;
-					} else {
-						csb = page.roLines.getline(cy1);
-						cx1 = csb.length() - 1;
-						if (cx1 < 0) {
-							continue;
-						}
-					}
-				}
-				char ch2 = csb.charAt(cx1);
-				if (ch2 == chx) {
-					lv++;
-				} else if (ch2 == ch) {
-					lv--;
-					if (lv == 0) {
-						c1[0] = cx1;
-						c1[1] = cy1;
-						return;
-					}
-				}
-			} else {
-				cx1++;
-				if (cx1 >= csb.length()) {
-					cy1++;
-					if (cy1 >= page.roLines.getLinesize()) {
-						c1[0] = -1;
-						c1[1] = -1;
-						return;
-					} else {
-						csb = page.roLines.getline(cy1);
-						cx1 = 0;
-						if (cx1 >= csb.length()) {
-							continue;
-						}
-					}
-				}
-				char ch2 = csb.charAt(cx1);
-				if (ch2 == chx) {
-					lv++;
-				} else if (ch2 == ch) {
-					lv--;
-					if (lv == 0) {
-						c1[0] = cx1;
-						c1[1] = cy1;
-						return;
-					}
-				}
-			}
-		}
-	}
-
-	static Point find(PlainPage page, String s, int x, int y, boolean ignoreCase) {
-		if (y>=page.roLines.getLinesize())return null;
-		if (ignoreCase) {
-			s = s.toLowerCase();
-		}
-		x = Math.min(x, page.roLines.getline(y).toString(ignoreCase).length());
-		// first half row
-		int p1 = page.roLines.getline(y).toString(ignoreCase).indexOf(s, x);
-		if (p1 >= 0) {
-			return new Point(p1, y);
-		}
-		// middle rows
-		int fy = y;
-		for (int i = 0; i < page.roLines.getLinesize() - 1; i++) {
-			fy += 1;
-			if (fy >= page.roLines.getLinesize()) {
-				fy = 0;
-			}
-			p1 = page.roLines.getline(fy).toString(ignoreCase).indexOf(s);
-			if (p1 >= 0) {
-				return new Point(p1, fy);
-			}
-		}
-		// last half row
-		p1 = page.roLines.getline(y).toString(ignoreCase).substring(x).indexOf(
-				s);
-		if (p1 >= 0) {
-			return new Point(p1, fy);
-		}
-		return null;
-	}
-
 	static String subs(RoSb sb, int a, int b) {
 		return subs(sb.toString(), a, b);
 	}
@@ -1057,68 +1821,5 @@ public class U {
 			b = sb.length();
 		}
 		return sb.substring(a, b);
-	}
-
-	static String getClipBoard() {
-		String s;
-		try {
-			s = Toolkit.getDefaultToolkit().getSystemClipboard().getData(
-					DataFlavor.stringFlavor).toString();
-		} catch (Exception e) {
-			s = "";
-		}
-		return s;
-	}
-
-	static void setClipBoard(String s) {
-		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(
-				new StringSelection(s), null);
-	}
-
-	public static String spaces(int cx) {
-		if (cx <= 0)
-			return "";
-		StringBuffer sb = new StringBuffer(cx);
-		sb.setLength(cx);
-		for (int i = 0; i < cx; i++)
-			sb.setCharAt(i, ' ');
-		return sb.toString();
-	}
-
-	public static String[] split(String s, String sep) {
-		List<String> s1 = new ArrayList<String>();
-		int p1 = 0;
-		while (true) {
-			int p2 = s.indexOf(sep, p1);
-			if (p2 < 0) {
-				s1.add(U.f(s.substring(p1)));
-				break;
-			} else {
-				s1.add(U.f(s.substring(p1, p2)));
-				p1 = p2 + 1;
-			}
-		}
-		return (String[]) s1.toArray(new String[s1.size()]);
-	}
-
-	public static void saveFileHistory(String fn, int line) throws IOException {
-		File fhn = getFileHistoryName();
-		if (fhn.getAbsoluteFile().equals(new File(fn).getAbsoluteFile()))
-			return;
-		OutputStream out = new FileOutputStream(fhn, true);
-		out.write(String.format("\n%s|%s:", fn, line).getBytes("utf8"));
-		out.close();
-	}
-
-	static File getFileHistoryName() throws IOException {
-		String home = System.getProperty("user.home");
-		File dir = new File(home, ".neoeedit");
-		dir.mkdirs();
-
-		File f = new File(dir, "fh.txt");
-		if (!f.exists()) {
-			new FileOutputStream(f).close();
-		}
-		return f;
 	}
 }
