@@ -1822,4 +1822,10 @@ public class U {
 		}
 		return sb.substring(a, b);
 	}
+
+	public static void drawBackIcon(Graphics2D g2, int i, int j, int width,
+			int height, BufferedImage icon) {
+		int s = 100;
+		g2.drawImage(icon, width / 2 - s / 2, 200, 100, 100, null);
+	}
 }

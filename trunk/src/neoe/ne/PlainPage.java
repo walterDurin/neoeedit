@@ -666,6 +666,7 @@ public class PlainPage {
 		}
 
 		void drawToolbar(Graphics2D g2) {
+			U.drawBackIcon(g2, 0,0,dim.width,toolbarHeight,EditPanel.icon);
 			long MSG_VANISH_TIME = 3000;
 			String s1 = "<F1>:Help, " + (encoding == null ? "-" : encoding)
 					+ (lineSep.equals("\n") ? ", U" : ", W") + ", Line:"

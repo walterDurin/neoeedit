@@ -12,6 +12,7 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 
@@ -66,12 +67,12 @@ public class EditPanel extends JComponent implements MouseMotionListener,
 
     PlainPage page;
     JFrame frame;
-
+    static BufferedImage icon;
     public void openWindow() throws IOException {
         if (frame != null)
             return;
         frame = new JFrame(PlainPage.WINDOW_NAME);
-        frame.setIconImage(ImageIO.read(Class.class.getResourceAsStream("/Alien.png")));
+        frame.setIconImage(icon=ImageIO.read(Class.class.getResourceAsStream("/Alien.png")));
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setSize(new Dimension(800, 600));
         frame.getContentPane().add(this);
