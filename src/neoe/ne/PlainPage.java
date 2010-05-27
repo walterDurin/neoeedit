@@ -667,11 +667,11 @@ public class PlainPage {
 
 		void drawToolbar(Graphics2D g2) {
 			long MSG_VANISH_TIME = 3000;
-			String s1 = "<F1>:Help, " + encoding
+			String s1 = "<F1>:Help, " + (encoding == null ? "-" : encoding)
 					+ (lineSep.equals("\n") ? ", U" : ", W") + ", Line:"
 					+ roLines.getLinesize() + ", X:" + (cx + 1) + ", undo:"
 					+ history.size() + ", " + (rectSelectMode ? "R, " : "")
-					+ fn;
+					+ (fn == null ? "-" : fn);
 			g2.setColor(Color.WHITE);
 			g2.drawString(s1, 2, lineHeight + 2);
 			g2.setColor(Color.BLACK);
@@ -1003,7 +1003,7 @@ public class PlainPage {
 	int cy;
 	U.BasicEdit editNoRec = new U.BasicEdit(false, this);
 	U.BasicEdit editRec = new U.BasicEdit(true, this);
-	String encoding = "utf8";
+	String encoding;
 	public String fn;
 	U.History history;
 	boolean ignoreCase = true;
