@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <jardesc>
-    <jar path="D:/soft/neoeedit.jar"/>
+    <jar path="c:/long/neoeedit.jar"/>
     <options buildIfNeeded="true" compress="true" descriptionLocation="/neoeedit/jarit.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="false" overwrite="false" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
     <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
     <selectedProjects/>
@@ -11,7 +11,10 @@
         </sealing>
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
-        <javaElement handleIdentifier="=neoeedit/src"/>
+        <javaElement handleIdentifier="=neoeedit/src&lt;neoe"/>
+        <file path="/neoeedit/src/Alien.png"/>
+        <javaElement handleIdentifier="=neoeedit/src&lt;neoe.util"/>
+        <javaElement handleIdentifier="=neoeedit/src&lt;neoe.ne"/>
+        <file path="/neoeedit/src/icontab.png"/>
     </selectedElements>
-    <fatjar builder="org.eclipse.jdt.ui.plain_jar_builder" launchConfig=""/>
 </jardesc>
