@@ -1355,7 +1355,6 @@ public class U {
 			s = s.toLowerCase();
 		}
 		// first half row
-
 		int p1 = x;
 		while (true) {
 			p1 = page.roLines.getline(y).toString(ignoreCase).indexOf(s, p1);
@@ -1364,9 +1363,9 @@ public class U {
 				editRec.deleteInLine(y, p1, p1 + s.length());
 				editRec.insertInLine(y, p1, s2);
 				if (!all) {
-					return new Point(p1, y);
+					return new Point(p1 + s2.length(), y);
 				}
-				p1 = p1 + 1;
+				p1 = p1 + s2.length();
 			} else {
 				break;
 			}
@@ -1383,14 +1382,13 @@ public class U {
 				p1 = page.roLines.getline(fy).toString(ignoreCase).indexOf(s,
 						p1);
 				if (p1 >= 0) {
-
 					cnt++;
 					editRec.deleteInLine(fy, p1, p1 + s.length());
 					editRec.insertInLine(fy, p1, s2);
 					if (!all) {
 						return new Point(p1 + s2.length(), fy);
 					}
-					p1 = p1 + +s2.length();
+					p1 = p1 + s2.length();
 				} else {
 					break;
 				}
