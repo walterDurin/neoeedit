@@ -665,7 +665,9 @@ public class U {
 			}
 		}
 		if (page.fn != null) {
-			saveFile(page);
+			if (page.history.size() != 0) {
+				saveFile(page);
+			}
 			saveFileHistory(page.fn, page.cy);
 		}
 		page.ui.closed = true;
@@ -1615,7 +1617,6 @@ public class U {
 			out.write(page.lineSep);
 		}
 		out.close();
-
 		return true;
 	}
 
