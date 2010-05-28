@@ -405,7 +405,7 @@ public class PlainPage {
 			}
 		}
 
-		void wrapLines(int cx) {
+		void wrapLines(int cx) throws Exception {
 			int lineLen = 0;
 			{
 				int len = 0;
@@ -419,30 +419,33 @@ public class PlainPage {
 			if (ptSelection.isSelected()) {
 				ptSelection.cancelSelect();
 			}
-			int y = 0;
-			while (y < lines.size()) {
+			List<StringBuffer> newtext = new ArrayList<StringBuffer>();
+			for (int y = 0; y < lines.size(); y++) {
 				if (lines.get(y).length() * 2 > lineLen) {
-					int x = 0;
 					int len = 0;
 					RoSb sb = roLines.getline(y);
+					int start = 0;
 					for (int i = 0; i < sb.length(); i++) {
 						len += (sb.charAt(i) > 255) ? 2 : 1;
 						if (len >= lineLen) {
-							x = i;
-							break;
+							newtext.add(new StringBuffer(sb.substring(start,
+									i + 1)));
+							start = i + 1;
+							len=0;
 						}
 					}
-					if (x > 0) {
-						cy = y;
-						cx = x;
-						String s = sb.substring(cx, sb.length());
-						editRec.insertEmptyLine(cy + 1);
-						editRec.insertInLine(cy + 1, 0, s);
-						editRec.deleteInLine(cy, cx, Integer.MAX_VALUE);
+					if (start < sb.length()) {
+						newtext.add(new StringBuffer(sb.substring(start)));
 					}
+				} else {
+					newtext.add(new StringBuffer(lines.get(y)));
 				}
-				y++;
 			}
+			EditPanel ep = new EditPanel("");
+			PlainPage p2 = ep.page;
+			p2.workPath = workPath;
+			p2.ptEdit.setLines(newtext);
+			ep.openWindow();
 		}
 	}
 
@@ -695,6 +698,7 @@ public class PlainPage {
 		void message(String s) {
 			msg = s;
 			msgtime = System.currentTimeMillis();
+			uiComp.repaint();
 		}
 
 		void xpaint(Graphics g, Dimension size) {
