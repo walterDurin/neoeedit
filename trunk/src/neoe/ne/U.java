@@ -1264,11 +1264,12 @@ public class U {
 	}
 
 	static void readFile(PlainPage page, String fn) {
+		page.isCommentChecked=false;
 		if (page.encoding == null) {
 			page.encoding = U.guessEncodingForEditor(fn);
 		}
 		page.lineSep = U.guessLineSepForEditor(fn);
-		page.ptEdit.setLines(U.readFileForEditor(fn, page.encoding));
+		page.ptEdit.setLines(U.readFileForEditor(fn, page.encoding));		
 	}
 
 	static List<StringBuffer> readFileForEditor(String fn, String encoding) {
@@ -1575,6 +1576,7 @@ public class U {
 			JFileChooser chooser = new JFileChooser(page.workPath);
 			int returnVal = chooser.showSaveDialog(page.uiComp);
 			if (returnVal == JFileChooser.APPROVE_OPTION) {
+				page.isCommentChecked=false;
 				String fn = chooser.getSelectedFile().getAbsolutePath();
 				if (new File(fn).exists()) {
 					if (JOptionPane.YES_OPTION != JOptionPane
@@ -1587,7 +1589,7 @@ public class U {
 				}
 				page.fn = fn;
 				page.uiComp.changeTitle();
-
+				
 			} else {
 				return false;
 			}
