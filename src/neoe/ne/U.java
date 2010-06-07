@@ -1829,4 +1829,5 @@ public class U {
 		int s = 100;
 		g2.drawImage(icon, width / 2 - s / 2, 200, 100, 100, null);
 	}
+	
 }
