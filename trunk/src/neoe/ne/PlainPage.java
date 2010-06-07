@@ -783,9 +783,10 @@ public class PlainPage {
 				g2.scale(scalev, scalev);
 				drawGutter(g2);
 				// draw text
-				g2.translate(gutterWidth / scalev, 0);
-				g2.setClip(0, 0, dim.width - gutterWidth, dim.height
+				g2.setClip(0, 0, dim.width, dim.height
 						- toolbarHeight);
+				g2.translate(gutterWidth / scalev, 0);
+				
 
 				{ // highlight current line
 					int l1 = cy - sy;
@@ -1041,6 +1042,7 @@ public class PlainPage {
 		this.workPath = f.getParent();
 		history = new U.History(this);
 		U.readFile(this, f.getAbsolutePath());
+		
 	}
 
 	public PlainPage(EditPanel editor, String text) throws Exception {
