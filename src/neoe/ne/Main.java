@@ -7,14 +7,7 @@ public class Main {
 
 		if (args.length > 0) {
 			File f = new File(args[0]);
-			String fn = f.getName().toLowerCase();
-			if (fn.endsWith(".gif") || fn.endsWith(".jpg")
-					|| fn.endsWith(".png") || fn.endsWith(".bmp")) {
-				new PicView().show(f);
-			} else {
-				EditPanel editor = new EditPanel(f);
-				editor.openWindow();
-			}
+			U.openFile(f);
 		} else {
 			EditPanel editor = new EditPanel("neoeedit");
 			editor.page.ptSelection.selectAll();

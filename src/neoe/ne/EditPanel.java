@@ -93,38 +93,8 @@ public class EditPanel extends JComponent implements MouseMotionListener,
 				}
 			}
 		});
-		final TransferHandler th = new TransferHandler(null) {
-			public boolean canImport(TransferHandler.TransferSupport support) {
-				if (!support
-						.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
-					return false;
-				}
-				return true;
-			}
-			public boolean importData(TransferHandler.TransferSupport support) {
-				if (!canImport(support)) {
-					return false;
-				}
-				Transferable t = support.getTransferable();
-				try {
-					List<File> l = (List<File>) t
-							.getTransferData(DataFlavor.javaFileListFlavor);
-					for (File f : l) {
-						if (f.isFile())
-							try {
-								new EditPanel(f).openWindow();
-							} catch (Exception e) {
-								e.printStackTrace();
-							}
-					}
-				} catch (Exception e) {
-					e.printStackTrace();
-					return false;
-				}
-				return true;
-			}
-		};
-		frame.setTransferHandler(th);
+		
+		frame.setTransferHandler(U.th);
 		frame.setVisible(true);
 
 		// page.getFindWindow();
