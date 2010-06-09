@@ -1,7 +1,6 @@
 package neoe.ne;
 
 import java.awt.Cursor;
-import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -74,7 +73,7 @@ public class EditPanel extends JComponent implements MouseMotionListener,
 		frame.setIconImage(ImageIO.read(Class.class
 				.getResourceAsStream("/Alien.png")));
 		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		frame.setSize(new Dimension(800, 600));
+		U.setFrameSize(frame, 800, 600);
 		frame.getContentPane().add(this);
 		frame.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {

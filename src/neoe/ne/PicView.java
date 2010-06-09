@@ -3,8 +3,6 @@ package neoe.ne;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
-import java.awt.Point;
-import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -25,12 +23,15 @@ public class PicView {
 	public class Panel extends JComponent implements MouseMotionListener,
 			MouseListener, MouseWheelListener, KeyListener {
 
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = -74255011004476996L;
 		private BufferedImage img;
 		private int vy;
 		private int vx;
 		private int my;
 		private int mx;
-		private Point p;
 		double rate = 1.0;
 		private int pw;
 		private int ph;
@@ -198,9 +199,7 @@ public class PicView {
 		f.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		Panel p;
 		f.add(p = new Panel(fn));
-		Toolkit toolkit = Toolkit.getDefaultToolkit();
-		Dimension dim = toolkit.getScreenSize();
-		f.setSize(Math.min(dim.width, p.pw), Math.min(dim.height, p.ph));
+		U.setFrameSize(f, p.pw, p.ph);
 		f.setTransferHandler(U.th);
 		f.setVisible(true);
 	}
