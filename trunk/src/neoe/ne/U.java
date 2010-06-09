@@ -1113,7 +1113,7 @@ public class U {
 				if (b2.length != buf.length) {
 					continue;
 				}
-				int nlen = Math.min(0, len - 1);// for not last complete char
+				int nlen = Math.max(0, len - 1);// for not last complete char
 				if (Arrays.equals(Arrays.copyOf(buf, nlen), Arrays.copyOf(b2,
 						nlen))) {
 					return enc;

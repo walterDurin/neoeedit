@@ -16,7 +16,6 @@ public class FileIterator implements Iterable<File> {
 		buf.add(f);
 	}
 
-	
 	@Override
 	public Iterator<File> iterator() {
 		return new Iterator<File>() {
@@ -29,10 +28,14 @@ public class FileIterator implements Iterable<File> {
 			@Override
 			public File next() {
 				File f = buf.remove(0);
-				if (f.isDirectory()) {
+				String name=f.getName();
+				if (f.isDirectory() && !name.equals(".svn")
+						&& !name.equals(".cvs")
+						&& !name.equals(".bzr")
+						&& !name.equals(".git")) {
 					File[] sub = f.listFiles();
-					if (sub!=null){
-					    buf.addAll(Arrays.asList(sub));
+					if (sub != null) {
+						buf.addAll(Arrays.asList(sub));
 					}
 				}
 				return f;
