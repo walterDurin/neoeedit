@@ -1224,9 +1224,15 @@ public class U {
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			System.out.println("You chose to open this file: "
 					+ chooser.getSelectedFile().getAbsolutePath());
-			new EditPanel(chooser.getSelectedFile()).openWindow();
+			File f = chooser.getSelectedFile();
+			String fn = f.getName().toLowerCase();
+			if (fn.endsWith(".gif") || fn.endsWith(".jpg")
+					|| fn.endsWith(".png") || fn.endsWith(".bmp")) {
+				new PicView().show(f);
+			} else {
+				new EditPanel(chooser.getSelectedFile()).openWindow();
+			}
 		}
-
 	}
 
 	static void openFile(String fn, int line) throws Exception {
@@ -1264,12 +1270,12 @@ public class U {
 	}
 
 	static void readFile(PlainPage page, String fn) {
-		page.isCommentChecked=false;
+		page.isCommentChecked = false;
 		if (page.encoding == null) {
 			page.encoding = U.guessEncodingForEditor(fn);
 		}
 		page.lineSep = U.guessLineSepForEditor(fn);
-		page.ptEdit.setLines(U.readFileForEditor(fn, page.encoding));		
+		page.ptEdit.setLines(U.readFileForEditor(fn, page.encoding));
 	}
 
 	static List<StringBuffer> readFileForEditor(String fn, String encoding) {
@@ -1576,7 +1582,7 @@ public class U {
 			JFileChooser chooser = new JFileChooser(page.workPath);
 			int returnVal = chooser.showSaveDialog(page.uiComp);
 			if (returnVal == JFileChooser.APPROVE_OPTION) {
-				page.isCommentChecked=false;
+				page.isCommentChecked = false;
 				String fn = chooser.getSelectedFile().getAbsolutePath();
 				if (new File(fn).exists()) {
 					if (JOptionPane.YES_OPTION != JOptionPane
@@ -1589,7 +1595,7 @@ public class U {
 				}
 				page.fn = fn;
 				page.uiComp.changeTitle();
-				
+
 			} else {
 				return false;
 			}
@@ -1829,5 +1835,5 @@ public class U {
 		int s = 100;
 		g2.drawImage(icon, width / 2 - s / 2, 200, 100, 100, null);
 	}
-	
+
 }
