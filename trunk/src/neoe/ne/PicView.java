@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Point;
+import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -79,8 +80,8 @@ public class PicView {
 			int sw = w / 4;
 			int sh = sw * ph / pw;
 			if (x > w - sw && y > h - sh && small) {
-				vx = (int) ((x - w + sw) * pw / rate / sw);
-				vy = (int) ((y - h + sh) * ph / rate / sh);
+				vx = (int) ((x - w + sw) * pw / rate / sw - w / 2);
+				vy = (int) ((y - h + sh) * ph / rate / sh - h / 2);
 				repaint();
 			} else {
 				int dx = e.getX() - mx;
@@ -133,8 +134,8 @@ public class PicView {
 				vy1 = vy;
 			}
 			if (x > w - sw && y > h - sh && small) {
-				vx = (int) ((x - w + sw) * pw / rate / sw);
-				vy = (int) ((y - h + sh) * ph / rate / sh);
+				vx = (int) ((x - w + sw) * pw / rate / sw - w / 2);
+				vy = (int) ((y - h + sh) * ph / rate / sh - h / 2);
 				repaint();
 			} else {
 
@@ -195,8 +196,12 @@ public class PicView {
 	public void show(File fn) throws IOException {
 		JFrame f = new JFrame("PicView " + fn.getName());
 		f.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		f.add(new Panel(fn));
-		f.setSize(600, 600);
+		Panel p;
+		f.add(p = new Panel(fn));
+		Toolkit toolkit = Toolkit.getDefaultToolkit();
+		Dimension dim = toolkit.getScreenSize();
+		f.setSize(Math.min(dim.width, p.pw), Math.min(dim.height, p.ph));
+		f.setTransferHandler(U.th);
 		f.setVisible(true);
 	}
 }

@@ -10,6 +10,7 @@ import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
@@ -38,6 +39,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.TransferHandler;
 
 import neoe.ne.PlainPage.Paint;
 import neoe.util.FileIterator;
@@ -1225,13 +1227,49 @@ public class U {
 			System.out.println("You chose to open this file: "
 					+ chooser.getSelectedFile().getAbsolutePath());
 			File f = chooser.getSelectedFile();
-			String fn = f.getName().toLowerCase();
-			if (fn.endsWith(".gif") || fn.endsWith(".jpg")
-					|| fn.endsWith(".png") || fn.endsWith(".bmp")) {
-				new PicView().show(f);
-			} else {
-				new EditPanel(chooser.getSelectedFile()).openWindow();
+			openFile(f);
+		}
+	}
+
+	final static TransferHandler th = new TransferHandler(null) {
+		public boolean canImport(TransferHandler.TransferSupport support) {
+			if (!support.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+				return false;
 			}
+			return true;
+		}
+
+		public boolean importData(TransferHandler.TransferSupport support) {
+			if (!canImport(support)) {
+				return false;
+			}
+			Transferable t = support.getTransferable();
+			try {
+				List<File> l = (List<File>) t
+						.getTransferData(DataFlavor.javaFileListFlavor);
+				for (File f : l) {
+					if (f.isFile())
+						try {
+							U.openFile(f);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				return false;
+			}
+			return true;
+		}
+	};
+
+	static void openFile(File f) throws Exception {
+		String fn = f.getName().toLowerCase();
+		if (fn.endsWith(".gif") || fn.endsWith(".jpg") || fn.endsWith(".png")
+				|| fn.endsWith(".bmp")) {
+			new PicView().show(f);
+		} else {
+			new EditPanel(f).openWindow();
 		}
 	}
 
