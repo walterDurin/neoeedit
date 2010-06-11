@@ -1478,10 +1478,7 @@ public class U {
 		JPanel p = new JPanel();
 		sf.getContentPane().add(p);
 		SimpleLayout s = new SimpleLayout(p);
-		String sample = "var i=0; \nfunction run(s,current,total){//lineString,currentLineNo(from 0),totalLineCount\n//example\n"
-				+ "if (current==1) {return s.split('\\t').join('|');}// 1 line to 0 line\n"
-				+ "if (current==0) {return ['vvvvv','fasdfa',233];}// 1 line to multi line\n"
-				+ "return current+'/'+total+':'+s;// just return something\n}";
+		String sample = "var i=0; \nfunction run(s,cur,max){\nreturn s;\n}";
 		final EditPanel ed = new EditPanel(sample);
 		final PlainPage pp1 = ed.page;
 		ed.frame = sf;
@@ -1534,7 +1531,7 @@ public class U {
 
 	static void setFrameSize(JFrame f, int w, int h) {
 		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
-		f.setSize(Math.min(dim.width, w), Math.min(dim.height, h));		
+		f.setSize(Math.min(800,Math.min(dim.width, w)), Math.min(600,Math.min(dim.height, h)));		
 	}
 
 	static void runScriptOnDir(String workPath) throws Exception {
