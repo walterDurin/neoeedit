@@ -730,8 +730,7 @@ public class U {
 				while (true) {
 					all.add(String.format("%s:%s", p.y + 1, page.roLines
 							.getline(p.y)));
-					Point p2 = U
-							.find(page, text2find, 0, p.y + 1, ignoreCase);
+					Point p2 = U.find(page, text2find, 0, p.y + 1, ignoreCase);
 					if (p2 == null || p2.y <= p.y) {
 						break;
 					} else {
@@ -923,12 +922,13 @@ public class U {
 	}
 
 	static List<String> findInFile(File f, String text, boolean ignoreCase2) {
-		//System.out.println("find in "+f.getName());
+		// System.out.println("find in "+f.getName());
 		int MAX_SHOW_CHARS_IN_LINE = 30;
 		List<String> a = new ArrayList<String>();
 		try {
 			String enc = guessEncoding(f.getAbsolutePath());
-			if (enc==null) enc=UTF8;//avoid wrong skip
+			if (enc == null)
+				enc = UTF8;// avoid wrong skip
 			if (enc != null) {// skip binary
 				String fn = f.getAbsolutePath();
 				if (ignoreCase2) {
@@ -1265,10 +1265,14 @@ public class U {
 		}
 	};
 
-	static void openFile(File f) throws Exception {
+	static boolean isImageFile(File f) {
 		String fn = f.getName().toLowerCase();
-		if (fn.endsWith(".gif") || fn.endsWith(".jpg") || fn.endsWith(".png")
-				|| fn.endsWith(".bmp")) {
+		return (fn.endsWith(".gif") || fn.endsWith(".jpg")
+				|| fn.endsWith(".png") || fn.endsWith(".bmp"));
+	}
+
+	static void openFile(File f) throws Exception {
+		if (isImageFile(f)) {
 			new PicView().show(f);
 		} else {
 			new EditPanel(f).openWindow();
@@ -1525,13 +1529,14 @@ public class U {
 				sf.dispose();
 			}
 		});
-		setFrameSize(sf,800,600);		
+		setFrameSize(sf, 800, 600);
 		sf.setVisible(true);
 	}
 
 	static void setFrameSize(JFrame f, int w, int h) {
 		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
-		f.setSize(Math.min(800,Math.min(dim.width, w)), Math.min(600,Math.min(dim.height, h)));		
+		f.setSize(Math.min(800, Math.min(dim.width, w)), Math.min(600, Math
+				.min(dim.height, h)));
 	}
 
 	static void runScriptOnDir(String workPath) throws Exception {
