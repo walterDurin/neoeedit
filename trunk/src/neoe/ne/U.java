@@ -647,6 +647,38 @@ public class U {
 
 	public static final int TABWIDTH = 60;
 
+	final static TransferHandler th = new TransferHandler(null) {
+		public boolean canImport(TransferHandler.TransferSupport support) {
+			if (!support.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+				return false;
+			}
+			return true;
+		}
+
+		public boolean importData(TransferHandler.TransferSupport support) {
+			if (!canImport(support)) {
+				return false;
+			}
+			Transferable t = support.getTransferable();
+			try {
+				List<File> l = (List<File>) t
+						.getTransferData(DataFlavor.javaFileListFlavor);
+				for (File f : l) {
+					if (f.isFile())
+						try {
+							U.openFile(f);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				return false;
+			}
+			return true;
+		}
+	};
+
 	static final String UTF8 = "utf8";
 
 	static {
@@ -805,6 +837,12 @@ public class U {
 		}
 		showResult(editor, all, "dir " + dir, text);
 		editor.repaint();
+	}
+
+	public static void drawBackIcon(Graphics2D g2, int i, int j, int width,
+			int height, BufferedImage icon) {
+		int s = 100;
+		g2.drawImage(icon, width / 2 - s / 2, 200, 100, 100, null);
 	}
 
 	static int drawTwoColor(Graphics2D g2, String s, int x, int y, Color c1,
@@ -1178,6 +1216,12 @@ public class U {
 		return true;
 	}
 
+	static boolean isImageFile(File f) {
+		String fn = f.getName().toLowerCase();
+		return (fn.endsWith(".gif") || fn.endsWith(".jpg")
+				|| fn.endsWith(".png") || fn.endsWith(".bmp"));
+	}
+
 	static boolean isSkipChar(char ch, char ch1) {
 		if (Character.isSpaceChar(ch1) || ch1 == '\t') {
 			return Character.isSpaceChar(ch) || ch == '\t';
@@ -1214,6 +1258,14 @@ public class U {
 		return i / 2;
 	}
 
+	static void openFile(File f) throws Exception {
+		if (isImageFile(f)) {
+			new PicView().show(f);
+		} else {
+			new EditPanel(f).openWindow();
+		}
+	}
+
 	static void openFile(PlainPage page) throws Exception {
 		JFileChooser chooser = new JFileChooser();
 
@@ -1230,52 +1282,6 @@ public class U {
 					+ chooser.getSelectedFile().getAbsolutePath());
 			File f = chooser.getSelectedFile();
 			openFile(f);
-		}
-	}
-
-	final static TransferHandler th = new TransferHandler(null) {
-		public boolean canImport(TransferHandler.TransferSupport support) {
-			if (!support.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
-				return false;
-			}
-			return true;
-		}
-
-		public boolean importData(TransferHandler.TransferSupport support) {
-			if (!canImport(support)) {
-				return false;
-			}
-			Transferable t = support.getTransferable();
-			try {
-				List<File> l = (List<File>) t
-						.getTransferData(DataFlavor.javaFileListFlavor);
-				for (File f : l) {
-					if (f.isFile())
-						try {
-							U.openFile(f);
-						} catch (Exception e) {
-							e.printStackTrace();
-						}
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-				return false;
-			}
-			return true;
-		}
-	};
-
-	static boolean isImageFile(File f) {
-		String fn = f.getName().toLowerCase();
-		return (fn.endsWith(".gif") || fn.endsWith(".jpg")
-				|| fn.endsWith(".png") || fn.endsWith(".bmp"));
-	}
-
-	static void openFile(File f) throws Exception {
-		if (isImageFile(f)) {
-			new PicView().show(f);
-		} else {
-			new EditPanel(f).openWindow();
 		}
 	}
 
@@ -1533,12 +1539,6 @@ public class U {
 		sf.setVisible(true);
 	}
 
-	static void setFrameSize(JFrame f, int w, int h) {
-		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
-		f.setSize(Math.min(800, Math.min(dim.width, w)), Math.min(600, Math
-				.min(dim.height, h)));
-	}
-
 	static void runScriptOnDir(String workPath) throws Exception {
 		final JFrame sf = new JFrame("Javascript On dir");
 		sf.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -1701,6 +1701,12 @@ public class U {
 			return;
 		}
 		plainPage.encoding = s;
+	}
+
+	static void setFrameSize(JFrame f, int w, int h) {
+		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
+		f.setSize(Math.min(800, Math.min(dim.width, w)), Math.min(600, Math
+				.min(dim.height, h)));
 	}
 
 	static void showHelp(final Paint ui, final EditPanel uiComp) {
@@ -1875,12 +1881,6 @@ public class U {
 			b = sb.length();
 		}
 		return sb.substring(a, b);
-	}
-
-	public static void drawBackIcon(Graphics2D g2, int i, int j, int width,
-			int height, BufferedImage icon) {
-		int s = 100;
-		g2.drawImage(icon, width / 2 - s / 2, 200, 100, 100, null);
 	}
 
 }

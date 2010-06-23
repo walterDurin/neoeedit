@@ -23,7 +23,6 @@ import java.util.List;
 import javax.imageio.ImageIO;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
-import javax.swing.text.html.HTMLDocument.HTMLReader.IsindexAction;
 
 public class PicView {
 
@@ -34,40 +33,22 @@ public class PicView {
 		 * 
 		 */
 		private static final long serialVersionUID = -74255011004476996L;
-		private BufferedImage img;
-		private int vy;
-		private int vx;
-		private int my;
-		private int mx;
-		double rate = 1.0;
-		private int pw;
-		private int ph;
-		private int vy1;
-		private int vx1;
-		private boolean small = true;
 		private File f;
+		int fi;
+		List<File> files;
+		private BufferedImage img;
+		private int mx;
+		private int my;
+		private int ph;
+		private int pw;
+		double rate = 1.0;
+		private boolean small = true;
+		private int vx;
+		private int vx1;
 
-		@Override
-		protected void paintComponent(Graphics g) {
-			int w = getWidth();
-			int h = getHeight();
-			// System.out.println(w+"x"+h);
-			int sw = w / 4;
-			int sh = sw * ph / pw;
+		private int vy;
 
-			g.drawImage(img, 0, 0, w, h, (int) (vx * rate), (int) (vy * rate),
-					(int) ((w + vx) * rate), (int) ((h + vy) * rate), null);
-			if (small) {
-				g.drawImage(img, w - sw, h - sh, w, h, 0, 0, pw, ph, null);
-				g.setColor(Color.WHITE);
-				g.drawRect(w - sw, h - sh, sw, sh);
-				g.setColor(Color.RED);
-				g.drawRect((int) (w - sw + vx * rate * sw / pw),//
-						(int) (h - sh + vy * rate * sh / ph),//
-						(int) (sw * w * rate / pw),//
-						(int) (sh * h * rate / ph));
-			}
-		}
+		private int vy1;
 
 		public Panel(File fn) throws IOException {
 			long t1 = System.currentTimeMillis();
@@ -82,9 +63,68 @@ public class PicView {
 			setFocusable(true);
 		}
 
-		private void setSize(BufferedImage img) {
-			setPreferredSize(new Dimension(pw = img.getWidth(), ph = img
-					.getHeight()));
+		@Override
+		public void keyPressed(KeyEvent e) {
+			int kc = e.getKeyCode();
+			if (kc == KeyEvent.VK_F1) {
+				small = !small;
+				repaint();
+			} else if (kc == KeyEvent.VK_LEFT) {
+				viewFile(-1);
+			} else if (kc == KeyEvent.VK_RIGHT) {
+				viewFile(1);
+			} else if (kc == KeyEvent.VK_UP) {
+				rotate(1);
+			} else if (kc == KeyEvent.VK_DOWN) {
+				rotate(-1);
+			} else if (kc == KeyEvent.VK_0) {
+				rate = 1;
+				vx = 0;
+				vy = 0;
+				repaint();
+			}
+		}
+
+		@Override
+		public void keyReleased(KeyEvent e) {
+
+		}
+
+		@Override
+		public void keyTyped(KeyEvent e) {
+
+		}
+
+		private List<File> listImgs() {
+			List<File> files = new ArrayList<File>();
+			File[] fs = f.getParentFile().listFiles();
+			for (File f1 : fs) {
+				if (U.isImageFile(f1)) {
+					files.add(f1);
+				}
+			}
+			Collections.sort(files);
+			fi = files.indexOf(f);
+			if (fi < 0) {
+				fi = 0;
+				System.out.println("what?not found file name in list");
+			} else {
+				System.out.println("list image files count " + files.size());
+			}
+			return files;
+		}
+
+		@Override
+		public void mouseClicked(MouseEvent e) {
+			int x = e.getX(), y = e.getY();
+			if (e.getClickCount() == 2) {
+				vx = (int) ((vx + x) * rate - x);
+				vy = (int) ((vy + y) * rate - y);
+				rate = 1;
+				repaint();
+			} else {
+
+			}
 		}
 
 		@Override
@@ -108,30 +148,17 @@ public class PicView {
 		}
 
 		@Override
-		public void mouseMoved(MouseEvent e) {
-
-		}
-
-		@Override
-		public void mouseClicked(MouseEvent e) {
-			int x = e.getX(), y = e.getY();
-			if (e.getClickCount() == 2) {
-				vx = (int) ((vx + x) * rate - x);
-				vy = (int) ((vy + y) * rate - y);
-				rate = 1;
-				repaint();
-			} else {
-
-			}
-		}
-
-		@Override
 		public void mouseEntered(MouseEvent e) {
 
 		}
 
 		@Override
 		public void mouseExited(MouseEvent e) {
+
+		}
+
+		@Override
+		public void mouseMoved(MouseEvent e) {
 
 		}
 
@@ -180,35 +207,25 @@ public class PicView {
 		}
 
 		@Override
-		public void keyPressed(KeyEvent e) {
-			int kc = e.getKeyCode();
-			if (kc == KeyEvent.VK_F1) {
-				small = !small;
-				repaint();
-			} else if (kc == KeyEvent.VK_LEFT) {
-				viewFile(-1);
-			} else if (kc == KeyEvent.VK_RIGHT) {
-				viewFile(1);
-			} else if (kc == KeyEvent.VK_UP) {
-				rotate(1);
-			} else if (kc == KeyEvent.VK_DOWN) {
-				rotate(-1);
-			} else if (kc == KeyEvent.VK_0) {
-				rate = 1;
-				vx = 0;
-				vy = 0;
-				repaint();
+		protected void paintComponent(Graphics g) {
+			int w = getWidth();
+			int h = getHeight();
+			// System.out.println(w+"x"+h);
+			int sw = w / 4;
+			int sh = sw * ph / pw;
+
+			g.drawImage(img, 0, 0, w, h, (int) (vx * rate), (int) (vy * rate),
+					(int) ((w + vx) * rate), (int) ((h + vy) * rate), null);
+			if (small) {
+				g.drawImage(img, w - sw, h - sh, w, h, 0, 0, pw, ph, null);
+				g.setColor(Color.WHITE);
+				g.drawRect(w - sw, h - sh, sw, sh);
+				g.setColor(Color.RED);
+				g.drawRect((int) (w - sw + vx * rate * sw / pw),//
+						(int) (h - sh + vy * rate * sh / ph),//
+						(int) (sw * w * rate / pw),//
+						(int) (sh * h * rate / ph));
 			}
-		}
-
-		@Override
-		public void keyReleased(KeyEvent e) {
-
-		}
-
-		@Override
-		public void keyTyped(KeyEvent e) {
-
 		}
 
 		public void rotate(int direction) {
@@ -222,8 +239,10 @@ public class PicView {
 			repaint();
 		}
 
-		List<File> files;
-		int fi;
+		private void setSize(BufferedImage img) {
+			setPreferredSize(new Dimension(pw = img.getWidth(), ph = img
+					.getHeight()));
+		}
 
 		public void viewFile(int i) {
 			if (files == null) {
@@ -243,25 +262,6 @@ public class PicView {
 				e.printStackTrace();
 			}
 			repaint();
-		}
-
-		private List<File> listImgs() {
-			List<File> files = new ArrayList<File>();
-			File[] fs = f.getParentFile().listFiles();
-			for (File f1 : fs) {
-				if (U.isImageFile(f1)) {
-					files.add(f1);
-				}
-			}
-			Collections.sort(files);
-			fi = files.indexOf(f);
-			if (fi < 0) {
-				fi = 0;
-				System.out.println("what?not found file name in list");
-			} else {
-				System.out.println("list image files count " + files.size());
-			}
-			return files;
 		}
 
 	}
