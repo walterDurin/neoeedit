@@ -10,13 +10,20 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
+import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
+import java.awt.image.BufferedImageOp;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.text.html.HTMLDocument.HTMLReader.IsindexAction;
 
 public class PicView {
 
@@ -38,13 +45,16 @@ public class PicView {
 		private int vy1;
 		private int vx1;
 		private boolean small = true;
+		private File f;
 
 		@Override
 		protected void paintComponent(Graphics g) {
 			int w = getWidth();
 			int h = getHeight();
+			// System.out.println(w+"x"+h);
 			int sw = w / 4;
 			int sh = sw * ph / pw;
+
 			g.drawImage(img, 0, 0, w, h, (int) (vx * rate), (int) (vy * rate),
 					(int) ((w + vx) * rate), (int) ((h + vy) * rate), null);
 			if (small) {
@@ -61,16 +71,20 @@ public class PicView {
 
 		public Panel(File fn) throws IOException {
 			long t1 = System.currentTimeMillis();
+			this.f = fn;
 			img = ImageIO.read(fn);
 			System.out.println("read in " + (System.currentTimeMillis() - t1));
-			setPreferredSize(new Dimension(pw = img.getWidth(), ph = img
-					.getHeight()));
-
+			setSize(img);
 			addMouseListener(this);
 			addMouseMotionListener(this);
 			addMouseWheelListener(this);
 			addKeyListener(this);
 			setFocusable(true);
+		}
+
+		private void setSize(BufferedImage img) {
+			setPreferredSize(new Dimension(pw = img.getWidth(), ph = img
+					.getHeight()));
 		}
 
 		@Override
@@ -167,8 +181,22 @@ public class PicView {
 
 		@Override
 		public void keyPressed(KeyEvent e) {
-			if (e.getKeyCode() == KeyEvent.VK_F1) {
+			int kc = e.getKeyCode();
+			if (kc == KeyEvent.VK_F1) {
 				small = !small;
+				repaint();
+			} else if (kc == KeyEvent.VK_LEFT) {
+				viewFile(-1);
+			} else if (kc == KeyEvent.VK_RIGHT) {
+				viewFile(1);
+			} else if (kc == KeyEvent.VK_UP) {
+				rotate(1);
+			} else if (kc == KeyEvent.VK_DOWN) {
+				rotate(-1);
+			} else if (kc == KeyEvent.VK_0) {
+				rate = 1;
+				vx = 0;
+				vy = 0;
 				repaint();
 			}
 		}
@@ -181,6 +209,59 @@ public class PicView {
 		@Override
 		public void keyTyped(KeyEvent e) {
 
+		}
+
+		public void rotate(int direction) {
+			int angle = direction * 90;
+			AffineTransform at = new AffineTransform();
+			at.rotate(angle * Math.PI / 180.0, img.getWidth() / 2.0, img
+					.getHeight() / 2.0);
+			BufferedImageOp op = new AffineTransformOp(at,
+					AffineTransformOp.TYPE_BILINEAR);
+			img = op.filter(img, null);
+			repaint();
+		}
+
+		List<File> files;
+		int fi;
+
+		public void viewFile(int i) {
+			if (files == null) {
+				files = listImgs();
+			}
+			if (files.size() <= 0)
+				return;
+
+			fi += i;
+			if (fi < 0)
+				fi = files.size() - 1;
+			else if (fi >= files.size())
+				fi = 0;
+			try {
+				setSize(img = ImageIO.read(files.get(fi)));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			repaint();
+		}
+
+		private List<File> listImgs() {
+			List<File> files = new ArrayList<File>();
+			File[] fs = f.getParentFile().listFiles();
+			for (File f1 : fs) {
+				if (U.isImageFile(f1)) {
+					files.add(f1);
+				}
+			}
+			Collections.sort(files);
+			fi = files.indexOf(f);
+			if (fi < 0) {
+				fi = 0;
+				System.out.println("what?not found file name in list");
+			} else {
+				System.out.println("list image files count " + files.size());
+			}
+			return files;
 		}
 
 	}
