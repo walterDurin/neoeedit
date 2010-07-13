@@ -1286,6 +1286,11 @@ public class U {
 	}
 
 	static void openFile(String fn, int line) throws Exception {
+		File f = new File(fn);
+		if (isImageFile(f)) {
+			new PicView().show(f);
+			return;
+		}
 		final PlainPage pp = new EditPanel(new File(fn)).page;
 		if (pp != null && pp.lines.size() > 0) {
 			line -= 1;
@@ -1297,7 +1302,7 @@ public class U {
 		}
 	}
 
-	static void openFileHistory(EditPanel ed) throws Exception {
+	static void openFileHistory() throws Exception {
 		File fhn = getFileHistoryName();
 		PlainPage pp = new EditPanel(fhn).page;
 		pp.cy = Math.max(0, pp.lines.size() - 1);

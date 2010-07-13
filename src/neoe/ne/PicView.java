@@ -22,6 +22,7 @@ import java.util.List;
 
 import javax.imageio.ImageIO;
 import javax.swing.JComponent;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 
 public class PicView {
@@ -68,22 +69,51 @@ public class PicView {
 		@Override
 		public void keyPressed(KeyEvent e) {
 			int kc = e.getKeyCode();
-			if (kc == KeyEvent.VK_F1) {
-				small = !small;
-				repaint();
-			} else if (kc == KeyEvent.VK_LEFT) {
-				viewFile(-1);
-			} else if (kc == KeyEvent.VK_RIGHT) {
-				viewFile(1);
-			} else if (kc == KeyEvent.VK_UP) {
-				rotate(1);
-			} else if (kc == KeyEvent.VK_DOWN) {
-				rotate(-1);
-			} else if (kc == KeyEvent.VK_0) {
-				rate = 1;
-				vx = 0;
-				vy = 0;
-				repaint();
+			try {
+				if (e.isControlDown()) {
+					if (kc == KeyEvent.VK_H) {
+						U.openFileHistory();
+					} else if (kc == KeyEvent.VK_O) {
+						openFile();
+					} else if (kc == KeyEvent.VK_W) {
+						frame.dispose();
+					}
+				} else {
+					if (kc == KeyEvent.VK_F1) {
+						small = !small;
+						repaint();
+					} else if (kc == KeyEvent.VK_LEFT) {
+						viewFile(-1);
+					} else if (kc == KeyEvent.VK_RIGHT) {
+						viewFile(1);
+					} else if (kc == KeyEvent.VK_UP) {
+						rotate(1);
+					} else if (kc == KeyEvent.VK_DOWN) {
+						rotate(-1);
+					} else if (kc == KeyEvent.VK_0) {
+						rate = 1;
+						vx = 0;
+						vy = 0;
+						repaint();
+					}
+				}
+			} catch (Exception e1) {
+				e1.printStackTrace();
+			}
+
+		}
+
+		private void openFile() throws Exception {
+			JFileChooser chooser = new JFileChooser();
+			if (f != null) {
+				chooser.setSelectedFile(f);
+			}
+			int returnVal = chooser.showOpenDialog(frame);
+			if (returnVal == JFileChooser.APPROVE_OPTION) {
+				System.out.println("You chose to open this file: "
+						+ chooser.getSelectedFile().getAbsolutePath());
+				File f = chooser.getSelectedFile();
+				U.openFile(f);
 			}
 		}
 
@@ -286,5 +316,6 @@ public class PicView {
 		U.setFrameSize(f, p.pw, p.ph);
 		f.setTransferHandler(U.th);
 		f.setVisible(true);
+		U.saveFileHistory(fn.getAbsolutePath(), 0);
 	}
 }
