@@ -1181,7 +1181,7 @@ public class PlainPage {
 					if (cy < lines.size())
 						U.gotoFileLine(roLines.getline(cy).toString());
 				} else if (kc == KeyEvent.VK_H) {
-					U.openFileHistory(uiComp);
+					U.openFileHistory();
 				}
 			} else {
 				if (kc == KeyEvent.VK_LEFT) {
