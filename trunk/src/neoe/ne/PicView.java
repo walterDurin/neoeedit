@@ -49,8 +49,10 @@ public class PicView {
 		private int vy;
 
 		private int vy1;
+		private JFrame frame;
 
-		public Panel(File fn) throws IOException {
+		public Panel(JFrame f, File fn) throws IOException {
+			this.frame = f;
 			long t1 = System.currentTimeMillis();
 			this.f = fn;
 			img = ImageIO.read(fn);
@@ -257,6 +259,7 @@ public class PicView {
 			else if (fi >= files.size())
 				fi = 0;
 			try {
+				frame.setTitle("PicView " + files.get(fi).getName());
 				setSize(img = ImageIO.read(files.get(fi)));
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -279,7 +282,7 @@ public class PicView {
 		JFrame f = new JFrame("PicView " + fn.getName());
 		f.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		Panel p;
-		f.add(p = new Panel(fn));
+		f.add(p = new Panel(f, fn));
 		U.setFrameSize(f, p.pw, p.ph);
 		f.setTransferHandler(U.th);
 		f.setVisible(true);
