@@ -234,7 +234,7 @@ public class PlainPage {
 				String indent = U.getIndent(sb.toString());
 				String s = sb.substring(cx, sb.length());
 				editRec.insertEmptyLine(cy + 1);
-				editRec.insertInLine(cy + 1, 0, indent + s);
+				editRec.insertInLine(cy + 1, 0, indent + U.trimLeft(s));
 				editRec.deleteInLine(cy, cx, Integer.MAX_VALUE);
 				cy += 1;
 				cx = indent.length();

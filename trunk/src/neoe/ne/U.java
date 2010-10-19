@@ -1888,4 +1888,11 @@ public class U {
 		return sb.substring(a, b);
 	}
 
+	public static String trimLeft(String s) {
+		int i = 0;
+		while (i < s.length() && (s.charAt(i) == ' ' || s.charAt(i) == '\t'))
+			i++;
+		return i > 0 ? s.substring(i) : s;
+	}
+
 }
