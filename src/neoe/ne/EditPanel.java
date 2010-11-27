@@ -15,10 +15,10 @@ import java.io.File;
 import java.io.IOException;
 
 import javax.imageio.ImageIO;
-import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.JPanel;
 
-public class EditPanel extends JComponent implements MouseMotionListener,
+public class EditPanel extends JPanel implements MouseMotionListener,
 		MouseListener, MouseWheelListener, KeyListener {
 
 	private static final long serialVersionUID = -1667283144475200365L;
