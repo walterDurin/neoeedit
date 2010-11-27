@@ -313,7 +313,7 @@ public class PlainPage {
 		}
 
 		void insertString(String s) {
-			String[] ss = U.split(s, "\n");
+			String[] ss = U.splitLine(s);
 
 			if (rectSelectMode) {
 				Rectangle rect = ptSelection.getSelectRect();
@@ -391,7 +391,7 @@ public class PlainPage {
 		}
 
 		void setText(String s) {
-			String[] ss = s.split("\n");
+			String[] ss = U.splitLine(s);
 			List<StringBuffer> lines = new ArrayList<StringBuffer>();
 			for (int i = 0; i < ss.length; i++) {
 				lines.add(new StringBuffer(ss[i]));

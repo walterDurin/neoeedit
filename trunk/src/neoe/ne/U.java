@@ -1808,16 +1808,29 @@ public class U {
 		return sl;
 	}
 
-	public static String[] split(String s, String sep) {
+	public static String[] splitLine(String s) {
+		String sep="\n";
 		List<String> s1 = new ArrayList<String>();
 		int p1 = 0;
 		while (true) {
 			int p2 = s.indexOf(sep, p1);
 			if (p2 < 0) {
-				s1.add(U.f(s.substring(p1)));
+				String s2=U.f(s.substring(p1));
+				if (s2.indexOf('\r')>=0){
+					String[] ss2=s2.split("\\r");
+					for (String ss:ss2) s1.add(ss);
+				}else{
+					s1.add(s2);
+				}
 				break;
 			} else {
-				s1.add(U.f(s.substring(p1, p2)));
+				String s2=U.f(s.substring(p1, p2));
+				if (s2.indexOf('\r')>=0){
+					String[] ss2=s2.split("\\r");
+					for (String ss:ss2) s1.add(ss);
+				}else{
+					s1.add(s2);
+				}
 				p1 = p2 + 1;
 			}
 		}

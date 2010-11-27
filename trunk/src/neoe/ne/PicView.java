@@ -21,13 +21,13 @@ import java.util.Collections;
 import java.util.List;
 
 import javax.imageio.ImageIO;
-import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JPanel;
 
 public class PicView {
 
-	public class Panel extends JComponent implements MouseMotionListener,
+	public class Panel extends JPanel implements MouseMotionListener,
 			MouseListener, MouseWheelListener, KeyListener {
 
 		/**

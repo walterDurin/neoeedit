@@ -14,8 +14,9 @@
         <javaElement handleIdentifier="=neoeedit/src&lt;neoe.ne{Main.java"/>
         <file path="/neoeedit/src/Alien.png"/>
         <javaElement handleIdentifier="=neoeedit/src&lt;neoe.ne{FindReplaceWindow.java"/>
-        <javaElement handleIdentifier="=neoeedit/src&lt;neoe.ne{EditPanel.java"/>
         <javaElement handleIdentifier="=neoeedit/src&lt;neoe.util{FileIterator.java"/>
+        <javaElement handleIdentifier="=neoeedit/src&lt;neoe.ne{TopCoderEditorPlugin.java"/>
+        <javaElement handleIdentifier="=neoeedit/src&lt;neoe.ne{EditPanel.java"/>
         <javaElement handleIdentifier="=neoeedit/src&lt;neoe.ne{U.java"/>
         <file path="/neoeedit/src/icontab.png"/>
         <javaElement handleIdentifier="=neoeedit/src&lt;neoe.ne{PicView.java"/>
