@@ -5,7 +5,7 @@ import javax.swing.JPanel;
 public class TopCoderEditorPlugin {
 	EditPanel editor;
 	public JPanel getEditorPanel() {
-		try {
+		try {			
 			editor = new EditPanel("neoeedit");
 		} catch (Exception e) {			
 			e.printStackTrace();
