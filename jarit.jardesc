@@ -21,6 +21,7 @@
         <file path="/neoeedit/src/icontab.png"/>
         <javaElement handleIdentifier="=neoeedit/src&lt;neoe.ne{PicView.java"/>
         <javaElement handleIdentifier="=neoeedit/src&lt;neoe.ne{PlainPage.java"/>
+        <javaElement handleIdentifier="=neoeedit/src&lt;neoe.ne{Applet.java"/>
         <javaElement handleIdentifier="=neoeedit/src&lt;neoe.ne{JS.java"/>
     </selectedElements>
 </jardesc>
