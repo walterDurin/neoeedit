@@ -82,7 +82,7 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 				if (pp.fn != null) {
 					try {
 						U.saveFileHistory(pp.fn, pp.cy);
-					} catch (IOException e1) {
+					} catch (Exception e1) {
 						e1.printStackTrace();
 					}
 				}
