@@ -643,11 +643,11 @@ public class U {
 
 	static Random random = new Random();
 
-	public static Image TabImg;
+	public static Image TabImg, TabImgPrint;
 
-	public static final int TABWIDTH = 60;
+	final static TransferHandler th = new TransferHandler(null) {		
+		private static final long serialVersionUID = 5046626748299023865L;
 
-	final static TransferHandler th = new TransferHandler(null) {
 		public boolean canImport(TransferHandler.TransferSupport support) {
 			if (!support.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
 				return false;
@@ -655,6 +655,7 @@ public class U {
 			return true;
 		}
 
+		@SuppressWarnings("unchecked")
 		public boolean importData(TransferHandler.TransferSupport support) {
 			if (!canImport(support)) {
 				return false;
@@ -715,11 +716,11 @@ public class U {
 	 * @param g2
 	 * @return
 	 */
-	static int computeShowIndex(String s, int width, Graphics2D g2) {
+	static int computeShowIndex(String s, int width, Graphics2D g2, int TABWIDTH) {
 		if (s.length() == 0) {
 			return 0;
 		}
-		if (U.strWidth(g2, s) <= width) {
+		if (U.strWidth(g2, s, TABWIDTH) <= width) {
 			return s.length();
 		}
 		int i = s.length() / 2;
@@ -727,9 +728,11 @@ public class U {
 			if (i == 0) {
 				return 0;
 			}
-			int w = U.strWidth(g2, s.substring(0, i));
+			int w = U.strWidth(g2, s.substring(0, i), TABWIDTH);
 			if (w <= width) {
-				return i + computeShowIndex(s.substring(i), width - w, g2);
+				return i
+						+ computeShowIndex(s.substring(i), width - w, g2,
+								TABWIDTH);
 			} else {
 				i = i / 2;
 			}
@@ -846,9 +849,9 @@ public class U {
 	}
 
 	static int drawTwoColor(Graphics2D g2, String s, int x, int y, Color c1,
-			Color c2) {
+			Color c2, int d) {
 		g2.setColor(c2);
-		g2.drawString(s, x + 1, y + 1);
+		g2.drawString(s, x + d, y + d);
 		g2.setColor(c1);
 		g2.drawString(s, x, y);
 		return g2.getFontMetrics().stringWidth(s);
@@ -1030,12 +1033,13 @@ public class U {
 		return f;
 	}
 
-	static int getHighLightID(String s, Graphics2D g2, Color color) {
+	static int getHighLightID(String s, Graphics2D g2, Color colorKeyword,
+			Color colorDigital, Color color) {
 		if (Arrays.binarySearch(kws, s) >= 0
 				|| Arrays.binarySearch(kws, s.toLowerCase()) >= 0) {
-			g2.setColor(Color.BLUE);
+			g2.setColor(colorKeyword);
 		} else if (isAllDigital(s)) {
-			g2.setColor(Color.RED);
+			g2.setColor(colorDigital);
 		} else {
 			g2.setColor(color);
 		}
@@ -1243,7 +1247,8 @@ public class U {
 	private static void loadTabImage() throws Exception {
 		BufferedImage img = ImageIO.read(U.class
 				.getResourceAsStream("/icontab.png"));
-		TabImg = img.getScaledInstance(TABWIDTH, 8, Image.SCALE_SMOOTH);
+		TabImg = img.getScaledInstance(60, 8, Image.SCALE_SMOOTH);
+		TabImgPrint = img.getScaledInstance(20, 8, Image.SCALE_SMOOTH);
 	}
 
 	public static void log(String s) {
@@ -1809,26 +1814,28 @@ public class U {
 	}
 
 	public static String[] splitLine(String s) {
-		String sep="\n";
+		String sep = "\n";
 		List<String> s1 = new ArrayList<String>();
 		int p1 = 0;
 		while (true) {
 			int p2 = s.indexOf(sep, p1);
 			if (p2 < 0) {
-				String s2=U.f(s.substring(p1));
-				if (s2.indexOf('\r')>=0){
-					String[] ss2=s2.split("\\r");
-					for (String ss:ss2) s1.add(ss);
-				}else{
+				String s2 = U.f(s.substring(p1));
+				if (s2.indexOf('\r') >= 0) {
+					String[] ss2 = s2.split("\\r");
+					for (String ss : ss2)
+						s1.add(ss);
+				} else {
 					s1.add(s2);
 				}
 				break;
 			} else {
-				String s2=U.f(s.substring(p1, p2));
-				if (s2.indexOf('\r')>=0){
-					String[] ss2=s2.split("\\r");
-					for (String ss:ss2) s1.add(ss);
-				}else{
+				String s2 = U.f(s.substring(p1, p2));
+				if (s2.indexOf('\r') >= 0) {
+					String[] ss2 = s2.split("\\r");
+					for (String ss : ss2)
+						s1.add(ss);
+				} else {
 					s1.add(s2);
 				}
 				p1 = p2 + 1;
@@ -1860,7 +1867,7 @@ public class U {
 		t.start();
 	}
 
-	static int strWidth(Graphics2D g2, String s) {
+	static int strWidth(Graphics2D g2, String s, int TABWIDTH) {
 		if (s.indexOf("\t") < 0) {
 			return g2.getFontMetrics().stringWidth(s);
 		} else {
