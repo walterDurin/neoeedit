@@ -1247,7 +1247,7 @@ public class U {
 	private static void loadTabImage() throws Exception {
 		BufferedImage img = ImageIO.read(U.class
 				.getResourceAsStream("/icontab.png"));
-		TabImg = img.getScaledInstance(60, 8, Image.SCALE_SMOOTH);
+		TabImg = img.getScaledInstance(40, 8, Image.SCALE_SMOOTH);
 		TabImgPrint = img.getScaledInstance(20, 8, Image.SCALE_SMOOTH);
 	}
 
@@ -1520,6 +1520,7 @@ public class U {
 					pp.workPath = pp1.workPath;
 					pp.ptEdit.setLines(newLines);
 					pp.uiComp.openWindow();
+					pp.ui.applyColorMode(pp1.ui.colorMode);
 				} catch (Exception e1) {
 					System.out.println(e1);
 					String s1 = "" + e1;
@@ -1576,6 +1577,7 @@ public class U {
 					pp.workPath = pp1.workPath;
 					pp.ptEdit.setLines(newLines);
 					pp.uiComp.openWindow();
+					pp.ui.applyColorMode(pp1.ui.colorMode);
 				} catch (Exception e1) {
 					e1.printStackTrace();
 					String s1 = "" + e1;
@@ -1771,6 +1773,7 @@ public class U {
 		EditPanel ep = new EditPanel("");
 		PlainPage p2 = ep.page;
 		p2.workPath = editor.page.workPath;
+		p2.ui.applyColorMode(editor.page.ui.colorMode);
 		List<StringBuffer> sbs = new ArrayList<StringBuffer>();
 		sbs.add(new StringBuffer(String.format(
 				"find %s results in %s for '%s'", all.size(), dir, text)));

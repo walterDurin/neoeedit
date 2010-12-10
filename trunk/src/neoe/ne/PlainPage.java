@@ -1,5 +1,6 @@
 package neoe.ne;
 
+import static java.awt.Color.*;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -79,6 +80,10 @@ public class PlainPage {
 			uiComp.repaint();
 			Graphics2D g2 = (Graphics2D) graphics;
 			g2.translate(pf.getImageableX(), pf.getImageableY());
+			if (ui.noise) {
+				U.paintNoise(g2, new Dimension((int) pf.getImageableWidth(),
+						(int) pf.getImageableHeight()));
+			}
 			g2.setFont(font);
 			g2.setColor(colorHeaderFooter);
 			g2.drawString(fn == null ? "Unsaved" : new File(fn).getName(), 0,
@@ -93,9 +98,8 @@ public class PlainPage {
 						- U.strWidth(g2, s, TAB_WIDTH_PRINT) - 2, (int) pf
 						.getImageableHeight() - 2);
 				g2.setColor(colorGutterLine);
-				g2.drawLine(gutterWidth-4, headerHeight, gutterWidth-4, (int) pf
-						.getImageableHeight()
-						- footerHeight);
+				g2.drawLine(gutterWidth - 4, headerHeight, gutterWidth - 4,
+						(int) pf.getImageableHeight() - footerHeight);
 			}
 			int p = linePerPage * pageIndex;
 			int charCntInLine = (int) pf.getImageableWidth() / 5 + 5;// inaccurate
@@ -112,10 +116,7 @@ public class PlainPage {
 				drawTextLine(g2, s, gutterWidth, y, charCntInLine);
 
 			}
-			if (ui.noise) {
-				U.paintNoise(g2, new Dimension((int) pf.getImageableWidth(),
-						(int) pf.getImageableHeight()));
-			}
+
 			return Printable.PAGE_EXISTS;
 		}
 
@@ -123,7 +124,7 @@ public class PlainPage {
 				int charCntInLine) {
 			drawStringLine(g2, s, x0, y0);
 			int w = U.strWidth(g2, s, TAB_WIDTH_PRINT);
-			drawReturn(g2, w + gutterWidth+2, y0);
+			drawReturn(g2, w + gutterWidth + 2, y0);
 		}
 
 		void drawStringLine(Graphics2D g2, String s, int x, int y) {
@@ -626,11 +627,16 @@ public class PlainPage {
 			p2.workPath = workPath;
 			p2.ptEdit.setLines(newtext);
 			ep.openWindow();
+			p2.ui.applyColorMode(ui.colorMode);
 		}
 	}
 
 	class Paint {
-		public static final int TABWIDTH = 60;
+		static final int TABWIDTH = 40;
+
+		Paint() {
+			applyColorMode(0);
+		}
 
 		class Comment {
 			void markBox(Graphics2D g2, int x, int y) {
@@ -643,7 +649,7 @@ public class PlainPage {
 					g2.setColor(Color.WHITE);
 					g2.drawRect(w1 - 1, (y - sy) * (lineHeight + lineGap) - 4,
 							w2, 16);
-					g2.setColor(color);
+					g2.setColor(colorNormal);
 					g2.drawRect(w1, (y - sy) * (lineHeight + lineGap) - 3, w2,
 							16);
 					g2.drawString(c, w1, lineHeight + (y - sy)
@@ -701,16 +707,16 @@ public class PlainPage {
 		BufferedImage aboutImg;
 		boolean aboutOn;
 		int aboutY;
-		Color bkColor = new Color(0xe0e0f0);
+		Color colorBg = new Color(0xe0e0f0);
 		/** 3d char */
-		Color c1 = new Color(200, 80, 50);
+		Color colorComment = new Color(200, 80, 50);
 		/** 3d char */
-		Color c2 = Color.WHITE;
+		Color colorComment2 = Color.WHITE;
 		boolean closed = false;
-		Color color = Color.BLACK;
+		Color colorNormal = Color.BLACK;
 		String comment = null;
 		Comment commentor = new Comment();
-		Color currentLineColor = new Color(0xF0F0F0);
+		Color colorCurrentLineBg = new Color(0xF0F0F0);
 		Dimension dim;
 		Font font = new Font("Monospaced", Font.PLAIN, 12);
 		int gutterWidth = 40;
@@ -719,9 +725,51 @@ public class PlainPage {
 		boolean noise = false;
 		int noisesleep = 500;
 		float scalev = 1;
+		int colorMode = -1;
+		/**
+		 * 0:white mode 1: black mode 2: blue mode * 1 bg, 2 normal, 3 keyword,
+		 * 4 digit, 5 comment, 6 gutNumber, 7 gutLine, 8 currentLineBg, 9
+		 * comment2
+		 */
+		final int[][] ColorModes = new int[][] {
+				{ 0xdddddd, BLACK.getRGB(), BLUE.getRGB(),
+						RED.getRGB(), 0xC85032, 0x115511, 0xffffff, 0xF0F0F0,
+						0xffffff },
+				{ 0x0, LIGHT_GRAY.getRGB(), YELLOW.darker().getRGB(), GREEN.getRGB(),
+						BLUE.brighter().getRGB(), 0xC85032, LIGHT_GRAY.getRGB(), 0x222222,
+						0x404040 },
+				{ BLUE.darker().getRGB(), LIGHT_GRAY.getRGB(), YELLOW.getRGB(),
+						GREEN.getRGB(), RED.getRGB(), LIGHT_GRAY.getRGB(),
+						LIGHT_GRAY.getRGB(), 0x2222ff, 0x0 } };
+
+		public void setNextColorMode() {
+			if (++colorMode >= ColorModes.length)
+				colorMode = 0;
+		}
+
+		public void applyColorMode(int i) {			
+			if (i >= ColorModes.length)
+				i = 0;
+			colorMode=i;
+			int[] cm = ColorModes[i];
+			colorBg = new Color(cm[0]);
+			colorNormal = new Color(cm[1]);
+			colorKeyword = new Color(cm[2]);
+			colorDigit = new Color(cm[3]);
+			colorComment = new Color(cm[4]);
+			colorGutNumber = new Color(cm[5]);
+			colorGutLine = new Color(cm[6]);
+			colorCurrentLineBg = new Color(cm[7]);
+			colorComment2 = new Color(cm[8]);
+		}
+
+		private Color colorGutNumber;
+		private Color colorGutLine;
+		private Color colorKeyword;
+		private Color colorDigit;
 
 		void drawGutter(Graphics2D g2) {
-			g2.setColor(new Color(0x115511));
+			g2.setColor(colorGutNumber);
 			for (int i = 0; i < showLineCnt; i++) {
 				if (sy + i + 1 > roLines.getLinesize()) {
 					break;
@@ -794,7 +842,8 @@ public class PlainPage {
 						g2.drawImage(U.TabImg, x + w, y - lineHeight, null);
 						w += TABWIDTH;
 					}
-					w += U.drawTwoColor(g2, s1, x + w, y, c1, c2, 1);
+					w += U.drawTwoColor(g2, s1, x + w, y, colorComment,
+							colorComment2, 1);
 					if (w > dim.width - gutterWidth) {
 						break;
 					}
@@ -807,7 +856,8 @@ public class PlainPage {
 						w += TABWIDTH;
 					} else {
 						// int highlightid =
-						U.getHighLightID(s1, g2, Color.BLUE, Color.RED, color);
+						U.getHighLightID(s1, g2, colorKeyword, colorDigit,
+								colorNormal);
 						g2.drawString(s1, x + w, y);
 						w += g2.getFontMetrics().stringWidth(s1);
 					}
@@ -830,7 +880,7 @@ public class PlainPage {
 				if (sx < sb.length()) {
 					int chari2 = Math.min(charCntInLine + sx, sb.length());
 					String s = U.subs(sb, sx, chari2);
-					g2.setColor(color);
+					g2.setColor(colorNormal);
 					drawStringLine(g2, s, 0, py);
 					int w = U.strWidth(g2, s, TABWIDTH);
 					drawReturn(g2, w, py);
@@ -944,7 +994,7 @@ public class PlainPage {
 					my = 0;
 					ptSelection.mouseSelection(sb);
 				}
-				g2.setColor(bkColor);
+				g2.setColor(colorBg);
 				g2.fillRect(0, 0, size.width, size.height);
 				if (noise) {
 					U.paintNoise(g2, dim);
@@ -954,7 +1004,7 @@ public class PlainPage {
 				drawToolbar(g2);
 				// draw gutter
 				g2.translate(0, toolbarHeight);
-				g2.setColor(Color.WHITE);
+				g2.setColor(colorGutLine);
 				g2.drawRect(gutterWidth, -1, dim.width - gutterWidth,
 						dim.height - toolbarHeight);
 
@@ -967,12 +1017,12 @@ public class PlainPage {
 				{ // highlight current line
 					int l1 = cy - sy;
 					if (l1 >= 0 && l1 < showLineCnt) {
-						g2.setColor(currentLineColor);
+						g2.setColor(colorCurrentLineBg);
 						g2.fillRect(0, l1 * (lineHeight + lineGap), size.width,
 								lineHeight + lineGap - 1);
 					}
 				}
-				g2.setColor(color);
+				g2.setColor(colorNormal);
 				// g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
 				// RenderingHints.VALUE_ANTIALIAS_ON);
 				drawTextLines(g2, charCntInLine);
@@ -1042,6 +1092,7 @@ public class PlainPage {
 				ui.message("Bug:" + th);
 			}
 		}
+
 	}
 
 	class Selection {
@@ -1208,11 +1259,12 @@ public class PlainPage {
 	int showLineCnt;
 	int sy, sx;
 	int toolbarHeight = 25;
-	Paint ui = new Paint();
+	Paint ui;
 	EditPanel uiComp;
 	public String workPath;
 
 	public PlainPage(EditPanel editor, File f) throws Exception {
+		ui = new Paint();
 		this.uiComp = editor;
 		this.fn = f.getAbsolutePath();
 		this.workPath = f.getParent();
@@ -1222,6 +1274,7 @@ public class PlainPage {
 	}
 
 	public PlainPage(EditPanel editor, String text) throws Exception {
+		ui = new Paint();
 		this.uiComp = editor;
 		history = new U.History(this);
 		ptEdit.setText(text);
@@ -1287,6 +1340,9 @@ public class PlainPage {
 				} else if (kc == KeyEvent.VK_PAGE_DOWN) {
 					cx = cx + uiComp.getWidth() / 10;
 					focusCursor();
+				} else if (kc == KeyEvent.VK_C) {
+					ui.setNextColorMode();
+					ui.applyColorMode(ui.colorMode);
 				}
 			} else if (env.isControlDown()) {
 				if (kc == KeyEvent.VK_C) {
@@ -1314,6 +1370,7 @@ public class PlainPage {
 					ep.openWindow();
 					ep.page.workPath = this.workPath;
 					ep.page.ptSelection.selectAll();
+					ep.page.ui.applyColorMode(ui.colorMode);
 				} else if (kc == KeyEvent.VK_S) {
 					if (U.saveFile(this)) {
 						System.out.println("saved");

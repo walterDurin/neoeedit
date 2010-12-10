@@ -88,7 +88,7 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 				}
 			}
 		});
-		
+
 		frame.setTransferHandler(U.th);
 		frame.setVisible(true);
 
