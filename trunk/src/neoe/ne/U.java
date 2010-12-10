@@ -878,6 +878,7 @@ public class U {
 
 	static {
 		try {
+			System.out.println("welcome to "+PlainPage.WINDOW_NAME);
 			loadTabImage();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -900,7 +901,8 @@ public class U {
 			saveFileHistory(page.fn, page.cy);
 		}
 		page.ui.closed = true;
-		editor.frame.dispose();
+		if (editor.frame != null)
+			editor.frame.dispose();
 	}
 
 	/**
