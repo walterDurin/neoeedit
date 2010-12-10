@@ -43,7 +43,7 @@ public class PlainPage {
 				sy = Math.max(0, line - showLineCnt / 2 + 1);
 				cy = line;
 				cx = 0;
-				focusCursor();				
+				focusCursor();
 			}
 		}
 
@@ -1338,13 +1338,22 @@ public class PlainPage {
 				ui.message("filename copied");
 				my = 0;
 				uiComp.repaint();
-				return;
+			} else {
+				try {
+					if (U.saveFile(this)) {
+						ui.message("saved");
+					}
+				} catch (Exception e) {
+					ui.message("err:" + e);
+					e.printStackTrace();
+				}
 			}
-		}
-		int mx = evt.getX();
-		if (mx > 0 && mx < ui.gutterWidth) {
-			cursor.gotoLine();
-			uiComp.repaint();
+		} else {
+			int mx = evt.getX();
+			if (mx > 0 && mx < ui.gutterWidth) {
+				cursor.gotoLine();
+				uiComp.repaint();
+			}
 		}
 	}
 
