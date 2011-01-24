@@ -1252,6 +1252,9 @@ public class PlainPage {
 					U.openFileHistory();
 				} else if (kc == KeyEvent.VK_P) {
 					new U.Print(PlainPage.this).printPages();
+				} else if (kc == KeyEvent.VK_ENTER) {
+					cursor.moveEnd();
+					focusCursor();
 				}
 			} else {
 				if (kc == KeyEvent.VK_LEFT) {
