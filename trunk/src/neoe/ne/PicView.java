@@ -242,6 +242,7 @@ public class PicView {
 		protected void paintComponent(Graphics g) {
 			int w = getWidth();
 			int h = getHeight();
+			g.clearRect(0, 0, w, h);
 			// System.out.println(w+"x"+h);
 			int sw = w / 4;
 			int sh = sw * ph / pw;
