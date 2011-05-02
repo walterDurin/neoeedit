@@ -1329,10 +1329,10 @@ public class U {
 
 	static String guessEncoding(String fn) throws Exception {
 		// S/ystem.out.println("guessing encoding");
-		String[] encodings = { UTF8, "sjis", "gbk", };
+		String[] encodings = {  "sjis", "gbk", "unicode",UTF8, };
 
 		FileInputStream in = new FileInputStream(fn);
-		final int defsize = 4096;
+		final int defsize = 4096*2;
 		int len = Math.min(defsize, (int) new File(fn).length());
 		try {
 			// S/ystem.out.println("len:" + len);
@@ -1345,15 +1345,20 @@ public class U {
 				buf = b2;
 			}
 			for (String enc : encodings) {
-				byte[] b2 = new String(buf, enc).getBytes(enc);
-				if (b2.length != buf.length) {
-					continue;
-				}
-				int nlen = Math.max(0, len - 1);// for not last complete char
-				if (Arrays.equals(Arrays.copyOf(buf, nlen), Arrays.copyOf(b2,
-						nlen))) {
+				
+				String s=new String(buf, enc);
+				if (new String(s.getBytes(enc),enc).equals(s)){
 					return enc;
 				}
+//				byte[] b2 = new String(buf, enc).getBytes(enc);
+//				if (b2.length != buf.length) {
+//					continue;
+//				}
+//				int nlen = Math.max(0, len - 1);// for not last complete char
+//				if (Arrays.equals(Arrays.copyOf(buf, nlen), Arrays.copyOf(b2,
+//						nlen))) {
+//					return enc;
+//				}
 			}
 		} finally {
 			in.close();
