@@ -1329,7 +1329,7 @@ public class U {
 
 	static String guessEncoding(String fn) throws Exception {
 		// S/ystem.out.println("guessing encoding");
-		String[] encodings = {  "sjis", "gbk", "unicode",UTF8, };
+		String[] encodings = {  "sjis", "gbk", UTF8,"unicode",};
 
 		FileInputStream in = new FileInputStream(fn);
 		final int defsize = 4096*2;
@@ -1344,10 +1344,10 @@ public class U {
 				System.arraycopy(buf, 0, b2, 0, len);
 				buf = b2;
 			}
-			for (String enc : encodings) {
-				
+			for (String enc : encodings) {				
 				String s=new String(buf, enc);
-				if (new String(s.getBytes(enc),enc).equals(s)){
+				if (new String(s.getBytes(enc),enc).equals(s)
+						&& s.indexOf("�")<0){
 					return enc;
 				}
 //				byte[] b2 = new String(buf, enc).getBytes(enc);
