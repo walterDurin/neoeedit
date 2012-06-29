@@ -318,10 +318,11 @@ public class PlainPage {
 			}
 			uiComp.repaint();
 		}
-
-		void insertString(String s) {
+		void insertString(String s){
 			String[] ss = U.splitLine(s);
-
+			insertString(ss);
+		}
+		void insertString(String[] ss) {
 			if (rectSelectMode) {
 				Rectangle rect = ptSelection.getSelectRect();
 				int pi = 0;
@@ -1247,7 +1248,9 @@ public class PlainPage {
 					ui.scalev = 1;
 				} else if (kc == KeyEvent.VK_G) {
 					if (cy < lines.size())
-						U.gotoFileLine(roLines.getline(cy).toString());
+						if (!U.gotoFileLine(roLines.getline(cy).toString())){
+							U.listDir( PlainPage.this, cy);
+						}
 				} else if (kc == KeyEvent.VK_H) {
 					U.openFileHistory();
 				} else if (kc == KeyEvent.VK_P) {

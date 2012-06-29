@@ -343,10 +343,10 @@ public class U {
 
 		public boolean canAppend(HistoryCell last) {
 			return ((last.action == U.BasicAction.Delete
-					&& this.action == U.BasicAction.Delete && // 
-			((last.x1 == this.x1 || last.x1 == this.x2) && last.y1 == this.y1))// 
+					&& this.action == U.BasicAction.Delete && //
+			((last.x1 == this.x1 || last.x1 == this.x2) && last.y1 == this.y1))//
 			|| (last.action == U.BasicAction.Insert
-					&& this.action == U.BasicAction.Insert && // 
+					&& this.action == U.BasicAction.Insert && //
 			((last.x1 == this.x1 || last.x2 == this.x1) && last.y1 == this.y1)));
 		}
 
@@ -483,9 +483,7 @@ public class U {
 				int i = 0;
 				for (String s1 : ws) {
 					if (i++ != 0) {
-						g2
-								.drawImage(U.TabImgPrint, x + w,
-										y - lineHeight, null);
+						g2.drawImage(U.TabImgPrint, x + w, y - lineHeight, null);
 						w += TAB_WIDTH_PRINT;
 					}
 					g2.setColor(colorComment);
@@ -499,9 +497,7 @@ public class U {
 				List<String> s1x = U.split(s);
 				for (String s1 : s1x) {
 					if (s1.equals("\t")) {
-						g2
-								.drawImage(U.TabImgPrint, x + w,
-										y - lineHeight, null);
+						g2.drawImage(U.TabImgPrint, x + w, y - lineHeight, null);
 						w += TAB_WIDTH_PRINT;
 					} else {
 						// int highlightid =
@@ -555,13 +551,17 @@ public class U {
 					lineGap + lineHeight);
 			{
 				String s = (pageIndex + 1) + "/" + totalPage;
-				g2.drawString(s, (int) pf.getImageableWidth()
-						- U.strWidth(g2, s, TAB_WIDTH_PRINT) - 2, lineGap
-						+ lineHeight);
+				g2.drawString(
+						s,
+						(int) pf.getImageableWidth()
+								- U.strWidth(g2, s, TAB_WIDTH_PRINT) - 2,
+						lineGap + lineHeight);
 				s = new Date().toString() + " - NeoeEdit";
-				g2.drawString(s, (int) pf.getImageableWidth()
-						- U.strWidth(g2, s, TAB_WIDTH_PRINT) - 2, (int) pf
-						.getImageableHeight() - 2);
+				g2.drawString(
+						s,
+						(int) pf.getImageableWidth()
+								- U.strWidth(g2, s, TAB_WIDTH_PRINT) - 2,
+						(int) pf.getImageableHeight() - 2);
 				g2.setColor(colorGutterLine);
 				g2.drawLine(gutterWidth - 4, headerHeight, gutterWidth - 4,
 						(int) pf.getImageableHeight() - footerHeight);
@@ -878,7 +878,7 @@ public class U {
 
 	static {
 		try {
-			System.out.println("welcome to "+PlainPage.WINDOW_NAME);
+			System.out.println("welcome to " + PlainPage.WINDOW_NAME);
 			loadTabImage();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -959,8 +959,8 @@ public class U {
 			} else {
 				List<String> all = new ArrayList<String>();
 				while (true) {
-					all.add(String.format("%s:%s", p.y + 1, page.roLines
-							.getline(p.y)));
+					all.add(String.format("%s:%s", p.y + 1,
+							page.roLines.getline(p.y)));
 					Point p2 = U.find(page, text2find, 0, p.y + 1, ignoreCase);
 					if (p2 == null || p2.y <= p.y) {
 						break;
@@ -1080,8 +1080,8 @@ public class U {
 			}
 		}
 		// last half row
-		p1 = page.roLines.getline(y).toString(ignoreCase).substring(x).indexOf(
-				s);
+		p1 = page.roLines.getline(y).toString(ignoreCase).substring(x)
+				.indexOf(s);
 		if (p1 >= 0) {
 			return new Point(p1, fy);
 		}
@@ -1203,8 +1203,8 @@ public class U {
 	static String getClipBoard() {
 		String s;
 		try {
-			s = Toolkit.getDefaultToolkit().getSystemClipboard().getData(
-					DataFlavor.stringFlavor).toString();
+			s = Toolkit.getDefaultToolkit().getSystemClipboard()
+					.getData(DataFlavor.stringFlavor).toString();
 		} catch (Exception e) {
 			s = "";
 		}
@@ -1255,11 +1255,11 @@ public class U {
 		return sb.toString();
 	}
 
-	static void gotoFileLine(String sb) throws Exception {
+	static boolean gotoFileLine(String sb) throws Exception {
 		int p1, p2;
 		if ((p1 = sb.indexOf("|")) >= 0) {
+			String fn = sb.substring(0, p1);
 			if ((p2 = sb.indexOf(":", p1)) >= 0) {
-				String fn = sb.substring(0, p1);
 				int line = -1;
 				try {
 					line = Integer.parseInt(sb.substring(p1 + 1, p2));
@@ -1267,8 +1267,35 @@ public class U {
 				}
 				if (line >= 0) {
 					openFile(fn, line);
+					return true;
 				}
 			}
+		}
+		return false;
+	}
+
+	static void listDir(PlainPage pp, int atLine) throws Exception {
+		String line = pp.roLines.getline(atLine).toString();
+		String fn = line.trim();
+		int p1 = fn.indexOf('|');
+		if (p1 >= 0)
+			fn = fn.substring(0, p1).trim();
+		File f = new File(fn);
+		if (f.isFile() && f.exists()) {
+			openFile(fn, 0);
+		} else if (f.isDirectory()) {
+			File[] fs = f.listFiles();
+			pp.cx = line.length();
+			pp.ptEdit.insertString("\n{-----");
+			for (File f1 : fs) {
+				if (f1.isDirectory()) {
+					pp.ptEdit.insertString("\n" + f1.getAbsolutePath()
+							+ " | <DIR>");
+				} else {
+					pp.ptEdit.insertString("\n" + f1.getAbsolutePath());
+				}
+			}
+			pp.ptEdit.insertString("\n-----}");
 		}
 	}
 
@@ -1329,10 +1356,10 @@ public class U {
 
 	static String guessEncoding(String fn) throws Exception {
 		// S/ystem.out.println("guessing encoding");
-		String[] encodings = {  "sjis", "gbk", UTF8,"unicode",};
+		String[] encodings = { "sjis", "gbk", UTF8, "unicode", };
 
 		FileInputStream in = new FileInputStream(fn);
-		final int defsize = 4096*2;
+		final int defsize = 4096 * 2;
 		int len = Math.min(defsize, (int) new File(fn).length());
 		try {
 			// S/ystem.out.println("len:" + len);
@@ -1344,21 +1371,21 @@ public class U {
 				System.arraycopy(buf, 0, b2, 0, len);
 				buf = b2;
 			}
-			for (String enc : encodings) {				
-				String s=new String(buf, enc);
-				if (new String(s.getBytes(enc),enc).equals(s)
-						&& s.indexOf("�")<0){
+			for (String enc : encodings) {
+				String s = new String(buf, enc);
+				if (new String(s.getBytes(enc), enc).equals(s)
+						&& s.indexOf("�") < 0) {
 					return enc;
 				}
-//				byte[] b2 = new String(buf, enc).getBytes(enc);
-//				if (b2.length != buf.length) {
-//					continue;
-//				}
-//				int nlen = Math.max(0, len - 1);// for not last complete char
-//				if (Arrays.equals(Arrays.copyOf(buf, nlen), Arrays.copyOf(b2,
-//						nlen))) {
-//					return enc;
-//				}
+				// byte[] b2 = new String(buf, enc).getBytes(enc);
+				// if (b2.length != buf.length) {
+				// continue;
+				// }
+				// int nlen = Math.max(0, len - 1);// for not last complete char
+				// if (Arrays.equals(Arrays.copyOf(buf, nlen), Arrays.copyOf(b2,
+				// nlen))) {
+				// return enc;
+				// }
 			}
 		} finally {
 			in.close();
@@ -1618,8 +1645,8 @@ public class U {
 			}
 			p1 = 0;
 			while (true) {
-				p1 = page.roLines.getline(fy).toString(ignoreCase).indexOf(s,
-						p1);
+				p1 = page.roLines.getline(fy).toString(ignoreCase)
+						.indexOf(s, p1);
 				if (p1 >= 0) {
 					cnt++;
 					editRec.deleteInLine(fy, p1, p1 + s.length());
@@ -1858,8 +1885,8 @@ public class U {
 	}
 
 	static void setClipBoard(String s) {
-		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(
-				new StringSelection(s), null);
+		Toolkit.getDefaultToolkit().getSystemClipboard()
+				.setContents(new StringSelection(s), null);
 	}
 
 	static void setEncodingByUser(PlainPage plainPage, String msg) {
@@ -1879,8 +1906,8 @@ public class U {
 
 	static void setFrameSize(JFrame f, int w, int h) {
 		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
-		f.setSize(Math.min(800, Math.min(dim.width, w)), Math.min(600, Math
-				.min(dim.height, h)));
+		f.setSize(Math.min(800, Math.min(dim.width, w)),
+				Math.min(600, Math.min(dim.height, h)));
 	}
 
 	static void showHelp(final Paint ui, final EditPanel uiComp) {
