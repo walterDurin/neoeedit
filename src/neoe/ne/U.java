@@ -1307,7 +1307,7 @@ public class U {
 		for (int i = 0; i < page.roLines.getLinesize(); i++) {
 			RoSb sb = page.roLines.getline(i);
 			for (int j = 0; j < cnts.length; j++) {
-				if (sb.toString().trim().startsWith(commentchars[j])) {
+				if (sb.substring(0,Math.min(sb.length(), 80)).toString().trim().startsWith(commentchars[j])) {
 					cnts[j]++;
 				}
 			}
@@ -1346,7 +1346,7 @@ public class U {
 			}
 		}
 		if (comment == null) {
-			page.ui.message("no comment found" + Arrays.toString(cnts));
+			page.ui.message("no comment found");
 		} else {
 			page.ui.message("comment found:" + comment);
 		}
