@@ -1365,12 +1365,16 @@ public class U {
 			// S/ystem.out.println("len:" + len);
 			byte[] buf = new byte[len];
 			len = in.read(buf);
+			in.close();
 			// S/ystem.out.println("len2:" + len);
 			if (len != defsize) {
 				byte[] b2 = new byte[len];
 				System.arraycopy(buf, 0, b2, 0, len);
 				buf = b2;
 			}
+			String encoding = guessByBOM(buf);
+			if (encoding != null)
+				return encoding;
 			for (String enc : encodings) {
 				String s = new String(buf, enc);
 				if (new String(s.getBytes(enc), enc).equals(s)
@@ -1391,6 +1395,32 @@ public class U {
 			in.close();
 		}
 
+		return null;
+	}
+
+	static final Object[][] BOMs = new Object[][] {
+			new Object[] { new int[] { 0xEF, 0xBB, 0xBF }, "UTF-8" },
+			new Object[] { new int[] { 0xFE, 0xFF }, "UTF-16BE" },
+			new Object[] { new int[] { 0xFF, 0xFE }, "UTF-16LE" },
+			new Object[] { new int[] { 0, 0, 0xFE, 0xFF }, "UTF-32BE" },
+			new Object[] { new int[] { 0xFF, 0xFE, 0, 0 }, "UTF-32LE" }, };
+
+	private static String guessByBOM(byte[] src) {
+		for (Object[] row : BOMs) {
+			int[] seq = (int[]) row[0];
+			// compare 2 array
+			if (seq.length > src.length)
+				continue;
+			boolean same = true;
+			for (int i = 0; i < seq.length; i++) {
+				if ((byte)seq[i] != src[i]) {
+					same = false;
+					break;
+				}
+			}
+			if (same)
+				return (String) row[1];
+		}
 		return null;
 	}
 

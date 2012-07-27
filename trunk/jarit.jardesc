@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <jardesc>
-    <jar path="E:/Downloads/neoeedit.jar"/>
+    <jar path="f:/down/neoeedit.jar"/>
     <options buildIfNeeded="true" compress="true" descriptionLocation="/neoeedit/jarit.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="false" overwrite="false" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
     <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
     <selectedProjects/>
@@ -11,17 +11,6 @@
         </sealing>
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
-        <javaElement handleIdentifier="=neoeedit/src&lt;neoe.ne{Main.java"/>
-        <file path="/neoeedit/src/Alien.png"/>
-        <javaElement handleIdentifier="=neoeedit/src&lt;neoe.ne{FindReplaceWindow.java"/>
-        <javaElement handleIdentifier="=neoeedit/src&lt;neoe.util{FileIterator.java"/>
-        <javaElement handleIdentifier="=neoeedit/src&lt;neoe.ne{TopCoderEditorPlugin.java"/>
-        <javaElement handleIdentifier="=neoeedit/src&lt;neoe.ne{EditPanel.java"/>
-        <javaElement handleIdentifier="=neoeedit/src&lt;neoe.ne{U.java"/>
-        <file path="/neoeedit/src/icontab.png"/>
-        <javaElement handleIdentifier="=neoeedit/src&lt;neoe.ne{PicView.java"/>
-        <javaElement handleIdentifier="=neoeedit/src&lt;neoe.ne{PlainPage.java"/>
-        <javaElement handleIdentifier="=neoeedit/src&lt;neoe.ne{Applet.java"/>
-        <javaElement handleIdentifier="=neoeedit/src&lt;neoe.ne{JS.java"/>
+        <javaElement handleIdentifier="=neoeedit/src"/>
     </selectedElements>
 </jardesc>
