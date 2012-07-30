@@ -183,6 +183,24 @@ public class PlainPage {
 			cy = Math.max(0, Math.min(roLines.getLinesize() - 1, y));
 			cx = Math.max(0, Math.min(roLines.getline(cy).length(), x));
 		}
+
+		void moveToPair() {
+			// move cursor between (){}[]<> pair
+			if (cx - 1 < roLines.getline(cy).length() && cx - 1 >= 0) {
+				char c = roLines.getline(cy).charAt(cx - 1);
+				String pair = "(){}[]<>";
+				int p1 = pair.indexOf(c);
+				if (p1 >= 0) {
+					if (p1 % 2 == 0) {
+						PlainPage.this.ui.commentor.moveToPairMark(cx - 1, cy,
+								pair.charAt(p1 + 1), c, 1);
+					} else {
+						PlainPage.this.ui.commentor.moveToPairMark(cx - 1, cy,
+								pair.charAt(p1 - 1), c, -1);
+					}
+				}
+			}
+		}
 	}
 
 	class EasyEdit {
@@ -318,10 +336,12 @@ public class PlainPage {
 			}
 			uiComp.repaint();
 		}
-		void insertString(String s){
+
+		void insertString(String s) {
 			String[] ss = U.splitLine(s);
 			insertString(ss);
 		}
+
 		void insertString(String[] ss) {
 			if (rectSelectMode) {
 				Rectangle rect = ptSelection.getSelectRect();
@@ -528,6 +548,16 @@ public class PlainPage {
 					if (cy2 != c1[1]) {
 						markGutLine(g2, cy2, c1[1]);
 					}
+				}
+			}
+
+			void moveToPairMark(int cx2, int cy2, char ch, char ch2, int inc) {
+				int[] c1 = new int[] { cx2, cy2 };
+				U.findchar(PlainPage.this, ch, inc, c1, ch2);
+				if (c1[0] >= 0) {// found
+					cx = c1[0] + 1;
+					cy = c1[1];
+					focusCursor();
 				}
 			}
 		}
@@ -793,9 +823,9 @@ public class PlainPage {
 						sx = Math.max(0, cx - charCntInLine / 2);
 						int xx = charCntInLine / 4;
 						while (xx > 0
-								&& U.strWidth(g2, U.subs(roLines.getline(cy),
-										sx, cx), TABWIDTH) > size.width
-										- lineHeight * 3) {
+								&& U.strWidth(g2,
+										U.subs(roLines.getline(cy), sx, cx),
+										TABWIDTH) > size.width - lineHeight * 3) {
 							sx = Math.max(0, cx - xx - 1);
 							xx /= 2; // quick guess
 						}
@@ -894,11 +924,11 @@ public class PlainPage {
 						int p1 = pair.indexOf(c);
 						if (p1 >= 0) {
 							if (p1 % 2 == 0) {
-								commentor.pairMark(g2, cx - 1, cy, pair
-										.charAt(p1 + 1), c, 1);
+								commentor.pairMark(g2, cx - 1, cy,
+										pair.charAt(p1 + 1), c, 1);
 							} else {
-								commentor.pairMark(g2, cx - 1, cy, pair
-										.charAt(p1 - 1), c, -1);
+								commentor.pairMark(g2, cx - 1, cy,
+										pair.charAt(p1 - 1), c, -1);
 							}
 						}
 					}
@@ -1179,6 +1209,8 @@ public class PlainPage {
 				} else if (kc == KeyEvent.VK_C) {
 					ui.setNextColorMode();
 					ui.applyColorMode(ui.colorMode);
+				} else if (kc == KeyEvent.VK_P) {
+					cursor.moveToPair();
 				}
 			} else if (env.isControlDown()) {
 				if (kc == KeyEvent.VK_C) {
@@ -1248,8 +1280,8 @@ public class PlainPage {
 					ui.scalev = 1;
 				} else if (kc == KeyEvent.VK_G) {
 					if (cy < lines.size())
-						if (!U.gotoFileLine(roLines.getline(cy).toString())){
-							U.listDir( PlainPage.this, cy);
+						if (!U.gotoFileLine(roLines.getline(cy).toString())) {
+							U.listDir(PlainPage.this, cy);
 						}
 				} else if (kc == KeyEvent.VK_H) {
 					U.openFileHistory();
