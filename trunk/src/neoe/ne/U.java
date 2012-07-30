@@ -1184,7 +1184,7 @@ public class U {
 						a.add(String.format("%s|%s:%s", fn, lineno, oline));
 					}
 				}
-
+				in.close();
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
