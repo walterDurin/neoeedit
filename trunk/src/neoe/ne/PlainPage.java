@@ -1211,6 +1211,8 @@ public class PlainPage {
 					ui.applyColorMode(ui.colorMode);
 				} else if (kc == KeyEvent.VK_P) {
 					cursor.moveToPair();
+				} else if (!Character.isIdentifierIgnorable(kc)) {
+					unknownCommand(env);
 				}
 			} else if (env.isControlDown()) {
 				if (kc == KeyEvent.VK_C) {
@@ -1290,7 +1292,10 @@ public class PlainPage {
 				} else if (kc == KeyEvent.VK_ENTER) {
 					cursor.moveEnd();
 					focusCursor();
+				} else if (!Character.isIdentifierIgnorable(kc)) {
+					unknownCommand(env);
 				}
+
 			} else {
 				if (kc == KeyEvent.VK_LEFT) {
 					cursor.moveLeft();
@@ -1337,10 +1342,24 @@ public class PlainPage {
 			uiComp.repaint();
 		} catch (Exception e) {
 			ui.message("err:" + e);
-			uiComp.repaint();
 			e.printStackTrace();
 		}
 		history.endAtom();
+	}
+
+	private void unknownCommand(KeyEvent env) {
+		StringBuilder sb = new StringBuilder();
+		if (env.isControlDown())
+			sb.append("Ctrl");
+		if (env.isAltDown()) {
+			if (sb.length() > 0)
+				sb.append("-");
+			sb.append("Alt");
+		}
+		if (sb.length() > 0)
+			sb.append("-");
+		sb.append((char)env.getKeyCode());
+		ui.message("Unknow Command:" + sb);
 	}
 
 	public void keyReleased(KeyEvent env) {
