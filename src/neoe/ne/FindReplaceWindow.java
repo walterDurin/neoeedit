@@ -2,6 +2,7 @@ package neoe.ne;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.File;
@@ -64,6 +65,12 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 		s.add(jcb2 = new JCheckBox("include subdir", true));
 		s.add(jcb3 = new JCheckBox("skip binary", true));
 		s.newline();
+		jcb1.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				jb4.setEnabled(!jcb1.isSelected());
+				jb2.setEnabled(!jcb1.isSelected());
+			}
+		});
 		jb1.setActionCommand("find");
 		jb2.setActionCommand("replace");
 		jb3.setActionCommand("replaceall");
@@ -81,6 +88,22 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 		}
 		jta1.addKeyListener(this);
 		jta2.addKeyListener(this);
+		KeyListener closeOnEsc = new KeyAdapter() {
+			public void keyPressed(KeyEvent env) {
+				if (env.getKeyCode() == KeyEvent.VK_ESCAPE) {
+					dialog.dispose();
+				}
+			}
+		};
+		dialog.addKeyListener(closeOnEsc);
+		jta1.addKeyListener(closeOnEsc);
+		jta2.addKeyListener(closeOnEsc);
+		jtadir.addKeyListener(closeOnEsc);
+		jrb1.addKeyListener(closeOnEsc);
+		jrb2.addKeyListener(closeOnEsc);
+		jcb1.addKeyListener(closeOnEsc);
+		jcb2.addKeyListener(closeOnEsc);
+		jcb3.addKeyListener(closeOnEsc);
 	}
 
 	public void show() {
@@ -100,16 +123,16 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 		try {
 			String command = ae.getActionCommand();
 			if (command.equals("find")) {
-				page.ptFind.doFind(jta1.getText(), jrb1.isSelected(), jrb2
-						.isSelected(), jcb1.isSelected(), jtadir.getText());
+				page.ptFind.doFind(jta1.getText(), jrb1.isSelected(),
+						jrb2.isSelected(), jcb1.isSelected(), jtadir.getText());
 			} else if (command.equals("findall")) {
 				U.doFindInPage(page, jta1.getText(), jrb1.isSelected());
 			} else if (command.equals("replace")) {
-				U.doReplace(page, jta1.getText(), jrb1.isSelected(), jrb2
-						.isSelected(), jta2.getText(), true,  false, null);
+				U.doReplace(page, jta1.getText(), jrb1.isSelected(),
+						jrb2.isSelected(), jta2.getText(), true, false, null);
 			} else if (command.equals("replaceall")) {
-				U.doReplaceAll(page, jta1.getText(), jrb1.isSelected(), jrb2
-						.isSelected(), jta2.getText(),  jcb1.isSelected(),
+				U.doReplaceAll(page, jta1.getText(), jrb1.isSelected(),
+						jrb2.isSelected(), jta2.getText(), jcb1.isSelected(),
 						jtadir.getText());
 			} else {
 				return;
