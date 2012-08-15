@@ -11,11 +11,13 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.io.File;
 import java.io.IOException;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 public class EditPanel extends JPanel implements MouseMotionListener,
@@ -92,6 +94,18 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 		frame.setTransferHandler(U.th);
 		frame.setVisible(true);
 
+		frame.addWindowListener(new WindowAdapter() {
+			public void windowActivated(WindowEvent e) {
+				if (page.fn!=null&&page.fileLastModified!=0){
+					long t=new File(page.fn).lastModified();
+					if (t>page.fileLastModified+100){
+						page.fileLastModified=t;
+						JOptionPane.showMessageDialog(frame, "File changed outside.");
+					}
+				}
+				
+			}
+		});
 		// page.getFindWindow();
 		changeTitle();
 		repaint();

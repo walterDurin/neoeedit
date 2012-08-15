@@ -1378,7 +1378,7 @@ public class U {
 			for (String enc : encodings) {
 				String s = new String(buf, enc);
 				if (new String(s.getBytes(enc), enc).equals(s)
-						&& s.indexOf("�") < 0) {
+						&& s.indexOf("�ｽ") < 0) {
 					return enc;
 				}
 				// byte[] b2 = new String(buf, enc).getBytes(enc);
@@ -1576,6 +1576,7 @@ public class U {
 		}
 		page.lineSep = U.guessLineSepForEditor(fn);
 		page.ptEdit.setLines(U.readFileForEditor(fn, page.encoding));
+		page.fileLastModified=new File(fn).lastModified();
 	}
 
 	static List<StringBuffer> readFileForEditor(String fn, String encoding) {
@@ -1903,6 +1904,7 @@ public class U {
 			out.write(page.lineSep);
 		}
 		out.close();
+		page.fileLastModified=new File(page.fn).lastModified();
 		return true;
 	}
 

@@ -1128,6 +1128,7 @@ public class PlainPage {
 	Paint ui;
 	EditPanel uiComp;
 	String workPath;
+	public long fileLastModified;
 
 	public PlainPage(EditPanel editor, File f) throws Exception {
 		ui = new Paint();
