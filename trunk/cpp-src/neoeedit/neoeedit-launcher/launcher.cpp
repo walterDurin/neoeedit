@@ -44,7 +44,6 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	ret = GetModuleFileName(NULL, (LPWSTR)&value, BufferSize);
 	printf("%ws\n",value);
 	wstring exepath = value;
-	//printf("A=%ws\nb=%ws\n",cmd.c_str(),exepath.c_str());
 	size_t p = exepath.find_last_of(L"\\");
 	if (p!=string::npos){
 		exepath=exepath.substr(0,p+1)+JARFN;
@@ -53,12 +52,11 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
 	wstring params=L"";
 	for (int i=1;i<argc;i++){
-		params = params + L" "+ argv[i];
+		params = params + L" \""+ argv[i] + L"\"";
 	}
 
 	replaceAll(cmd, L"%*", L"");
-	replaceAll(cmd, L" -jar ", L"");
-	//replaceAll(cmd, L"\\", L"\\\\");
+	replaceAll(cmd, L" -jar ", L"");	
 
 	wstring allstr =  cmd + L" -jar "+exepath;
 	if (params.size()>0) allstr+=params;
