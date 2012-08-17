@@ -22,16 +22,16 @@ inline std::wstring &
 
 
 
-int WINAPI WinMain(HINSTANCE hInstance,
+int WINAPI wWinMain(HINSTANCE hInstance,
 	HINSTANCE hPrevInstance,
-	LPSTR lpCmdLine,
+	LPWSTR lpCmdLine,
 	int nCmdShow)
 {
 
 	LPWSTR *argv;
 	int argc;
 
-	argv = CommandLineToArgvW(GetCommandLine(), &argc);
+	argv = CommandLineToArgvW(GetCommandLineW(), &argc);
 
 
 	WCHAR* JARFN=L"neoeedit.jar";
@@ -58,7 +58,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	replaceAll(cmd, L"%*", L"");
 	replaceAll(cmd, L" -jar ", L"");	
 
-	wstring allstr =  cmd + L" -Xmx1000M -jar "+exepath;
+	wstring allstr =  cmd + L" -Dfile.encoding=unicode -Xmx1000M -jar "+exepath;
 	if (params.size()>0) allstr+=params;
 	printf("%ws\n",allstr.c_str());
 	
@@ -76,5 +76,5 @@ int WINAPI WinMain(HINSTANCE hInstance,
     PROCESS_INFORMATION piProcessInfo;
 	memset(&siStartupInfo, 0, sizeof(siStartupInfo));
     memset(&piProcessInfo, 0, sizeof(piProcessInfo)); 
-	CreateProcess(NULL, (LPWSTR)allstr.c_str(), NULL, NULL, false, CREATE_DEFAULT_ERROR_MODE, NULL, NULL, &siStartupInfo, &piProcessInfo);
+	CreateProcessW(NULL, (LPWSTR)allstr.c_str(), NULL, NULL, false, CREATE_DEFAULT_ERROR_MODE, NULL, NULL, &siStartupInfo, &piProcessInfo);
 }
