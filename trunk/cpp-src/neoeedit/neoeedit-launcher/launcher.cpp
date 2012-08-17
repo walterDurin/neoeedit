@@ -58,7 +58,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	replaceAll(cmd, L"%*", L"");
 	replaceAll(cmd, L" -jar ", L"");	
 
-	wstring allstr =  cmd + L" -jar "+exepath;
+	wstring allstr =  cmd + L" -Xmx1000M -jar "+exepath;
 	if (params.size()>0) allstr+=params;
 	printf("%ws\n",allstr.c_str());
 	
