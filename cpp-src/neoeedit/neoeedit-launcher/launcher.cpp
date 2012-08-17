@@ -1,107 +1,82 @@
 #include <Windows.h>
-#include <jni.h>
+#include <string>
+#include <process.h>
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd){
-	char* szBuf = getenv("PATH");
-	//printf("%s\n", szBuf);
-	char* context=NULL;
-	char* p1 = strtok_s (szBuf,";", &context);
-	char* BUF2=new char[1024];
-	char* target=new char[1024];
-	target[0]=0;  
-	while (p1 != NULL)
+#define BUFFER 10240
+using namespace std;
+
+inline std::wstring &
+	replaceAll(std::wstring &s, const std::wstring &sub,
+	const std::wstring &other)
+{
+	size_t b = 0;
+	for (;;)
 	{
-		char* buf3 = BUF2;
-		buf3[0]=0;
-		strcat_s(buf3,1024,p1);
-		strcat_s(buf3,1024,"\\java.exe");
-		DWORD exist = GetFileAttributes(buf3);
-		if (exist!=0xFFFFFFFF){
-			strcpy_s(target ,1024, buf3);
-			strcat_s(buf3,1024," <found>");
-		}
-		//printf ("%s\n",buf3);
+		b = s.find(sub, b);
+		if (b == s.npos) break;
+		s.replace(b, sub.size(), other);
+		b += other.size();
+	}
+	return s;
+}
 
-		p1 = strtok_s (NULL, ";",&context);
+
+
+int WINAPI WinMain(HINSTANCE hInstance,
+	HINSTANCE hPrevInstance,
+	LPSTR lpCmdLine,
+	int nCmdShow)
+{
+
+	LPWSTR *argv;
+	int argc;
+
+	argv = CommandLineToArgvW(GetCommandLine(), &argc);
+
+
+	WCHAR* JARFN=L"neoeedit.jar";
+	WCHAR value[BUFFER];
+	DWORD BufferSize = BUFFER;
+	LONG  ret = RegGetValue(HKEY_CLASSES_ROOT, (LPCWSTR)L"\\jarfile\\shell\\open\\command", 
+		(LPCWSTR)"", RRF_RT_ANY, NULL, (PVOID)&value, &BufferSize);
+	printf("%ws\n",value);
+	wstring cmd = value;
+	ret = GetModuleFileName(NULL, (LPWSTR)&value, BufferSize);
+	printf("%ws\n",value);
+	wstring exepath = value;
+	//printf("A=%ws\nb=%ws\n",cmd.c_str(),exepath.c_str());
+	size_t p = exepath.find_last_of(L"\\");
+	if (p!=string::npos){
+		exepath=exepath.substr(0,p+1)+JARFN;
+	}
+	replaceAll(cmd, L"\"%1\"", L"");
+
+	wstring params=L"";
+	for (int i=1;i<argc;i++){
+		params = params + L" "+ argv[i];
 	}
 
-	int pos1=strlen(target)-strlen("\\java.exe");
-	target[pos1]=0;
-	strcat_s(target,1024,"\\..\\jre\\bin\\client\\jvm.dll");
-	DWORD exist = GetFileAttributes(target);
-	if (exist!=0xFFFFFFFF){
-	}else{
-		target[pos1]=0;
-		strcat_s(target,1024,"\\client\\jvm.dll");
-		exist = GetFileAttributes(target);
-		if (exist!=0xFFFFFFFF){
-		}else{
-			target[0]=0;
-			printf ("jvm.dll not found.\n");
-		}
-	}
+	replaceAll(cmd, L"%*", L"");
+	replaceAll(cmd, L" -jar ", L"");
+	//replaceAll(cmd, L"\\", L"\\\\");
 
-	if (strlen(target)>0){
-		printf ("found=%s\n",target);
-	}
-
-	char*fn=new char[1024];
-	GetModuleFileName(NULL,fn,1024);
-	char* last_backslash = strrchr(fn, '\\'); 
-	if (last_backslash)
+	wstring allstr =  cmd + L" -jar "+exepath;
+	if (params.size()>0) allstr+=params;
+	printf("%ws\n",allstr.c_str());
+	
+	/*FILE*  pPipe =  _wpopen(allstr.c_str(), L"r");
+	char   psBuffer[128];
+	while(fgets(psBuffer, 128, pPipe))
 	{
-		*last_backslash = '\0';
+	  printf(psBuffer);
 	}
-	strcat_s(fn,1024,"\\neoeedit.jar");
-	if(0xFFFFFFFF==GetFileAttributes(fn)){
-		printf("cannot find %s\n",fn);
-		return 1;
-	}
-
-	HINSTANCE _libInst=NULL;
-	typedef jint (JNICALL CreateJavaVM_t)(JavaVM **pvm, void **penv, void *args);
-
-	if ( (_libInst = LoadLibrary(target)) == NULL) {
-		printf("Can't load JVM DLL");
-		return 2;
-	}
-
-	JavaVMOption options[3];
-	// java
-	char* opt0=new char[1024];
-	sprintf_s(opt0,1024,"-Djava.class.path=%s",fn);
-	options[0].optionString = opt0;
-	options[1].optionString ="-Xms64M";
-	options[2].optionString ="-Xmx512M";
-	JavaVMInitArgs vm_args;
-	vm_args.version = JNI_VERSION_1_6;
-	vm_args.options = options;
-	vm_args.nOptions = 3;
-	vm_args.ignoreUnrecognized = false;
-
-	JNIEnv * x_env;
-	JavaVM * x_jvm;
-	jclass x_cls;
-	CreateJavaVM_t* createFn = (CreateJavaVM_t *)GetProcAddress(_libInst, "JNI_CreateJavaVM");
-	jint res = createFn(&x_jvm, (void**)&x_env, &vm_args);
-	x_cls =  x_env ->FindClass("neoe/ne/Main");
-	jmethodID mid = x_env->GetStaticMethodID(x_cls, "main","([Ljava/lang/String;)V");
-	jobjectArray args;
-	jstring jstr;
-	jstr = (x_env)->NewStringUTF(lpCmdLine);
-	jclass stringClass;
-
-	stringClass = (x_env)->FindClass( "java/lang/String");
-	if(lpCmdLine && strlen(lpCmdLine)>0){
-		args = (x_env)->NewObjectArray( 1, stringClass, jstr);
-	}else{
-		args = (x_env)->NewObjectArray( 0, stringClass, NULL);
-	}
-	(x_env)->CallStaticVoidMethod(x_cls, mid, args);
-
-	if ((x_env)->ExceptionOccurred()) {
-		(x_env)->ExceptionDescribe();
-	}
-	(x_jvm)->DestroyJavaVM();     
-	return 0;
+	*/
+	//printf("\n%d\n",errno );
+	//_wsystem(allstr.c_str());
+	//_wspawnl(_P_WAIT, cmd.c_str(), L"-jar",exepath);
+	STARTUPINFOW        siStartupInfo;
+    PROCESS_INFORMATION piProcessInfo;
+	memset(&siStartupInfo, 0, sizeof(siStartupInfo));
+    memset(&piProcessInfo, 0, sizeof(piProcessInfo)); 
+	CreateProcess(NULL, (LPWSTR)allstr.c_str(), NULL, NULL, false, CREATE_DEFAULT_ERROR_MODE, NULL, NULL, &siStartupInfo, &piProcessInfo);
 }
