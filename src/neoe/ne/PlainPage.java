@@ -1093,9 +1093,7 @@ public class PlainPage {
 		}
 	}
 
-	static final String REV = "$Rev$";
-	static final String WINDOW_NAME = "neoeedit r"
-			+ REV.substring(6, REV.length() - 2);
+	static final String WINDOW_NAME = "neoeedit " + Version.REV;
 
 	Cursor cursor = new Cursor();
 
