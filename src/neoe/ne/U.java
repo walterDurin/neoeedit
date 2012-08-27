@@ -1307,7 +1307,8 @@ public class U {
 		for (int i = 0; i < page.roLines.getLinesize(); i++) {
 			RoSb sb = page.roLines.getline(i);
 			for (int j = 0; j < cnts.length; j++) {
-				if (sb.substring(0,Math.min(sb.length(), 80)).toString().trim().startsWith(commentchars[j])) {
+				if (sb.substring(0, Math.min(sb.length(), 80)).toString()
+						.trim().startsWith(commentchars[j])) {
 					cnts[j]++;
 				}
 			}
@@ -1413,7 +1414,7 @@ public class U {
 				continue;
 			boolean same = true;
 			for (int i = 0; i < seq.length; i++) {
-				if ((byte)seq[i] != src[i]) {
+				if ((byte) seq[i] != src[i]) {
 					same = false;
 					break;
 				}
@@ -1576,7 +1577,7 @@ public class U {
 		}
 		page.lineSep = U.guessLineSepForEditor(fn);
 		page.ptEdit.setLines(U.readFileForEditor(fn, page.encoding));
-		page.fileLastModified=new File(fn).lastModified();
+		page.fileLastModified = new File(fn).lastModified();
 	}
 
 	static List<StringBuffer> readFileForEditor(String fn, String encoding) {
@@ -1904,7 +1905,7 @@ public class U {
 			out.write(page.lineSep);
 		}
 		out.close();
-		page.fileLastModified=new File(page.fn).lastModified();
+		page.fileLastModified = new File(page.fn).lastModified();
 		return true;
 	}
 
@@ -2003,6 +2004,8 @@ public class U {
 		}
 		p2.ptEdit.setLines(sbs);
 		ep.openWindow();
+		ep.frame.setTitle(String.format("Found(%s)'%s' in %s - %s", all.size(),
+				text, dir, PlainPage.WINDOW_NAME));
 		gc();
 	}
 
