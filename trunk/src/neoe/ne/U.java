@@ -1,6 +1,7 @@
 package neoe.ne;
 
 import java.awt.Color;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
@@ -29,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -2140,5 +2142,18 @@ public class U {
 		while (i < s.length() && (s.charAt(i) == ' ' || s.charAt(i) == '\t'))
 			i++;
 		return i > 0 ? s.substring(i) : s;
+	}
+
+	public static void launch(String s) throws Exception {
+		s=s.trim();
+		String slo = s.toLowerCase();
+		Desktop dt = Desktop.getDesktop();
+		if (slo.startsWith("mailto:")) {
+			dt.mail(new URI(s));
+		}else if (slo.startsWith("http://")||slo.startsWith("https://")){
+			dt.browse(new URI(s));
+		}else {
+			dt.open(new File(s));
+		}
 	}
 }
