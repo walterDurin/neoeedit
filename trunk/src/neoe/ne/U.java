@@ -2006,7 +2006,7 @@ public class U {
 		}
 		p2.ptEdit.setLines(sbs);
 		ep.openWindow();
-		ep.frame.setTitle(String.format("Found(%s)'%s' in %s - %s", all.size(),
+		ep.frame.setTitle(String.format("(%s)'%s' in %s - %s", all.size(),
 				text, dir, PlainPage.WINDOW_NAME));
 		gc();
 	}
