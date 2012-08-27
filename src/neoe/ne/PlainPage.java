@@ -1210,6 +1210,9 @@ public class PlainPage {
 					ui.applyColorMode(ui.colorMode);
 				} else if (kc == KeyEvent.VK_P) {
 					cursor.moveToPair();
+				} else if (kc == KeyEvent.VK_L) {
+					if (cy < lines.size())
+							U.launch(roLines.getline(cy).toString());
 				} else if (!Character.isIdentifierIgnorable(kc)) {
 					unknownCommand(env);
 				}
