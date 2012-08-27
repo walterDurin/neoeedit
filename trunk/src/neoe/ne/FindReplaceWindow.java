@@ -110,12 +110,12 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 		dialog.setVisible(true);
 	}
 
-	public static void main(String[] args) {
-		JFrame f = new JFrame();
-		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		f.setVisible(true);
-		new FindReplaceWindow(f, null).show();
-	}
+//	public static void main(String[] args) {
+//		JFrame f = new JFrame();
+//		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+//		f.setVisible(true);
+//		new FindReplaceWindow(f, null).show();
+//	}
 
 	@Override
 	public void actionPerformed(ActionEvent ae) {
