@@ -1644,7 +1644,6 @@ public class U {
 				}
 			}
 		}.start();
-
 	}
 
 	static Point replace(PlainPage page, String s, int x, int y, String s2,
@@ -2145,14 +2144,14 @@ public class U {
 	}
 
 	public static void launch(String s) throws Exception {
-		s=s.trim();
+		s = s.trim();
 		String slo = s.toLowerCase();
 		Desktop dt = Desktop.getDesktop();
 		if (slo.startsWith("mailto:")) {
 			dt.mail(new URI(s));
-		}else if (slo.startsWith("http://")||slo.startsWith("https://")){
+		} else if (slo.startsWith("http://") || slo.startsWith("https://")) {
 			dt.browse(new URI(s));
-		}else {
+		} else {
 			dt.open(new File(s));
 		}
 	}
