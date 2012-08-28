@@ -589,7 +589,7 @@ public class PlainPage {
 						GREEN.getRGB(), RED.getRGB(), 0x008800,
 						LIGHT_GRAY.getRGB(), 0x2222ff, 0x0 } };
 		Color colorNormal = Color.BLACK;
-		String comment = null;
+		String[] comment = null;
 		Comment commentor = new Comment();
 		Dimension dim;
 		Font font = new Font("Monospaced", Font.PLAIN, 12);
@@ -676,8 +676,8 @@ public class PlainPage {
 		}
 
 		int drawStringLine(Graphics2D g2, String s, int x, int y) {
-			int w = 0;
-			int commentPos = comment == null ? -1 : s.indexOf(comment);
+			int w = 0;			
+			int commentPos = getCommentPos(s);			
 			if (commentPos >= 0) {
 				String s1 = s.substring(0, commentPos);
 				String s2 = s.substring(commentPos);
@@ -687,6 +687,15 @@ public class PlainPage {
 				w = drawText(g2, s, x, y, false);
 			}
 			return w;
+		}
+
+		private int getCommentPos(String s) {
+			if (comment==null)return -1;
+			for (String c:comment){
+				int p=s.indexOf(c);
+				if (p>=0)return p;
+			}
+			return -1;
 		}
 
 		int drawText(Graphics2D g2, String s, int x, int y, boolean isComment) {
@@ -841,10 +850,7 @@ public class PlainPage {
 						my -= toolbarHeight;
 						mx = (int) (mx / scalev);
 						my = (int) (my / scalev);
-						cy = sy + my / (lineHeight + lineGap);// (int)((sy + my
-																// /
-						// (lineHeight +
-						// lineGap))/scalev);
+						cy = sy + my / (lineHeight + lineGap);
 						if (cy >= roLines.getLinesize()) {
 							cy = roLines.getLinesize() - 1;
 						}

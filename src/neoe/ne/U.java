@@ -465,8 +465,7 @@ public class U {
 
 		int drawStringLine(Graphics2D g2, String s, int x, int y) {
 			int w = 0;
-			String comment = ui.comment;
-			int commentPos = comment == null ? -1 : s.indexOf(comment);
+			int commentPos = getCommentPos(s);
 			if (commentPos >= 0) {
 				String s1 = s.substring(0, commentPos);
 				String s2 = s.substring(commentPos);
@@ -476,6 +475,18 @@ public class U {
 				w = drawText(g2, s, x, y, false);
 			}
 			return w;
+		}
+
+		private int getCommentPos(String s) {
+			String[] comment = ui.comment;
+			if (comment == null)
+				return -1;
+			for (String c : comment) {
+				int p = s.indexOf(c);
+				if (p >= 0)
+					return p;
+			}
+			return -1;
 		}
 
 		int drawText(Graphics2D g2, String s, int x, int y, boolean isComment) {
@@ -1302,7 +1313,7 @@ public class U {
 	}
 
 	static void guessComment(PlainPage page) {
-		String comment = null;
+		List<String> comment = new ArrayList<String>();
 		String[] commentchars = { "#", "%", "'", "//", "!", ";", "--", "/*",
 				"<!--" };
 		int[] cnts = new int[commentchars.length];
@@ -1326,34 +1337,25 @@ public class U {
 		if (kind == 1) {
 			for (int j = 0; j < cnts.length; j++) {
 				if (cnts[j] > 0) {
-					comment = commentchars[j];
-
+					comment.add(commentchars[j]);
 					break;
 				}
 			}
 		} else {
-			int k2 = 0;
 			int lv2 = Math.max(5, max / 10);
 			for (int j = 0; j < cnts.length; j++) {
 				if (cnts[j] > lv2) {
-					k2++;
-				}
-			}
-			if (k2 == 1) {
-				for (int j = 0; j < cnts.length; j++) {
-					if (cnts[j] > lv2) {
-						comment = commentchars[j];
-						break;
-					}
+					comment.add(commentchars[j]);
 				}
 			}
 		}
-		if (comment == null) {
+		if (comment.size() == 0) {
+			comment = null;
 			page.ui.message("no comment found");
 		} else {
 			page.ui.message("comment found:" + comment);
 		}
-		page.ui.comment = comment;
+		page.ui.comment = comment.toArray(new String[comment.size()]);
 		page.uiComp.repaint();
 	}
 
