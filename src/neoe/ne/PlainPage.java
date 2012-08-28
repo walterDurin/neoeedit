@@ -486,6 +486,8 @@ public class PlainPage {
 	}
 
 	class Paint {
+		long MSG_VANISH_TIME = 3000;
+
 		class Comment {
 			void markBox(Graphics2D g2, int x, int y) {
 				if (y >= sy && y <= sy + showLineCnt && x >= sx) {
@@ -748,8 +750,6 @@ public class PlainPage {
 		}
 
 		void drawToolbar(Graphics2D g2) {
-
-			long MSG_VANISH_TIME = 3000;
 			String s1 = "<F1>:Help, " + (encoding == null ? "-" : encoding)
 					+ (lineSep.equals("\n") ? ", U" : ", W") + ", Line:"
 					+ roLines.getLinesize() + ", X:" + (cx + 1) + ", undo:"
@@ -769,15 +769,15 @@ public class PlainPage {
 							+ lineGap);
 					g2.setColor(Color.YELLOW);
 					g2.drawString(msg, dim.width - w, lineHeight);
-					U.repaintAfter(MSG_VANISH_TIME, uiComp);
 				}
 			}
 		}
 
-		void message(String s) {
+		void message(final String s) {
 			msg = s;
 			msgtime = System.currentTimeMillis();
 			uiComp.repaint();
+			U.repaintAfter(MSG_VANISH_TIME, uiComp);
 			System.out.println(s);
 		}
 
@@ -832,28 +832,30 @@ public class PlainPage {
 					}
 				}
 				if (my > 0)
-					uiComp.grabFocus();
-				// apply mouse click position
-				if (my > 0 && my < toolbarHeight) {
-				} else if (my > 0 && mx >= gutterWidth && my >= toolbarHeight) {
-					mx -= gutterWidth;
-					my -= toolbarHeight;
-					mx = (int) (mx / scalev);
-					my = (int) (my / scalev);
-					cy = sy + my / (lineHeight + lineGap);// (int)((sy + my /
-					// (lineHeight +
-					// lineGap))/scalev);
-					if (cy >= roLines.getLinesize()) {
-						cy = roLines.getLinesize() - 1;
+					// uiComp.grabFocus(); // bug: get focus when dont need
+					// apply mouse click position
+					if (my > 0 && my < toolbarHeight) {
+					} else if (my > 0 && mx >= gutterWidth
+							&& my >= toolbarHeight) {
+						mx -= gutterWidth;
+						my -= toolbarHeight;
+						mx = (int) (mx / scalev);
+						my = (int) (my / scalev);
+						cy = sy + my / (lineHeight + lineGap);// (int)((sy + my
+																// /
+						// (lineHeight +
+						// lineGap))/scalev);
+						if (cy >= roLines.getLinesize()) {
+							cy = roLines.getLinesize() - 1;
+						}
+						RoSb sb = roLines.getline(cy);
+						sx = Math.min(sx, sb.length());
+						cx = sx
+								+ U.computeShowIndex(sb.substring(sx), mx, g2,
+										TABWIDTH);
+						my = 0;
+						ptSelection.mouseSelection(sb);
 					}
-					RoSb sb = roLines.getline(cy);
-					sx = Math.min(sx, sb.length());
-					cx = sx
-							+ U.computeShowIndex(sb.substring(sx), mx, g2,
-									TABWIDTH);
-					my = 0;
-					ptSelection.mouseSelection(sb);
-				}
 				g2.setColor(colorBg);
 				g2.fillRect(0, 0, size.width, size.height);
 				if (noise) {
@@ -1212,7 +1214,7 @@ public class PlainPage {
 					cursor.moveToPair();
 				} else if (kc == KeyEvent.VK_L) {
 					if (cy < lines.size())
-							U.launch(roLines.getline(cy).toString());
+						U.launch(roLines.getline(cy).toString());
 				} else if (!Character.isIdentifierIgnorable(kc)) {
 					unknownCommand(env);
 				}
@@ -1360,7 +1362,7 @@ public class PlainPage {
 		}
 		if (sb.length() > 0)
 			sb.append("-");
-		sb.append((char)env.getKeyCode());
+		sb.append((char) env.getKeyCode());
 		ui.message("Unknow Command:" + sb);
 	}
 
@@ -1396,7 +1398,7 @@ public class PlainPage {
 				U.setClipBoard(fn);
 				ui.message("filename copied");
 				my = 0;
-				uiComp.repaint();
+				// uiComp.repaint();
 			} else {
 				try {
 					if (U.saveFile(this)) {
