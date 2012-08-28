@@ -67,8 +67,15 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 		s.newline();
 		jcb1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				jb4.setEnabled(!jcb1.isSelected());
-				jb2.setEnabled(!jcb1.isSelected());
+				jb4.setVisible(!jcb1.isSelected());
+				jb2.setVisible(!jcb1.isSelected());
+				if (jcb1.isSelected()){
+					jb1.setText("Find in Files");
+					jb3.setText("Replace in Files");
+				}else{
+					jb1.setText("Find");
+					jb3.setText("Replace All");
+				}
 			}
 		});
 		jb1.setActionCommand("find");
