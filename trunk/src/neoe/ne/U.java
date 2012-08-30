@@ -1355,7 +1355,8 @@ public class U {
 		} else {
 			page.ui.message("comment found:" + comment);
 		}
-		page.ui.comment = comment.toArray(new String[comment.size()]);
+		page.ui.comment = comment == null ? null : comment
+				.toArray(new String[comment.size()]);
 		page.uiComp.repaint();
 	}
 
@@ -2007,6 +2008,10 @@ public class U {
 		}
 		p2.ptEdit.setLines(sbs);
 		ep.openWindow();
+		if (dir.startsWith("file ")) {
+			File f = new File(dir.substring(5));
+			dir = "file " + f.getName() + " " + f.getParent();
+		}
 		ep.frame.setTitle(String.format("(%s)'%s' in %s - %s", all.size(),
 				text, dir, PlainPage.WINDOW_NAME));
 		gc();
