@@ -973,6 +973,7 @@ public class PlainPage {
 
 		void copySelected() {
 			String s = getSelected();
+			s = U.removeAsciiZero(s);
 			U.setClipBoard(s);
 			ui.message("copied " + s.length());
 		}
