@@ -1921,9 +1921,26 @@ public class U {
 		}
 	}
 
-	static void setClipBoard(String s) {
+	static void setClipBoard(String s) {		
 		Toolkit.getDefaultToolkit().getSystemClipboard()
 				.setContents(new StringSelection(s), null);
+	}
+
+	static String removeAsciiZero(String s) {
+		int cnt=0;
+		char zero = (char) 0;
+		String zeros = "" + zero;
+		int p = s.indexOf(zero);
+		if (p < 0)
+			return s;
+		StringBuffer sb = new StringBuffer(s);
+		while (p >= 0) {
+			sb.deleteCharAt(p);
+			cnt++;
+			p = sb.indexOf(zeros, p);
+		}
+		System.out.println("removed "+cnt+" NULL char");
+		return sb.toString();
 	}
 
 	static void setEncodingByUser(PlainPage plainPage, String msg) {

@@ -1,5 +1,5 @@
 package neoe.ne;
 
 public class Version {
-	static final String REV = "r154";
+	static final String REV = "r155";
 }
