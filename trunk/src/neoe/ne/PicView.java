@@ -264,8 +264,8 @@ public class PicView {
 		public void rotate(int direction) {
 			int angle = direction * 90;
 			AffineTransform at = new AffineTransform();
-			at.rotate(angle * Math.PI / 180.0, img.getWidth() / 2.0, img
-					.getHeight() / 2.0);
+			at.rotate(angle * Math.PI / 180.0, img.getWidth() / 2.0,
+					img.getHeight() / 2.0);
 			BufferedImageOp op = new AffineTransformOp(at,
 					AffineTransformOp.TYPE_BILINEAR);
 			img = op.filter(img, null);
@@ -273,8 +273,8 @@ public class PicView {
 		}
 
 		private void setSize(BufferedImage img) {
-			setPreferredSize(new Dimension(pw = img.getWidth(), ph = img
-					.getHeight()));
+			setPreferredSize(new Dimension(pw = img.getWidth(),
+					ph = img.getHeight()));
 		}
 
 		public void viewFile(int i) {
@@ -300,10 +300,6 @@ public class PicView {
 
 	}
 
-	/**
-	 * @param args
-	 * @throws IOException
-	 */
 	public static void main(String[] args) throws IOException {
 		new PicView().show(new File(args[0]));
 
@@ -315,7 +311,7 @@ public class PicView {
 		Panel p;
 		f.add(p = new Panel(f, fn));
 		U.setFrameSize(f, p.pw, p.ph);
-		f.setTransferHandler(U.th);
+		f.setTransferHandler(U.TH);
 		f.setVisible(true);
 		U.saveFileHistory(fn.getAbsolutePath(), 0);
 	}

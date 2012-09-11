@@ -28,10 +28,9 @@ public class FileIterator implements Iterable<File> {
 			@Override
 			public File next() {
 				File f = buf.remove(0);
-				String name=f.getName();
+				String name = f.getName();
 				if (f.isDirectory() && !name.equals(".svn")
-						&& !name.equals(".cvs")
-						&& !name.equals(".bzr")
+						&& !name.equals(".cvs") && !name.equals(".bzr")
 						&& !name.equals(".git")) {
 					File[] sub = f.listFiles();
 					if (sub != null) {

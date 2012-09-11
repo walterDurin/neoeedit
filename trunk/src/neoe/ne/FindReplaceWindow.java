@@ -69,11 +69,11 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 			public void actionPerformed(ActionEvent arg0) {
 				jb4.setVisible(!jcb1.isSelected());
 				jb2.setVisible(!jcb1.isSelected());
-				if (jcb1.isSelected()){
+				if (jcb1.isSelected()) {
 					jb1.setText("Find in Files");
 					jb3.setText("Replace in Files");
 					jtadir.setEnabled(true);
-				}else{
+				} else {
 					jb1.setText("Find");
 					jb3.setText("Replace All");
 					jtadir.setEnabled(false);
@@ -121,12 +121,12 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 		dialog.setVisible(true);
 	}
 
-//	public static void main(String[] args) {
-//		JFrame f = new JFrame();
-//		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-//		f.setVisible(true);
-//		new FindReplaceWindow(f, null).show();
-//	}
+	// public static void main(String[] args) {
+	// JFrame f = new JFrame();
+	// f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	// f.setVisible(true);
+	// new FindReplaceWindow(f, null).show();
+	// }
 
 	@Override
 	public void actionPerformed(ActionEvent ae) {

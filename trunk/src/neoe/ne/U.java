@@ -114,9 +114,9 @@ public class U {
 		}
 
 		void insertInLine(int y, int x, String s) {
-			if (s.indexOf("\n") >= 0 || s.indexOf("\r") >= 0) {
+			if (s.indexOf('\n') >= 0 || s.indexOf('\r') >= 0) {
 				throw new RuntimeException("cannot contains line-seperator:["
-						+ s + "]" + s.indexOf("\n"));
+						+ s + "]" + s.indexOf('\n'));
 			}
 			if (y == page.roLines.getLinesize()) {
 				page.editRec.insertEmptyLine(y);
@@ -153,7 +153,7 @@ public class U {
 
 	static class FindAndReplace {
 		FindReplaceWindow findWindow;
-		private PlainPage pp;
+		final private PlainPage pp;
 		String text2find;
 
 		public FindAndReplace(PlainPage plainPage) {
@@ -186,7 +186,7 @@ public class U {
 
 		void showFindDialog() {
 			String t = pp.ptSelection.getSelected();
-			int p1 = t.indexOf("\n");
+			int p1 = t.indexOf('\n');
 			if (p1 >= 0) {
 				t = t.substring(0, p1);
 			}
@@ -204,7 +204,7 @@ public class U {
 	}
 
 	static class History {
-		public static int MAXSIZE = 200;
+		public final static int MAXSIZE = 200;
 		List<HistoryCell> atom;
 		LinkedList<List<HistoryCell>> data;
 		int p;
@@ -263,7 +263,7 @@ public class U {
 		}
 
 		public void beginAtom() {
-			if (atom.size() > 0) {
+			if (!atom.isEmpty()) {
 				endAtom();
 			}
 		}
@@ -275,7 +275,7 @@ public class U {
 		}
 
 		public void endAtom() {
-			if (atom.size() > 0) {
+			if (!atom.isEmpty()) {
 				// System.out.println("end atom");
 				add(atom);
 				atom = new ArrayList<HistoryCell>();
@@ -496,7 +496,7 @@ public class U {
 				int i = 0;
 				for (String s1 : ws) {
 					if (i++ != 0) {
-						g2.drawImage(U.TabImgPrint, x + w, y - lineHeight, null);
+						g2.drawImage(U.tabImgPrint, x + w, y - lineHeight, null);
 						w += TAB_WIDTH_PRINT;
 					}
 					g2.setColor(colorComment);
@@ -510,7 +510,7 @@ public class U {
 				List<String> s1x = U.split(s);
 				for (String s1 : s1x) {
 					if (s1.equals("\t")) {
-						g2.drawImage(U.TabImgPrint, x + w, y - lineHeight, null);
+						g2.drawImage(U.tabImgPrint, x + w, y - lineHeight, null);
 						w += TAB_WIDTH_PRINT;
 					} else {
 						// int highlightid =
@@ -691,7 +691,7 @@ public class U {
 	 */
 	static class RoSb {
 
-		private StringBuffer sb;
+		final private StringBuffer sb;
 
 		public RoSb(StringBuffer sb) {
 			this.sb = sb;
@@ -753,7 +753,7 @@ public class U {
 		}
 	}
 
-	final static String[] kws = { "ArithmeticError", "AssertionError",
+	final static String[] KWS = { "ArithmeticError", "AssertionError",
 			"AttributeError", "BufferType", "BuiltinFunctionType",
 			"BuiltinMethodType", "ClassType", "CodeType", "ComplexType",
 			"DeprecationWarning", "DictProxyType", "DictType",
@@ -850,9 +850,9 @@ public class U {
 
 	static Random random = new Random();
 
-	public static Image TabImg, TabImgPrint;
+	public static Image tabImg, tabImgPrint;
 
-	final static TransferHandler th = new TransferHandler(null) {
+	final static TransferHandler TH = new TransferHandler(null) {
 		private static final long serialVersionUID = 5046626748299023865L;
 
 		public boolean canImport(TransferHandler.TransferSupport support) {
@@ -900,12 +900,11 @@ public class U {
 
 	static void closePage(PlainPage page) throws Exception {
 		EditPanel editor = page.uiComp;
-		if (page.history.size() != 0) {
-			if (JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(editor,
-					"Are you sure to SAVE and close?", "Changes made",
-					JOptionPane.YES_NO_OPTION)) {
-				return;
-			}
+		if (page.history.size() != 0
+				&& JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(
+						editor, "Are you sure to SAVE and close?",
+						"Changes made", JOptionPane.YES_NO_OPTION)) {
+			return;
 		}
 		if (page.fn != null) {
 			if (page.history.size() != 0) {
@@ -1033,7 +1032,7 @@ public class U {
 			}
 			try {
 				List<String> res = U.findInFile(f, text, page.ignoreCase);
-				if (res.size() > 0) {
+				if (!res.isEmpty()) {
 					PlainPage pi = new EditPanel(f).page;
 					if (pi != null) {
 						doReplaceAll(pi, text, ignoreCase2, false, text2,
@@ -1238,8 +1237,8 @@ public class U {
 
 	static int getHighLightID(String s, Graphics2D g2, Color colorKeyword,
 			Color colorDigital, Color color) {
-		if (Arrays.binarySearch(kws, s) >= 0
-				|| Arrays.binarySearch(kws, s.toLowerCase()) >= 0) {
+		if (Arrays.binarySearch(KWS, s) >= 0
+				|| Arrays.binarySearch(KWS, s.toLowerCase()) >= 0) {
 			g2.setColor(colorKeyword);
 		} else if (isAllDigital(s)) {
 			g2.setColor(colorDigital);
@@ -1349,7 +1348,7 @@ public class U {
 				}
 			}
 		}
-		if (comment.size() == 0) {
+		if (comment.isEmpty()) {
 			comment = null;
 			page.ui.message("no comment found");
 		} else {
@@ -1384,7 +1383,7 @@ public class U {
 			for (String enc : encodings) {
 				String s = new String(buf, enc);
 				if (new String(s.getBytes(enc), enc).equals(s)
-						&& s.indexOf("�ｽ") < 0) {
+						&& s.indexOf("?�?�") < 0) {
 					return enc;
 				}
 				// byte[] b2 = new String(buf, enc).getBytes(enc);
@@ -1404,7 +1403,7 @@ public class U {
 		return null;
 	}
 
-	static final Object[][] BOMs = new Object[][] {
+	static final Object[][] BOMS = new Object[][] {
 			new Object[] { new int[] { 0xEF, 0xBB, 0xBF }, "UTF-8" },
 			new Object[] { new int[] { 0xFE, 0xFF }, "UTF-16BE" },
 			new Object[] { new int[] { 0xFF, 0xFE }, "UTF-16LE" },
@@ -1412,7 +1411,7 @@ public class U {
 			new Object[] { new int[] { 0xFF, 0xFE, 0, 0 }, "UTF-32LE" }, };
 
 	private static String guessByBOM(byte[] src) {
-		for (Object[] row : BOMs) {
+		for (Object[] row : BOMS) {
 			int[] seq = (int[]) row[0];
 			// compare 2 array
 			if (seq.length > src.length)
@@ -1505,8 +1504,8 @@ public class U {
 	static void loadTabImage() throws Exception {
 		BufferedImage img = ImageIO.read(U.class
 				.getResourceAsStream("/icontab.png"));
-		TabImg = img.getScaledInstance(40, 8, Image.SCALE_SMOOTH);
-		TabImgPrint = img.getScaledInstance(20, 8, Image.SCALE_SMOOTH);
+		tabImg = img.getScaledInstance(40, 8, Image.SCALE_SMOOTH);
+		tabImgPrint = img.getScaledInstance(20, 8, Image.SCALE_SMOOTH);
 	}
 
 	static void openFile(File f) throws Exception {
@@ -1603,7 +1602,7 @@ public class U {
 			} catch (Throwable e1) {
 				lines.add(new StringBuffer(e1.toString()));
 			}
-			if (lines.size() == 0) {
+			if (lines.isEmpty()) {
 				lines.add(new StringBuffer());
 			}
 			return lines;
@@ -1768,13 +1767,14 @@ public class U {
 		});
 		jb2.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if (pp1.history.size() != 0) {
-					if (JOptionPane.YES_OPTION != JOptionPane
-							.showConfirmDialog(ed, "Are you sure to close?",
-									"Changes made", JOptionPane.YES_NO_OPTION)) {
-						ed.grabFocus();
-						return;
-					}
+				if (pp1.history.size() != 0
+						&& JOptionPane.YES_OPTION != JOptionPane
+								.showConfirmDialog(ed,
+										"Are you sure to close?",
+										"Changes made",
+										JOptionPane.YES_NO_OPTION)) {
+					ed.grabFocus();
+					return;
 				}
 				sf.dispose();
 			}
@@ -1825,13 +1825,14 @@ public class U {
 		});
 		jb2.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if (pp1.history.size() != 0) {
-					if (JOptionPane.YES_OPTION != JOptionPane
-							.showConfirmDialog(ed, "Are you sure to close?",
-									"Changes made", JOptionPane.YES_NO_OPTION)) {
-						ed.grabFocus();
-						return;
-					}
+				if (pp1.history.size() != 0
+						&& JOptionPane.YES_OPTION != JOptionPane
+								.showConfirmDialog(ed,
+										"Are you sure to close?",
+										"Changes made",
+										JOptionPane.YES_NO_OPTION)) {
+					ed.grabFocus();
+					return;
 				}
 				sf.dispose();
 			}
@@ -1846,13 +1847,12 @@ public class U {
 		int returnVal = chooser.showSaveDialog(editor);
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			String fn = chooser.getSelectedFile().getAbsolutePath();
-			if (new File(fn).exists()) {
-				if (JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(
-						editor, "file exists, are you sure to overwrite?",
-						"save as...", JOptionPane.YES_NO_OPTION)) {
-					page.ui.message("not renamed");
-					return;
-				}
+			if (new File(fn).exists()
+					&& JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(
+							editor, "file exists, are you sure to overwrite?",
+							"save as...", JOptionPane.YES_NO_OPTION)) {
+				page.ui.message("not renamed");
+				return;
 			}
 			page.fn = fn;
 			editor.changeTitle();
@@ -1868,14 +1868,14 @@ public class U {
 			if (returnVal == JFileChooser.APPROVE_OPTION) {
 				page.isCommentChecked = false;
 				String fn = chooser.getSelectedFile().getAbsolutePath();
-				if (new File(fn).exists()) {
-					if (JOptionPane.YES_OPTION != JOptionPane
-							.showConfirmDialog(page.uiComp,
-									"Are you sure to overwrite?",
-									"File exists", JOptionPane.YES_NO_OPTION)) {
-						page.ui.message("not saved");
-						return false;
-					}
+				if (new File(fn).exists()
+						&& JOptionPane.YES_OPTION != JOptionPane
+								.showConfirmDialog(page.uiComp,
+										"Are you sure to overwrite?",
+										"File exists",
+										JOptionPane.YES_NO_OPTION)) {
+					page.ui.message("not saved");
+					return false;
 				}
 				page.fn = fn;
 				page.uiComp.changeTitle();
@@ -1921,13 +1921,13 @@ public class U {
 		}
 	}
 
-	static void setClipBoard(String s) {		
+	static void setClipBoard(String s) {
 		Toolkit.getDefaultToolkit().getSystemClipboard()
 				.setContents(new StringSelection(s), null);
 	}
 
 	static String removeAsciiZero(String s) {
-		int cnt=0;
+		int cnt = 0;
 		char zero = (char) 0;
 		String zeros = "" + zero;
 		int p = s.indexOf(zero);
@@ -1939,7 +1939,7 @@ public class U {
 			cnt++;
 			p = sb.indexOf(zeros, p);
 		}
-		System.out.println("removed "+cnt+" NULL char");
+		System.out.println("removed " + cnt + " NULL char");
 		return sb.toString();
 	}
 
