@@ -2,7 +2,7 @@ package neoe.ne;
 
 import javax.swing.JApplet;
 
-public class Applet extends JApplet  {
+public class Applet extends JApplet {
 	private static final long serialVersionUID = -2224712202119400491L;
 
 	public void init() {
@@ -13,6 +13,5 @@ public class Applet extends JApplet  {
 			e.printStackTrace();
 		}
 	}
-	
 
 }

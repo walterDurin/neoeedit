@@ -676,8 +676,8 @@ public class PlainPage {
 		}
 
 		int drawStringLine(Graphics2D g2, String s, int x, int y) {
-			int w = 0;			
-			int commentPos = getCommentPos(s);			
+			int w = 0;
+			int commentPos = getCommentPos(s);
 			if (commentPos >= 0) {
 				String s1 = s.substring(0, commentPos);
 				String s2 = s.substring(commentPos);
@@ -690,10 +690,12 @@ public class PlainPage {
 		}
 
 		private int getCommentPos(String s) {
-			if (comment==null)return -1;
-			for (String c:comment){
-				int p=s.indexOf(c);
-				if (p>=0)return p;
+			if (comment == null)
+				return -1;
+			for (String c : comment) {
+				int p = s.indexOf(c);
+				if (p >= 0)
+					return p;
 			}
 			return -1;
 		}
@@ -705,7 +707,7 @@ public class PlainPage {
 				int i = 0;
 				for (String s1 : ws) {
 					if (i++ != 0) {
-						g2.drawImage(U.TabImg, x + w, y - lineHeight, null);
+						g2.drawImage(U.tabImg, x + w, y - lineHeight, null);
 						w += TABWIDTH;
 					}
 					w += U.drawTwoColor(g2, s1, x + w, y, colorComment,
@@ -718,7 +720,7 @@ public class PlainPage {
 				List<String> s1x = U.split(s);
 				for (String s1 : s1x) {
 					if (s1.equals("\t")) {
-						g2.drawImage(U.TabImg, x + w, y - lineHeight, null);
+						g2.drawImage(U.tabImg, x + w, y - lineHeight, null);
 						w += TABWIDTH;
 					} else {
 						// int highlightid =
@@ -1165,6 +1167,136 @@ public class PlainPage {
 		}
 	}
 
+	void keyPressedWithControlDown(KeyEvent env) throws Exception {
+		int kc = env.getKeyCode();
+		if (kc == KeyEvent.VK_C) {
+			ptSelection.copySelected();
+		} else if (kc == KeyEvent.VK_V) {
+			if (ptSelection.isSelected()) {
+				ptEdit.deleteRect(ptSelection.getSelectRect());
+			}
+			ptEdit.insertString(U.getClipBoard());
+		} else if (kc == KeyEvent.VK_X) {
+			ptSelection.cutSelected();
+		} else if (kc == KeyEvent.VK_A) {
+			ptSelection.selectAll();
+		} else if (kc == KeyEvent.VK_D) {
+			if (ptSelection.isSelected()) {
+				ptEdit.deleteRect(ptSelection.getSelectRect());
+			} else {
+				ptEdit.deleteLine(cy);
+			}
+			focusCursor();
+		} else if (kc == KeyEvent.VK_O) {
+			U.openFile(this);
+		} else if (kc == KeyEvent.VK_N) {
+			EditPanel ep = new EditPanel("empty");
+			ep.openWindow();
+			ep.page.workPath = this.workPath;
+			ep.page.ptSelection.selectAll();
+			ep.page.ui.applyColorMode(ui.colorMode);
+		} else if (kc == KeyEvent.VK_S) {
+			if (U.saveFile(this)) {
+				System.out.println("saved");
+				ui.message("saved");
+			}
+		} else if (kc == KeyEvent.VK_L) {
+			cursor.gotoLine();
+		} else if (kc == KeyEvent.VK_Z) {
+			history.undo();
+		} else if (kc == KeyEvent.VK_F) {
+			ptFind.showFindDialog();
+		} else if (kc == KeyEvent.VK_Y) {
+			history.redo();
+		} else if (kc == KeyEvent.VK_W) {
+			U.closePage(this);
+		} else if (kc == KeyEvent.VK_E) {
+			U.setEncodingByUser(this, "Set Encoding:");
+		} else if (kc == KeyEvent.VK_PAGE_UP) {
+			cy = 0;
+			cx = 0;
+			focusCursor();
+		} else if (kc == KeyEvent.VK_PAGE_DOWN) {
+			cy = roLines.getLinesize() - 1;
+			cx = 0;
+			focusCursor();
+		} else if (kc == KeyEvent.VK_R) {
+			U.removeTrailingSpace(PlainPage.this);
+		} else if (kc == KeyEvent.VK_LEFT) {
+			cursor.moveLeftWord();
+			focusCursor();
+		} else if (kc == KeyEvent.VK_RIGHT) {
+			cursor.moveRightWord();
+			focusCursor();
+		} else if (kc == KeyEvent.VK_UP) {
+			sy = Math.max(0, sy - 1);
+		} else if (kc == KeyEvent.VK_DOWN) {
+			sy = Math.min(sy + 1, roLines.getLinesize() - 1);
+		} else if (kc == KeyEvent.VK_0) {
+			ui.scalev = 1;
+		} else if (kc == KeyEvent.VK_G) {
+			if (cy < lines.size())
+				if (!U.gotoFileLine(roLines.getline(cy).toString())) {
+					U.listDir(PlainPage.this, cy);
+				}
+		} else if (kc == KeyEvent.VK_H) {
+			U.openFileHistory();
+		} else if (kc == KeyEvent.VK_P) {
+			new U.Print(PlainPage.this).printPages();
+		} else if (kc == KeyEvent.VK_ENTER) {
+			cursor.moveEnd();
+			focusCursor();
+		} else if (!Character.isIdentifierIgnorable(kc)) {
+			unknownCommand(env);
+		}
+	}
+
+	void keyPressedWithAltDown(KeyEvent env) throws Exception {
+		int kc = env.getKeyCode();
+		if (kc == KeyEvent.VK_LEFT) {
+			ptEdit.moveLineLeft(cy);
+			focusCursor();
+		} else if (kc == KeyEvent.VK_RIGHT) {
+			ptEdit.moveLineRight(cy);
+			focusCursor();
+		} else if (kc == KeyEvent.VK_BACK_SLASH) {
+			rectSelectMode = !rectSelectMode;
+		} else if (kc == KeyEvent.VK_N) {
+			ui.noise = !ui.noise;
+			if (ui.noise) {
+				U.startNoiseThread(ui, uiComp);
+			}
+		} else if (kc == KeyEvent.VK_S) {
+			if (lineSep.equals("\n"))
+				lineSep = "\r\n";
+			else
+				lineSep = "\n";
+		} else if (kc == KeyEvent.VK_W) {
+			ptEdit.wrapLines(cx);
+			focusCursor();
+		} else if (kc == KeyEvent.VK_J) {
+			U.runScript(this);
+		} else if (kc == KeyEvent.VK_D) {
+			U.runScriptOnDir(this.workPath);
+		} else if (kc == KeyEvent.VK_PAGE_UP) {
+			cx = Math.max(0, cx - uiComp.getWidth() / 10);
+			focusCursor();
+		} else if (kc == KeyEvent.VK_PAGE_DOWN) {
+			cx = cx + uiComp.getWidth() / 10;
+			focusCursor();
+		} else if (kc == KeyEvent.VK_C) {
+			ui.setNextColorMode();
+			ui.applyColorMode(ui.colorMode);
+		} else if (kc == KeyEvent.VK_P) {
+			cursor.moveToPair();
+		} else if (kc == KeyEvent.VK_L) {
+			if (cy < lines.size())
+				U.launch(roLines.getline(cy).toString());
+		} else if (!Character.isIdentifierIgnorable(kc)) {
+			unknownCommand(env);
+		}
+	}
+
 	public void keyPressed(KeyEvent env) {
 		history.beginAtom();
 		try {
@@ -1173,142 +1305,21 @@ public class PlainPage {
 			int ocx = cx;
 			int ocy = cy;
 			int kc = env.getKeyCode();
-			if (kc == KeyEvent.VK_F1) {
-				U.showHelp(ui, uiComp);
-			} else if (kc == KeyEvent.VK_F2) {
-				U.saveAs(this);
-			} else if (kc == KeyEvent.VK_F3) {
-				ptFind.findNext();
-			} else if (kc == KeyEvent.VK_F5) {
-				U.reloadWithEncodingByUser(fn, this);
-			}
-			if (env.isAltDown()) {
-				if (kc == KeyEvent.VK_LEFT) {
-					ptEdit.moveLineLeft(cy);
-					focusCursor();
-				} else if (kc == KeyEvent.VK_RIGHT) {
-					ptEdit.moveLineRight(cy);
-					focusCursor();
-				} else if (kc == KeyEvent.VK_BACK_SLASH) {
-					rectSelectMode = !rectSelectMode;
-				} else if (kc == KeyEvent.VK_N) {
-					ui.noise = !ui.noise;
-					if (ui.noise) {
-						U.startNoiseThread(ui, uiComp);
-					}
-				} else if (kc == KeyEvent.VK_S) {
-					if (lineSep.equals("\n"))
-						lineSep = "\r\n";
-					else
-						lineSep = "\n";
-				} else if (kc == KeyEvent.VK_W) {
-					ptEdit.wrapLines(cx);
-					focusCursor();
-				} else if (kc == KeyEvent.VK_J) {
-					U.runScript(this);
-				} else if (kc == KeyEvent.VK_D) {
-					U.runScriptOnDir(this.workPath);
-				} else if (kc == KeyEvent.VK_PAGE_UP) {
-					cx = Math.max(0, cx - uiComp.getWidth() / 10);
-					focusCursor();
-				} else if (kc == KeyEvent.VK_PAGE_DOWN) {
-					cx = cx + uiComp.getWidth() / 10;
-					focusCursor();
-				} else if (kc == KeyEvent.VK_C) {
-					ui.setNextColorMode();
-					ui.applyColorMode(ui.colorMode);
-				} else if (kc == KeyEvent.VK_P) {
-					cursor.moveToPair();
-				} else if (kc == KeyEvent.VK_L) {
-					if (cy < lines.size())
-						U.launch(roLines.getline(cy).toString());
-				} else if (!Character.isIdentifierIgnorable(kc)) {
-					unknownCommand(env);
-				}
-			} else if (env.isControlDown()) {
-				if (kc == KeyEvent.VK_C) {
-					ptSelection.copySelected();
-				} else if (kc == KeyEvent.VK_V) {
-					if (ptSelection.isSelected()) {
-						ptEdit.deleteRect(ptSelection.getSelectRect());
-					}
-					ptEdit.insertString(U.getClipBoard());
-				} else if (kc == KeyEvent.VK_X) {
-					ptSelection.cutSelected();
-				} else if (kc == KeyEvent.VK_A) {
-					ptSelection.selectAll();
-				} else if (kc == KeyEvent.VK_D) {
-					if (ptSelection.isSelected()) {
-						ptEdit.deleteRect(ptSelection.getSelectRect());
-					} else {
-						ptEdit.deleteLine(cy);
-					}
-					focusCursor();
-				} else if (kc == KeyEvent.VK_O) {
-					U.openFile(this);
-				} else if (kc == KeyEvent.VK_N) {
-					EditPanel ep = new EditPanel("empty");
-					ep.openWindow();
-					ep.page.workPath = this.workPath;
-					ep.page.ptSelection.selectAll();
-					ep.page.ui.applyColorMode(ui.colorMode);
-				} else if (kc == KeyEvent.VK_S) {
-					if (U.saveFile(this)) {
-						System.out.println("saved");
-						ui.message("saved");
-					}
-				} else if (kc == KeyEvent.VK_L) {
-					cursor.gotoLine();
-				} else if (kc == KeyEvent.VK_Z) {
-					history.undo();
-				} else if (kc == KeyEvent.VK_F) {
-					ptFind.showFindDialog();
-				} else if (kc == KeyEvent.VK_Y) {
-					history.redo();
-				} else if (kc == KeyEvent.VK_W) {
-					U.closePage(this);
-				} else if (kc == KeyEvent.VK_E) {
-					U.setEncodingByUser(this, "Set Encoding:");
-				} else if (kc == KeyEvent.VK_PAGE_UP) {
-					cy = 0;
-					cx = 0;
-					focusCursor();
-				} else if (kc == KeyEvent.VK_PAGE_DOWN) {
-					cy = roLines.getLinesize() - 1;
-					cx = 0;
-					focusCursor();
-				} else if (kc == KeyEvent.VK_R) {
-					U.removeTrailingSpace(PlainPage.this);
-				} else if (kc == KeyEvent.VK_LEFT) {
-					cursor.moveLeftWord();
-					focusCursor();
-				} else if (kc == KeyEvent.VK_RIGHT) {
-					cursor.moveRightWord();
-					focusCursor();
-				} else if (kc == KeyEvent.VK_UP) {
-					sy = Math.max(0, sy - 1);
-				} else if (kc == KeyEvent.VK_DOWN) {
-					sy = Math.min(sy + 1, roLines.getLinesize() - 1);
-				} else if (kc == KeyEvent.VK_0) {
-					ui.scalev = 1;
-				} else if (kc == KeyEvent.VK_G) {
-					if (cy < lines.size())
-						if (!U.gotoFileLine(roLines.getline(cy).toString())) {
-							U.listDir(PlainPage.this, cy);
-						}
-				} else if (kc == KeyEvent.VK_H) {
-					U.openFileHistory();
-				} else if (kc == KeyEvent.VK_P) {
-					new U.Print(PlainPage.this).printPages();
-				} else if (kc == KeyEvent.VK_ENTER) {
-					cursor.moveEnd();
-					focusCursor();
-				} else if (!Character.isIdentifierIgnorable(kc)) {
-					unknownCommand(env);
-				}
 
+			if (env.isAltDown()) {
+				keyPressedWithAltDown(env);
+			} else if (env.isControlDown()) {
+				keyPressedWithControlDown(env);
 			} else {
-				if (kc == KeyEvent.VK_LEFT) {
+				if (kc == KeyEvent.VK_F1) {
+					U.showHelp(ui, uiComp);
+				} else if (kc == KeyEvent.VK_F2) {
+					U.saveAs(this);
+				} else if (kc == KeyEvent.VK_F3) {
+					ptFind.findNext();
+				} else if (kc == KeyEvent.VK_F5) {
+					U.reloadWithEncodingByUser(fn, this);
+				} else if (kc == KeyEvent.VK_LEFT) {
 					cursor.moveLeft();
 					focusCursor();
 				} else if (kc == KeyEvent.VK_RIGHT) {
@@ -1374,6 +1385,7 @@ public class PlainPage {
 	}
 
 	public void keyReleased(KeyEvent env) {
+
 	}
 
 	public void keyTyped(KeyEvent env) {
