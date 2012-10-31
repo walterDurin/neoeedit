@@ -4,15 +4,12 @@ import java.io.File;
 
 public class Main {
 	public static void main(String[] args) throws Exception {
-
+		EditPanel editor = new EditPanel();
 		if (args.length > 0) {
-			File f = new File(args[0]);
-			U.openFile(f);
-		} else {
-			EditPanel editor = new EditPanel("neoeedit");
-			editor.page.ptSelection.selectAll();
-			editor.openWindow();
+			new PlainPage(editor, PageData.newFromFile(new File(args[0]).getCanonicalPath()));
+		} else {			
+			editor.getPage().ptSelection.selectAll();			
 		}
-
+		editor.openWindow();
 	}
 }

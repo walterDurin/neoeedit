@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.List;
 
 import javax.imageio.ImageIO;
-import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
@@ -71,11 +70,12 @@ public class PicView {
 			int kc = e.getKeyCode();
 			try {
 				if (e.isControlDown()) {
-					if (kc == KeyEvent.VK_H) {
-						U.openFileHistory();
-					} else if (kc == KeyEvent.VK_O) {
-						openFile();
-					} else if (kc == KeyEvent.VK_W) {
+					// if (kc == KeyEvent.VK_H) {
+					// U.openFileHistory();
+					// } else if (kc == KeyEvent.VK_O) {
+					// openFile();
+					// } else
+					if (kc == KeyEvent.VK_W) {
 						frame.dispose();
 					}
 				} else {
@@ -103,19 +103,19 @@ public class PicView {
 
 		}
 
-		private void openFile() throws Exception {
-			JFileChooser chooser = new JFileChooser();
-			if (f != null) {
-				chooser.setSelectedFile(f);
-			}
-			int returnVal = chooser.showOpenDialog(frame);
-			if (returnVal == JFileChooser.APPROVE_OPTION) {
-				System.out.println("You chose to open this file: "
-						+ chooser.getSelectedFile().getAbsolutePath());
-				File f = chooser.getSelectedFile();
-				U.openFile(f);
-			}
-		}
+		// private void openFile() throws Exception {
+		// JFileChooser chooser = new JFileChooser();
+		// if (f != null) {
+		// chooser.setSelectedFile(f);
+		// }
+		// int returnVal = chooser.showOpenDialog(frame);
+		// if (returnVal == JFileChooser.APPROVE_OPTION) {
+		// System.out.println("You chose to open this file: "
+		// + chooser.getSelectedFile().getAbsolutePath());
+		// File f = chooser.getSelectedFile();
+		// U.openFile(f);
+		// }
+		// }
 
 		@Override
 		public void keyReleased(KeyEvent e) {
@@ -300,6 +300,15 @@ public class PicView {
 
 	}
 
+	private EditPanel ep;
+
+	public PicView() {
+	}
+
+	public PicView(EditPanel ep) {
+		this.ep = ep;
+	}
+
 	public static void main(String[] args) throws IOException {
 		new PicView().show(new File(args[0]));
 
@@ -311,7 +320,7 @@ public class PicView {
 		Panel p;
 		f.add(p = new Panel(f, fn));
 		U.setFrameSize(f, p.pw, p.ph);
-		f.setTransferHandler(U.TH);
+		f.setTransferHandler(new U.TH(ep));
 		f.setVisible(true);
 		U.saveFileHistory(fn.getAbsolutePath(), 0);
 	}

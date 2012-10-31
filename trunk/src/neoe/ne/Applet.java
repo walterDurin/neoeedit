@@ -8,7 +8,7 @@ public class Applet extends JApplet {
 	public void init() {
 		super.init();
 		try {
-			add(new EditPanel("neoeedit"));
+			add(new EditPanel());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
