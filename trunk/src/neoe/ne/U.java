@@ -440,10 +440,10 @@ public class U {
 
 		int linePerPage;
 		ReadonlyLines roLines;
+		String title;
 		int totalPage;
 		Paint ui;
 		EditPanel uiComp;
-		String title;
 
 		Print(PlainPage pp) {
 			this.ui = pp.ui;
@@ -471,18 +471,6 @@ public class U {
 				w = drawText(g2, s, x, y, false);
 			}
 			return w;
-		}
-
-		private int getCommentPos(String s) {
-			String[] comment = ui.comment;
-			if (comment == null)
-				return -1;
-			for (String c : comment) {
-				int p = s.indexOf(c);
-				if (p >= 0)
-					return p;
-			}
-			return -1;
 		}
 
 		int drawText(Graphics2D g2, String s, int x, int y, boolean isComment) {
@@ -527,6 +515,18 @@ public class U {
 				int charCntInLine) {
 			int w = drawStringLine(g2, s, x0, y0);
 			drawReturn(g2, w + gutterWidth + 2, y0);
+		}
+
+		private int getCommentPos(String s) {
+			String[] comment = ui.comment;
+			if (comment == null)
+				return -1;
+			for (String c : comment) {
+				int p = s.indexOf(c);
+				if (p >= 0)
+					return p;
+			}
+			return -1;
 		}
 
 		int getTotalPage(PageFormat pf) {
@@ -749,6 +749,57 @@ public class U {
 		}
 	}
 
+	static class TH extends TransferHandler {
+		private static final long serialVersionUID = 5046626748299023865L;
+
+		private EditPanel ep;
+
+		TH(EditPanel ep) {
+			this.ep = ep;
+		}
+
+		public boolean canImport(TransferHandler.TransferSupport support) {
+			if (!support.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+				return false;
+			}
+			return true;
+		}
+
+		@SuppressWarnings("unchecked")
+		public boolean importData(TransferHandler.TransferSupport support) {
+			if (!canImport(support)) {
+				return false;
+			}
+			Transferable t = support.getTransferable();
+			try {
+				List<File> l = (List<File>) t
+						.getTransferData(DataFlavor.javaFileListFlavor);
+				for (File f : l) {
+					if (f.isFile())
+						try {
+							U.openFile(f, ep);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				return false;
+			}
+			ep.frame.repaint();
+			return true;
+		}
+	}
+
+	private final static String _TITLE_OF_PAGES = "__PAGES__";
+
+	static final Object[][] BOMS = new Object[][] {
+			new Object[] { new int[] { 0xEF, 0xBB, 0xBF }, "UTF-8" },
+			new Object[] { new int[] { 0xFE, 0xFF }, "UTF-16BE" },
+			new Object[] { new int[] { 0xFF, 0xFE }, "UTF-16LE" },
+			new Object[] { new int[] { 0, 0, 0xFE, 0xFF }, "UTF-32BE" },
+			new Object[] { new int[] { 0xFF, 0xFE, 0, 0 }, "UTF-32LE" }, };
+
 	final static String[] KWS = { "ArithmeticError", "AssertionError",
 			"AttributeError", "BufferType", "BuiltinFunctionType",
 			"BuiltinMethodType", "ClassType", "CodeType", "ComplexType",
@@ -842,53 +893,11 @@ public class U {
 			"vbnullchar", "vbnullstring", "vbobject", "vbred", "vbsingle",
 			"vbstring", "vbtab", "vbvariant", "vbverticaltab", "vbwhite",
 			"vbyellow", "void", "volatile", "weekday", "weekdayname", "wend",
-			"while", "with", "xor", "xrange", "year", "yield", "zip" };
+			"while", "with", "xor", "xrange", "year", "yield", "zip" };;
 
 	static Random random = new Random();
 
 	public static Image tabImg, tabImgPrint;
-
-	static class TH extends TransferHandler {
-		private EditPanel ep;
-
-		TH(EditPanel ep) {
-			this.ep = ep;
-		}
-
-		private static final long serialVersionUID = 5046626748299023865L;
-
-		public boolean canImport(TransferHandler.TransferSupport support) {
-			if (!support.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
-				return false;
-			}
-			return true;
-		}
-
-		@SuppressWarnings("unchecked")
-		public boolean importData(TransferHandler.TransferSupport support) {
-			if (!canImport(support)) {
-				return false;
-			}
-			Transferable t = support.getTransferable();
-			try {
-				List<File> l = (List<File>) t
-						.getTransferData(DataFlavor.javaFileListFlavor);
-				for (File f : l) {
-					if (f.isFile())
-						try {
-							U.openFile(f, ep);
-						} catch (Exception e) {
-							e.printStackTrace();
-						}
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-				return false;
-			}
-			ep.frame.repaint();
-			return true;
-		}
-	};
 
 	static final String UTF8 = "utf8";
 
@@ -901,6 +910,17 @@ public class U {
 		}
 	}
 
+	static boolean changedOutside(PlainPage pp) {
+		PageData page = pp.pageData;
+		if (page.getFn() != null && page.fileLastModified != 0) {
+			long t = new File(page.getFn()).lastModified();
+			if (t > page.fileLastModified + 100) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	static void closePage(PlainPage page) throws Exception {
 		EditPanel editor = page.uiComp;
 		int opt = JOptionPane.NO_OPTION;
@@ -911,10 +931,10 @@ public class U {
 			if (opt == JOptionPane.CANCEL_OPTION)
 				return;
 		}
+		if (opt == JOptionPane.YES_OPTION) {
+			saveFile(page);
+		}
 		if (page.pageData.getFn() != null) {
-			if (opt == JOptionPane.YES_OPTION) {
-				saveFile(page);
-			}
 			saveFileHistory(page.pageData.getFn(), page.cy);
 		}
 		page.close();
@@ -961,7 +981,7 @@ public class U {
 			List<String> res = U.findInFile(f, text, ignoreCase);
 			all.addAll(res);
 		}
-		showResult(page, all, "dir " + dir, text);
+		showResult(page, all, "dir", dir, text);
 		page.uiComp.repaint();
 	}
 
@@ -983,8 +1003,7 @@ public class U {
 						p = p2;
 					}
 				}
-				showResult(page, all, "file " + page.pageData.getFn(),
-						text2find);
+				showResult(page, all, "file", page.pageData.getFn(), text2find);
 				page.uiComp.repaint();
 			}
 		}
@@ -1049,7 +1068,7 @@ public class U {
 			}
 
 		}
-		showResult(page, all, "dir " + dir, text);
+		showResult(page, all, "dir", dir, text);
 		page.uiComp.repaint();
 	}
 
@@ -1061,13 +1080,6 @@ public class U {
 		g2.drawString(s, x, y);
 		return g2.getFontMetrics().stringWidth(s);
 
-	}
-
-	static String removeTailR(String s) {
-		while (s.endsWith("\r")) {
-			s = s.substring(0, s.length() - 1);
-		}
-		return s;
 	}
 
 	static Point find(PlainPage page, String s, int x, int y, boolean ignoreCase) {
@@ -1104,6 +1116,29 @@ public class U {
 			return new Point(p1, fy);
 		}
 		return null;
+	}
+
+	static boolean findAndShowPageListPage(EditPanel ep, String title) {
+		for (PlainPage pp : ep.pageSet) {
+			if (pp.pageData.getTitle().equals(title)) {
+				ep.setPage(pp);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	static boolean findAndShowPageListPage(EditPanel ep, String title,
+			int lineNo) {
+		boolean isPLP = title.equals(titleOfPages(ep));
+		for (PlainPage pp : ep.pageSet) {
+			if (pp.pageData.getTitle().equals(title)
+					&& (pp.cy + 1 == lineNo || isPLP)) {
+				ep.setPage(pp);
+				return true;
+			}
+		}
+		return false;
 	}
 
 	static void findchar(PlainPage page, char ch, int inc, int[] c1, char chx) {
@@ -1262,6 +1297,19 @@ public class U {
 		return s.substring(0, p);
 	}
 
+	public static List<StringBuffer> getPageListStrings(EditPanel ep) {
+		List<StringBuffer> ss = new ArrayList<StringBuffer>();
+		sort(ep.pageSet);
+		for (PlainPage pp : ep.pageSet) {
+			StringBuffer sb = new StringBuffer();
+			sb.append(pp.pageData.getTitle() + "|" + (pp.cy + 1) + ":"
+					+ " Edited:" + pp.pageData.history.size() + " "
+					+ (changedOutside(pp) ? "[Changed Outside!!]" : ""));
+			ss.add(sb);
+		}
+		return ss;
+	}
+
 	static String getText(PlainPage page) {
 		StringBuffer sb = new StringBuffer();
 		int len = page.pageData.roLines.getLinesize();
@@ -1295,29 +1343,43 @@ public class U {
 		return false;
 	}
 
-	static void listDir(PlainPage page, int atLine) throws Exception {
-		String line = page.pageData.roLines.getline(atLine).toString();
-		String fn = line.trim();
-		int p1 = fn.indexOf('|');
-		if (p1 >= 0)
-			fn = fn.substring(0, p1).trim();
-		File f = new File(fn);
-		if (f.isFile() && f.exists()) {
-			openFile(fn, 0, page.uiComp);
-		} else if (f.isDirectory()) {
-			File[] fs = f.listFiles();
-			page.cx = line.length();
-			page.ptEdit.insertString("\n{-----");
-			for (File f1 : fs) {
-				if (f1.isDirectory()) {
-					page.ptEdit.insertString("\n" + f1.getAbsolutePath()
-							+ " | <DIR>");
-				} else {
-					page.ptEdit.insertString("\n" + f1.getAbsolutePath());
+	public static boolean gotoFileLine2(EditPanel ep, String sb, String fn)
+			throws Exception {
+		int p2;
+		if ((p2 = sb.indexOf(":")) >= 0) {
+			int line = -1;
+			try {
+				line = Integer.parseInt(sb.substring(0, p2));
+			} catch (Exception e) {
+			}
+			if (line >= 0) {
+				fn = new File(fn).getCanonicalPath();
+				if (!U.findAndShowPageListPage(ep, fn, line)) {
+					openFile(fn, line, ep);
+				}
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static String guessByBOM(byte[] src) {
+		for (Object[] row : BOMS) {
+			int[] seq = (int[]) row[0];
+			// compare 2 array
+			if (seq.length > src.length)
+				continue;
+			boolean same = true;
+			for (int i = 0; i < seq.length; i++) {
+				if ((byte) seq[i] != src[i]) {
+					same = false;
+					break;
 				}
 			}
-			page.ptEdit.insertString("\n-----}");
+			if (same)
+				return (String) row[1];
 		}
+		return null;
 	}
 
 	static void guessComment(PlainPage page) {
@@ -1412,32 +1474,6 @@ public class U {
 		return null;
 	}
 
-	static final Object[][] BOMS = new Object[][] {
-			new Object[] { new int[] { 0xEF, 0xBB, 0xBF }, "UTF-8" },
-			new Object[] { new int[] { 0xFE, 0xFF }, "UTF-16BE" },
-			new Object[] { new int[] { 0xFF, 0xFE }, "UTF-16LE" },
-			new Object[] { new int[] { 0, 0, 0xFE, 0xFF }, "UTF-32BE" },
-			new Object[] { new int[] { 0xFF, 0xFE, 0, 0 }, "UTF-32LE" }, };
-
-	private static String guessByBOM(byte[] src) {
-		for (Object[] row : BOMS) {
-			int[] seq = (int[]) row[0];
-			// compare 2 array
-			if (seq.length > src.length)
-				continue;
-			boolean same = true;
-			for (int i = 0; i < seq.length; i++) {
-				if ((byte) seq[i] != src[i]) {
-					same = false;
-					break;
-				}
-			}
-			if (same)
-				return (String) row[1];
-		}
-		return null;
-	}
-
 	static String guessEncodingForEditor(String fn) {
 		try {
 			String s = guessEncoding(fn);
@@ -1510,6 +1546,44 @@ public class U {
 		return "" + v;
 	}
 
+	public static void launch(String s) throws Exception {
+		s = s.trim();
+		String slo = s.toLowerCase();
+		Desktop dt = Desktop.getDesktop();
+		if (slo.startsWith("mailto:")) {
+			dt.mail(new URI(s));
+		} else if (slo.startsWith("http://") || slo.startsWith("https://")) {
+			dt.browse(new URI(s));
+		} else {
+			dt.open(new File(s));
+		}
+	}
+
+	static void listDir(PlainPage page, int atLine) throws Exception {
+		String line = page.pageData.roLines.getline(atLine).toString();
+		String fn = line.trim();
+		int p1 = fn.indexOf('|');
+		if (p1 >= 0)
+			fn = fn.substring(0, p1).trim();
+		File f = new File(fn);
+		if (f.isFile() && f.exists()) {
+			openFile(fn, 0, page.uiComp);
+		} else if (f.isDirectory()) {
+			File[] fs = f.listFiles();
+			page.cx = line.length();
+			page.ptEdit.insertString("\n{-----");
+			for (File f1 : fs) {
+				if (f1.isDirectory()) {
+					page.ptEdit.insertString("\n" + f1.getAbsolutePath()
+							+ " | <DIR>");
+				} else {
+					page.ptEdit.insertString("\n" + f1.getAbsolutePath());
+				}
+			}
+			page.ptEdit.insertString("\n-----}");
+		}
+	}
+
 	static void loadTabImage() throws Exception {
 		BufferedImage img = ImageIO.read(U.class
 				.getResourceAsStream("/icontab.png"));
@@ -1552,8 +1626,11 @@ public class U {
 			new PicView().show(f);
 			return;
 		}
-		final PlainPage page = new PlainPage(ep, PageData.newFromFile(f
-				.getCanonicalPath()));
+		PageData pd = PageData.dataPool.get(fn); 
+		// including titles not saved
+		if (pd == null)
+			pd = PageData.newFromFile(f.getCanonicalPath());
+		final PlainPage page = new PlainPage(ep, pd);
 		if (page != null && page.pageData.lines.size() > 0) {
 			line -= 1;
 			page.cx = 0;
@@ -1584,6 +1661,10 @@ public class U {
 			g2.setColor(new Color(random.nextInt(cs)));
 			g2.drawLine(x, y, x + 1, y);
 		}
+	}
+
+	public static int randomID() {
+		return (int) (System.currentTimeMillis() % 1000000);
 	}
 
 	static void readFile(PageData data, String fn) {
@@ -1634,6 +1715,30 @@ public class U {
 		}
 		setEncodingByUser(pp, "Reload with Encoding:");
 		readFile(pp.pageData, fn);
+	}
+
+	static String removeAsciiZero(String s) {
+		int cnt = 0;
+		char zero = (char) 0;
+		String zeros = "" + zero;
+		int p = s.indexOf(zero);
+		if (p < 0)
+			return s;
+		StringBuffer sb = new StringBuffer(s);
+		while (p >= 0) {
+			sb.deleteCharAt(p);
+			cnt++;
+			p = sb.indexOf(zeros, p);
+		}
+		System.out.println("removed " + cnt + " NULL char");
+		return sb.toString();
+	}
+
+	static String removeTailR(String s) {
+		while (s.endsWith("\r")) {
+			s = s.substring(0, s.length() - 1);
+		}
+		return s;
 	}
 
 	static void removeTrailingSpace(PageData data) {
@@ -1890,23 +1995,6 @@ public class U {
 				.setContents(new StringSelection(s), null);
 	}
 
-	static String removeAsciiZero(String s) {
-		int cnt = 0;
-		char zero = (char) 0;
-		String zeros = "" + zero;
-		int p = s.indexOf(zero);
-		if (p < 0)
-			return s;
-		StringBuffer sb = new StringBuffer(s);
-		while (p >= 0) {
-			sb.deleteCharAt(p);
-			cnt++;
-			p = sb.indexOf(zeros, p);
-		}
-		System.out.println("removed " + cnt + " NULL char");
-		return sb.toString();
-	}
-
 	static void setEncodingByUser(PlainPage plainPage, String msg) {
 		String s = JOptionPane.showInputDialog(plainPage.uiComp, msg,
 				plainPage.pageData.encoding);
@@ -1975,25 +2063,44 @@ public class U {
 
 	}
 
-	static void showResult(PlainPage pp, List<String> all, String dir,
-			String text) throws Exception {
+	public static void showPageListPage(EditPanel ep) throws Exception {
+		if (findAndShowPageListPage(ep, titleOfPages(ep))) {
+			ep.getPage().pageData.setLines(getPageListStrings(ep));// refresh
+			ep.repaint();
+			return;
+		}
+		// boolean isFirstTime = !PageData.dataPool.containsKey(TITLE_OF_PAGES);
+		PageData pd = PageData.newEmpty(titleOfPages(ep));
+		new PlainPage(ep, pd);
+		pd.setLines(getPageListStrings(ep));
+		ep.repaint();
+	}
+
+	static void showResult(PlainPage pp, List<String> all, String type,
+			String name, String text) throws Exception {
 		PlainPage p2 = new PlainPage(pp.uiComp, PageData.newEmpty(String
-				.format("(%s)'%s' in %s - %s", all.size(), text, dir,
-						PlainPage.WINDOW_NAME)));
+				.format("(%s)'%s' in %s %s #%s", all.size(), text, type, name, randomID())));
 		p2.pageData.workPath = pp.pageData.workPath;
 		p2.ui.applyColorMode(pp.ui.colorMode);
 		List<StringBuffer> sbs = new ArrayList<StringBuffer>();
 		sbs.add(new StringBuffer(String.format(
-				"find %s results in %s for '%s'", all.size(), dir, text)));
+				"find %s results in %s for '%s'", all.size(), name, text)));
 		for (Object o : all) {
 			sbs.add(new StringBuffer(o.toString()));
 		}
 		p2.pageData.setLines(sbs);
-		if (dir.startsWith("file ")) {
-			File f = new File(dir.substring(5));
-			dir = "file " + f.getName() + " " + f.getParent();
+		if (type.equals("file")) {
+			p2.searchResultOf = name;
 		}
-		gc();
+		// gc();
+	}
+
+	static void sort(List<PlainPage> pageSet) {
+		Collections.sort(pageSet, new Comparator<PlainPage>() {
+			public int compare(PlainPage o1, PlainPage o2) {
+				return o1.pageData.getTitle().compareTo(o2.pageData.getTitle());
+			}
+		});
 	}
 
 	static String spaces(int cx) {
@@ -2122,102 +2229,30 @@ public class U {
 		return sb.substring(a, b);
 	}
 
-	static String trimLeft(String s) {
-		int i = 0;
-		while (i < s.length() && (s.charAt(i) == ' ' || s.charAt(i) == '\t'))
-			i++;
-		return i > 0 ? s.substring(i) : s;
-	}
-
-	public static void launch(String s) throws Exception {
-		s = s.trim();
-		String slo = s.toLowerCase();
-		Desktop dt = Desktop.getDesktop();
-		if (slo.startsWith("mailto:")) {
-			dt.mail(new URI(s));
-		} else if (slo.startsWith("http://") || slo.startsWith("https://")) {
-			dt.browse(new URI(s));
+	public static void switchToPageListPage(PlainPage pp) throws Exception {
+		EditPanel uiComp = pp.uiComp;
+		if (pp.pageData.getTitle().equals(U.titleOfPages(uiComp))
+				&& uiComp.lastPage != null) {
+			if (uiComp.pageSet.contains(uiComp.lastPage)) {
+				uiComp.setPage(uiComp.lastPage);
+			} else {
+				uiComp.lastPage = null;
+			}
 		} else {
-			dt.open(new File(s));
+			uiComp.lastPage = uiComp.getPage();
+			showPageListPage(uiComp);
 		}
 	}
-
-	public static int randomID() {
-		return (int) (System.currentTimeMillis() % 1000000);
-	}
-
-	private final static String _TITLE_OF_PAGES = "__PAGES__";
 
 	static String titleOfPages(EditPanel ep) {
 		return _TITLE_OF_PAGES + "@" + ep.hashCode();
 	}
 
-	public static void showPageListPage(EditPanel ep) throws Exception {
-		if (findAndShowPageListPage(ep, titleOfPages(ep))) {
-			ep.getPage().pageData.setLines(getPageListStrings(ep));// refresh
-			ep.repaint();
-			return;
-		}
-		// boolean isFirstTime = !PageData.dataPool.containsKey(TITLE_OF_PAGES);
-		PageData pd = PageData.newEmpty(titleOfPages(ep));
-		new PlainPage(ep, pd);
-		pd.setLines(getPageListStrings(ep));
-		ep.repaint();
-	}
-
-	static boolean findAndShowPageListPage(EditPanel ep, String title) {
-		for (PlainPage pp : ep.pageSet) {
-			if (pp.pageData.getTitle().equals(title)) {
-				ep.setPage(pp);
-				return true;
-			}
-		}
-		return false;
-	}
-
-	static boolean findAndShowPageListPage(EditPanel ep, String title,
-			int lineNo) {
-		boolean isPLP = title.equals(titleOfPages(ep));
-		for (PlainPage pp : ep.pageSet) {
-			if (pp.pageData.getTitle().equals(title)
-					&& (pp.cy == lineNo || isPLP)) {
-				ep.setPage(pp);
-				return true;
-			}
-		}
-		return false;
-	}
-
-	public static List<StringBuffer> getPageListStrings(EditPanel ep) {
-		List<StringBuffer> ss = new ArrayList<StringBuffer>();
-		sort(ep.pageSet);
-		for (PlainPage pp : ep.pageSet) {
-			StringBuffer sb = new StringBuffer();
-			sb.append(pp.pageData.getTitle() + "|" + pp.cy + ": "
-					+ (changedOutside(pp) ? "<Changed Outside>" : "")
-					+ " Edited:" + pp.pageData.history.size());
-			ss.add(sb);
-		}
-		return ss;
-	}
-
-	private static boolean changedOutside(PlainPage pp) {
-		PageData page = pp.pageData;
-		if (page.getFn() != null && page.fileLastModified != 0) {
-			long t = new File(page.getFn()).lastModified();
-			if (t > page.fileLastModified + 100) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	static void sort(List<PlainPage> pageSet) {
-		Collections.sort(pageSet, new Comparator<PlainPage>() {
-			public int compare(PlainPage o1, PlainPage o2) {
-				return o1.pageData.getTitle().compareTo(o2.pageData.getTitle());
-			}
-		});
+	static String trimLeft(String s) {
+		int i = 0;
+		while (i < s.length() && (s.charAt(i) == ' ' || s.charAt(i) == '\t'))
+			i++;
+		return i > 0 ? s.substring(i) : s;
 	}
 
 }

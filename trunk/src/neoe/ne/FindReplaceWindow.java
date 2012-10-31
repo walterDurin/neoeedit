@@ -20,21 +20,21 @@ import neoe.ne.U.SimpleLayout;
 
 public class FindReplaceWindow implements ActionListener, KeyListener {
 
-	JTextField jta1;
-	JTextField jta2;
-	JRadioButton jrb1;
+	private JDialog dialog;
 	JButton jb1;
 	JButton jb2;
 	JButton jb3;
-	private PlainPage page;
-	private JRadioButton jrb2;
-	private JDialog dialog;
+	private JButton jb4;
 	// private JFrame f;
 	private JCheckBox jcb1;
-	private JTextField jtadir;
 	private JCheckBox jcb2;
 	private JCheckBox jcb3;
-	private JButton jb4;
+	JRadioButton jrb1;
+	private JRadioButton jrb2;
+	JTextField jta1;
+	JTextField jta2;
+	private JTextField jtadir;
+	private PlainPage page;
 
 	public FindReplaceWindow(JFrame f, PlainPage page) {
 		this.page = page;
@@ -117,17 +117,6 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 		jcb3.addKeyListener(closeOnEsc);
 	}
 
-	public void show() {
-		dialog.setVisible(true);
-	}
-
-	// public static void main(String[] args) {
-	// JFrame f = new JFrame();
-	// f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-	// f.setVisible(true);
-	// new FindReplaceWindow(f, null).show();
-	// }
-
 	@Override
 	public void actionPerformed(ActionEvent ae) {
 		page.pageData.history.beginAtom();
@@ -156,6 +145,13 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 		page.pageData.history.endAtom();
 	}
 
+	// public static void main(String[] args) {
+	// JFrame f = new JFrame();
+	// f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	// f.setVisible(true);
+	// new FindReplaceWindow(f, null).show();
+	// }
+
 	@Override
 	public void keyPressed(KeyEvent e) {
 		if (e.getSource() == jta1) {
@@ -181,5 +177,9 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 	@Override
 	public void keyTyped(KeyEvent e) {
 
+	}
+
+	public void show() {
+		dialog.setVisible(true);
 	}
 }

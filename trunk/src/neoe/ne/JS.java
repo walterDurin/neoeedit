@@ -14,6 +14,22 @@ import sun.org.mozilla.javascript.internal.NativeArray;
 
 public class JS {
 
+	private static void addResult(Object o, List<StringBuffer> res) {
+		if (o == null)
+			return;
+		else if (o instanceof NativeArray) {
+			NativeArray arr = (NativeArray) o;
+			int len = (int) arr.getLength();
+			for (int j = 0; j < len; j++) {
+				Object obj = arr.get(j, arr);
+				res.add(new StringBuffer(obj.toString()));
+			}
+		} else {
+			res.add(new StringBuffer(o.toString()));
+		}
+
+	}
+
 	public static List<StringBuffer> run(List<StringBuffer> lines,
 			String userScript) throws Exception {
 		List<StringBuffer> res = new ArrayList<StringBuffer>();
@@ -33,22 +49,6 @@ public class JS {
 		}
 
 		return res;
-
-	}
-
-	private static void addResult(Object o, List<StringBuffer> res) {
-		if (o == null)
-			return;
-		else if (o instanceof NativeArray) {
-			NativeArray arr = (NativeArray) o;
-			int len = (int) arr.getLength();
-			for (int j = 0; j < len; j++) {
-				Object obj = arr.get(j, arr);
-				res.add(new StringBuffer(obj.toString()));
-			}
-		} else {
-			res.add(new StringBuffer(o.toString()));
-		}
 
 	}
 
