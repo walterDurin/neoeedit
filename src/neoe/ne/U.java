@@ -1003,7 +1003,7 @@ public class U {
 						p = p2;
 					}
 				}
-				showResult(page, all, "file", page.pageData.getFn(), text2find);
+				showResult(page, all, "file", page.pageData.getTitle(), text2find);
 				page.uiComp.repaint();
 			}
 		}
@@ -1343,7 +1343,7 @@ public class U {
 		return false;
 	}
 
-	public static boolean gotoFileLine2(EditPanel ep, String sb, String fn)
+	public static boolean gotoFileLine2(EditPanel ep, String sb, String title)
 			throws Exception {
 		int p2;
 		if ((p2 = sb.indexOf(":")) >= 0) {
@@ -1353,9 +1353,8 @@ public class U {
 			} catch (Exception e) {
 			}
 			if (line >= 0) {
-				fn = new File(fn).getCanonicalPath();
-				if (!U.findAndShowPageListPage(ep, fn, line)) {
-					openFile(fn, line, ep);
+				if (!U.findAndShowPageListPage(ep, title, line)) {
+					openFile(title, line, ep);
 				}
 				return true;
 			}
@@ -1637,13 +1636,13 @@ public class U {
 
 	}
 
-	static void openFile(String fn, int line, EditPanel ep) throws Exception {
-		File f = new File(fn);
+	static void openFile(String title, int line, EditPanel ep) throws Exception {
+		File f = new File(title);
 		if (isImageFile(f)) {
 			new PicView().show(f);
 			return;
 		}
-		PageData pd = PageData.dataPool.get(fn);
+		PageData pd = PageData.dataPool.get(title);
 		// including titles not saved
 		if (pd == null)
 			pd = PageData.newFromFile(f.getCanonicalPath());
