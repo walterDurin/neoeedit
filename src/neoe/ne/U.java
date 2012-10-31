@@ -1603,21 +1603,38 @@ public class U {
 	}
 
 	static void openFile(PlainPage page) throws Exception {
-		JFileChooser chooser = new JFileChooser();
+		// JFileChooser chooser = new JFileChooser();
+		//
+		// if (page.pageData.getFn() != null) {
+		// chooser.setSelectedFile(new File(page.pageData.getFn()));
+		// } else if (page.pageData.workPath != null) {
+		// chooser.setSelectedFile(new File(page.pageData.workPath));
+		// // check later:cannot set correctly
+		// }
+		// int returnVal = chooser.showOpenDialog(page.uiComp);
+		// if (returnVal == JFileChooser.APPROVE_OPTION) {
+		// System.out.println("You chose to open this file: "
+		// + chooser.getSelectedFile().getAbsolutePath());
+		// File f = chooser.getSelectedFile();
+		// openFile(f, page.uiComp);
+		// }
+		String dir = page.pageData.workPath;
+		if (dir == null)
+			dir = new File(".").getCanonicalPath();
+		String title = "[Dir]" + dir;
+		PageData pd = PageData.dataPool.get(title);
+		if (pd == null) {
+			pd = PageData.newEmpty(title);
+			pd.setText(dir);
+			PlainPage pp = new PlainPage(page.uiComp, pd);
+			U.listDir(pp, 0);
+		} else {
+			EditPanel ep = page.uiComp;
+			if (!U.findAndShowPageListPage(ep, title)) {
+				new PlainPage(page.uiComp, pd);
+			}
+		}
 
-		if (page.pageData.getFn() != null) {
-			chooser.setSelectedFile(new File(page.pageData.getFn()));
-		} else if (page.pageData.workPath != null) {
-			chooser.setSelectedFile(new File(page.pageData.workPath));
-			// check later:cannot set correctly
-		}
-		int returnVal = chooser.showOpenDialog(page.uiComp);
-		if (returnVal == JFileChooser.APPROVE_OPTION) {
-			System.out.println("You chose to open this file: "
-					+ chooser.getSelectedFile().getAbsolutePath());
-			File f = chooser.getSelectedFile();
-			openFile(f, page.uiComp);
-		}
 	}
 
 	static void openFile(String fn, int line, EditPanel ep) throws Exception {
@@ -1626,7 +1643,7 @@ public class U {
 			new PicView().show(f);
 			return;
 		}
-		PageData pd = PageData.dataPool.get(fn); 
+		PageData pd = PageData.dataPool.get(fn);
 		// including titles not saved
 		if (pd == null)
 			pd = PageData.newFromFile(f.getCanonicalPath());
@@ -2079,7 +2096,8 @@ public class U {
 	static void showResult(PlainPage pp, List<String> all, String type,
 			String name, String text) throws Exception {
 		PlainPage p2 = new PlainPage(pp.uiComp, PageData.newEmpty(String
-				.format("(%s)'%s' in %s %s #%s", all.size(), text, type, name, randomID())));
+				.format("(%s)'%s' in %s %s #%s", all.size(), text, type, name,
+						randomID())));
 		p2.pageData.workPath = pp.pageData.workPath;
 		p2.ui.applyColorMode(pp.ui.colorMode);
 		List<StringBuffer> sbs = new ArrayList<StringBuffer>();
