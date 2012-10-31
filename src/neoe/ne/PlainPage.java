@@ -1319,7 +1319,6 @@ public class PlainPage {
 			ep.openWindow();
 		} else if (kc == KeyEvent.VK_S) {
 			if (U.saveFile(this)) {
-				System.out.println("saved");
 				ui.message("saved");
 			}
 		} else if (kc == KeyEvent.VK_L) {
@@ -1374,7 +1373,7 @@ public class PlainPage {
 		} else if (kc == KeyEvent.VK_ENTER) {
 			cursor.moveEnd();
 			focusCursor();
-		} else if (kc == KeyEvent.VK_TAB) {
+		} else if (kc == KeyEvent.VK_TAB || kc == KeyEvent.VK_Q) {
 			U.switchToPageListPage(this);
 
 		} else if (!Character.isIdentifierIgnorable(kc)) {
@@ -1383,7 +1382,6 @@ public class PlainPage {
 	}
 
 	public void keyReleased(KeyEvent env) {
-
 	}
 
 	public void keyTyped(KeyEvent env) {
