@@ -94,8 +94,8 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 		jcb3.setEnabled(false);
 		dialog.pack();
 		dialog.setLocationRelativeTo(f);
-		if (page != null && page.fn != null) {
-			jtadir.setText(new File(page.fn).getParent());
+		if (page != null && page.pageData.getFn() != null) {
+			jtadir.setText(new File(page.pageData.getFn()).getParent());
 		}
 		jta1.addKeyListener(this);
 		jta2.addKeyListener(this);
@@ -130,7 +130,7 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 
 	@Override
 	public void actionPerformed(ActionEvent ae) {
-		page.history.beginAtom();
+		page.pageData.history.beginAtom();
 		try {
 			String command = ae.getActionCommand();
 			if (command.equals("find")) {
@@ -153,7 +153,7 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 			e.printStackTrace();
 			page.ui.message(e.toString());
 		}
-		page.history.endAtom();
+		page.pageData.history.endAtom();
 	}
 
 	@Override

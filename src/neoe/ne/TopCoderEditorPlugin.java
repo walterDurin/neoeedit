@@ -7,8 +7,8 @@ public class TopCoderEditorPlugin {
 
 	public JPanel getEditorPanel() {
 		try {
-			editor = new EditPanel("neoeedit");
-			editor.page.ui.applyColorMode(1);
+			editor = new EditPanel();
+			editor.getPage().ui.applyColorMode(1);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -17,14 +17,14 @@ public class TopCoderEditorPlugin {
 
 	public String getSource() {
 		if (editor != null) {
-			return U.getText(editor.page);
+			return U.getText(editor.getPage());
 		}
 		return null;
 	}
 
 	public void setSource(String s) {
 		if (editor != null) {
-			editor.page.ptEdit.setText(s);
+			editor.getPage().pageData.setText(s);
 			editor.revalidate();
 			editor.repaint();
 		}

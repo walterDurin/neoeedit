@@ -33,6 +33,8 @@ import java.io.OutputStreamWriter;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -61,12 +63,12 @@ public class U {
 	}
 
 	static class BasicEdit {
-		PlainPage page;
+		PageData data;
 		boolean record;
 
-		BasicEdit(boolean record, PlainPage page) {
+		BasicEdit(boolean record, PageData data) {
 			this.record = record;
-			this.page = page;
+			this.data = data;
 		}
 
 		void deleteEmptyLine(int y) {
@@ -101,7 +103,7 @@ public class U {
 		}
 
 		History history() {
-			return page.history;
+			return data.history;
 		}
 
 		void insertEmptyLine(int y) {
@@ -118,8 +120,8 @@ public class U {
 				throw new RuntimeException("cannot contains line-seperator:["
 						+ s + "]" + s.indexOf('\n'));
 			}
-			if (y == page.roLines.getLinesize()) {
-				page.editRec.insertEmptyLine(y);
+			if (y == data.roLines.getLinesize()) {
+				data.editRec.insertEmptyLine(y);
 			}
 			StringBuffer sb = lines().get(y);
 			if (x > sb.length()) {
@@ -134,7 +136,7 @@ public class U {
 		}
 
 		List<StringBuffer> lines() {
-			return page.lines;
+			return data.lines;
 		}
 
 		void mergeLine(int y) {
@@ -168,7 +170,7 @@ public class U {
 				findNext();
 				pp.uiComp.repaint();
 			} else {
-				doFindInDir(pp.uiComp, text, ignoreCase, selected2, inDir, dir);
+				doFindInDir(pp, text, ignoreCase, selected2, inDir, dir);
 			}
 		}
 
@@ -208,13 +210,13 @@ public class U {
 		List<HistoryCell> atom;
 		LinkedList<List<HistoryCell>> data;
 		int p;
-		PlainPage page;
+		PageData pageData;
 
-		public History(PlainPage page) {
+		public History(PageData pageData) {
 			data = new LinkedList<List<HistoryCell>>();
 			p = 0;
 			atom = new ArrayList<HistoryCell>();
-			this.page = page;
+			this.pageData = pageData;
 		}
 
 		void add(List<HistoryCell> o) {
@@ -239,7 +241,6 @@ public class U {
 		}
 
 		public void addOne(HistoryCell historyInfo) {
-			historyInfo.page = this.page;
 			atom.add(historyInfo);
 		}
 
@@ -300,13 +301,13 @@ public class U {
 			}
 		}
 
-		void redo() throws Exception {
+		void redo(PlainPage page) throws Exception {
 			List<HistoryCell> os = getRedo();
 			if (os == null) {
 				return;
 			}
 			for (HistoryCell o : os) {
-				o.redo();
+				o.redo(page);
 			}
 		}
 
@@ -314,21 +315,20 @@ public class U {
 			return p;
 		}
 
-		void undo() throws Exception {
+		void undo(PlainPage page) throws Exception {
 			List<HistoryCell> os = get();
 			if (os == null) {
 				return;
 			}
 			for (int i = os.size() - 1; i >= 0; i--) {
 				HistoryCell o = os.get(i);
-				o.undo();
+				o.undo(page);
 			}
 		}
 	}
 
 	static class HistoryCell {
 		U.BasicAction action;
-		PlainPage page;
 		String s1;
 		int x1, x2, y1, y2;
 
@@ -352,42 +352,35 @@ public class U {
 			((last.x1 == this.x1 || last.x2 == this.x1) && last.y1 == this.y1)));
 		}
 
-		U.BasicEdit editNoRec() {
-			return page.editNoRec;
-		}
-
-		public void redo() {
-			// System.out.println("redo:" + toString());
+		public void redo(PlainPage page) {
+			BasicEdit editNoRec = page.pageData.editNoRec;
+			ReadonlyLines roLines = page.pageData.roLines;
 			switch (action) {
 			case Delete:
-				s1 = roLines().getInLine(y1, x1, x2);
-				editNoRec().deleteInLine(y1, x1, x2);
+				s1 = roLines.getInLine(y1, x1, x2);
+				editNoRec.deleteInLine(y1, x1, x2);
 				page.cursor.setSafePos(x1, y1);
 				break;
 			case DeleteEmtpyLine:
-				editNoRec().deleteEmptyLine(y1);
+				editNoRec.deleteEmptyLine(y1);
 				page.cursor.setSafePos(0, y1);
 				break;
 			case Insert:
-				editNoRec().insertInLine(y1, x1, s1);
+				editNoRec.insertInLine(y1, x1, s1);
 				page.cursor.setSafePos(x1 + s1.length(), y1);
 				s1 = null;
 				break;
 			case InsertEmptyLine:
-				editNoRec().insertEmptyLine(y1);
+				editNoRec.insertEmptyLine(y1);
 				page.cursor.setSafePos(0, y1 + 1);
 				break;
 			case MergeLine:
-				editNoRec().mergeLine(y1);
+				editNoRec.mergeLine(y1);
 				page.cursor.setSafePos(x1, y1);
 				break;
 			default:
 				throw new RuntimeException("unkown action " + action);
 			}
-		}
-
-		ReadonlyLines roLines() {
-			return page.roLines;
 		}
 
 		@Override
@@ -396,32 +389,33 @@ public class U {
 					+ x2 + ", y1=" + y1 + ", y2=" + y2 + ", s1=" + s1 + "]\n";
 		}
 
-		public void undo() {
-			// System.out.println("undo:" + toString());
+		public void undo(PlainPage page) {
+			BasicEdit editNoRec = page.pageData.editNoRec;
+			ReadonlyLines roLines = page.pageData.roLines;
 			switch (action) {
 			case Delete:
-				editNoRec().insertInLine(y1, x1, s1);
+				editNoRec.insertInLine(y1, x1, s1);
 				page.cursor.setSafePos(x1 + s1.length(), y1);
 				s1 = null;
 				break;
 			case DeleteEmtpyLine:
-				editNoRec().insertEmptyLine(y1);
+				editNoRec.insertEmptyLine(y1);
 				page.cursor.setSafePos(0, y1 + 1);
 				break;
 			case Insert:
-				s1 = roLines().getInLine(y1, x1, x2);
-				editNoRec().deleteInLine(y1, x1, x2);
+				s1 = roLines.getInLine(y1, x1, x2);
+				editNoRec.deleteInLine(y1, x1, x2);
 				page.cursor.setSafePos(0, y1);
 				break;
 			case InsertEmptyLine:
-				editNoRec().deleteEmptyLine(y1);
+				editNoRec.deleteEmptyLine(y1);
 				page.cursor.setSafePos(0, y1);
 				break;
 			case MergeLine:
-				String s2 = roLines().getInLine(y1, x1, Integer.MAX_VALUE);
-				editNoRec().deleteInLine(y1, x1, Integer.MAX_VALUE);
-				editNoRec().insertEmptyLine(y1 + 1);
-				editNoRec().insertInLine(y1 + 1, 0, s2);
+				String s2 = roLines.getInLine(y1, x1, Integer.MAX_VALUE);
+				editNoRec.deleteInLine(y1, x1, Integer.MAX_VALUE);
+				editNoRec.insertEmptyLine(y1 + 1);
+				editNoRec.insertInLine(y1 + 1, 0, s2);
 				page.cursor.setSafePos(0, y1 + 1);
 				break;
 			default:
@@ -449,12 +443,14 @@ public class U {
 		int totalPage;
 		Paint ui;
 		EditPanel uiComp;
+		String title;
 
 		Print(PlainPage pp) {
 			this.ui = pp.ui;
 			this.uiComp = pp.uiComp;
-			this.roLines = pp.roLines;
-			this.fn = pp.fn;
+			this.roLines = pp.pageData.roLines;
+			this.fn = pp.pageData.getFn();
+			this.title = pp.pageData.getTitle();
 		}
 
 		void drawReturn(Graphics2D g2, int w, int py) {
@@ -560,7 +556,7 @@ public class U {
 			}
 			g2.setFont(font);
 			g2.setColor(colorHeaderFooter);
-			g2.drawString(fn == null ? "Unsaved" : new File(fn).getName(), 0,
+			g2.drawString(fn == null ? title : new File(fn).getName(), 0,
 					lineGap + lineHeight);
 			{
 				String s = (pageIndex + 1) + "/" + totalPage;
@@ -631,10 +627,10 @@ public class U {
 	}
 
 	static class ReadonlyLines {
-		PlainPage page;
+		PageData data;
 
-		ReadonlyLines(PlainPage page) {
-			this.page = page;
+		ReadonlyLines(PageData data) {
+			this.data = data;
 		}
 
 		String getInLine(int y, int x1, int x2) {
@@ -649,23 +645,23 @@ public class U {
 		}
 
 		RoSb getline(int i) {
-			return new RoSb(page.lines.get(i));
+			return new RoSb(data.lines.get(i));
 		}
 
 		int getLinesize() {
-			return page.lines.size();
+			return data.lines.size();
 		}
 
-		String getTextInRect(Rectangle r) {
+		String getTextInRect(Rectangle r, boolean rectSelectMode) {
 			int x1 = r.x;
 			int y1 = r.y;
 			int x2 = r.width;
 			int y2 = r.height;
 			StringBuffer sb = new StringBuffer();
-			if (page.rectSelectMode) {
+			if (rectSelectMode) {
 				for (int i = y1; i <= y2; i++) {
 					if (i != y1) {
-						sb.append(page.lineSep);
+						sb.append(data.lineSep);
 					}
 					sb.append(getInLine(i, x1, x2));
 				}
@@ -675,10 +671,10 @@ public class U {
 				} else if (y1 < y2) {
 					sb.append(getInLine(y1, x1, Integer.MAX_VALUE));
 					for (int i = y1 + 1; i < y2; i++) {
-						sb.append(page.lineSep);
+						sb.append(data.lineSep);
 						sb.append(getline(i));
 					}
-					sb.append(page.lineSep);
+					sb.append(data.lineSep);
 					sb.append(getInLine(y2, 0, x2));
 				}
 			}
@@ -852,7 +848,13 @@ public class U {
 
 	public static Image tabImg, tabImgPrint;
 
-	final static TransferHandler TH = new TransferHandler(null) {
+	static class TH extends TransferHandler {
+		private EditPanel ep;
+
+		TH(EditPanel ep) {
+			this.ep = ep;
+		}
+
 		private static final long serialVersionUID = 5046626748299023865L;
 
 		public boolean canImport(TransferHandler.TransferSupport support) {
@@ -874,7 +876,7 @@ public class U {
 				for (File f : l) {
 					if (f.isFile())
 						try {
-							U.openFile(f);
+							U.openFile(f, ep);
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
@@ -883,6 +885,7 @@ public class U {
 				e.printStackTrace();
 				return false;
 			}
+			ep.frame.repaint();
 			return true;
 		}
 	};
@@ -900,21 +903,21 @@ public class U {
 
 	static void closePage(PlainPage page) throws Exception {
 		EditPanel editor = page.uiComp;
-		if (page.history.size() != 0
-				&& JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(
-						editor, "Are you sure to SAVE and close?",
-						"Changes made", JOptionPane.YES_NO_OPTION)) {
-			return;
+		int opt = JOptionPane.NO_OPTION;
+		if (page.pageData.history.size() != 0) {
+			opt = JOptionPane.showConfirmDialog(editor,
+					"Are you sure to SAVE and close?", "Changes made",
+					JOptionPane.YES_NO_CANCEL_OPTION);
+			if (opt == JOptionPane.CANCEL_OPTION)
+				return;
 		}
-		if (page.fn != null) {
-			if (page.history.size() != 0) {
+		if (page.pageData.getFn() != null) {
+			if (opt == JOptionPane.YES_OPTION) {
 				saveFile(page);
 			}
-			saveFileHistory(page.fn, page.cy);
+			saveFileHistory(page.pageData.getFn(), page.cy);
 		}
-		page.ui.closed = true;
-		if (editor.frame != null)
-			editor.frame.dispose();
+		page.close();
 	}
 
 	/**
@@ -947,7 +950,7 @@ public class U {
 		}
 	}
 
-	static void doFindInDir(EditPanel editor, String text, boolean ignoreCase,
+	static void doFindInDir(PlainPage page, String text, boolean ignoreCase,
 			boolean selected2, boolean inDir, String dir) throws Exception {
 		Iterable<File> it = new FileIterator(dir);
 		List<String> all = new ArrayList<String>();
@@ -958,8 +961,8 @@ public class U {
 			List<String> res = U.findInFile(f, text, ignoreCase);
 			all.addAll(res);
 		}
-		showResult(editor, all, "dir " + dir, text);
-		editor.repaint();
+		showResult(page, all, "dir " + dir, text);
+		page.uiComp.repaint();
 	}
 
 	static void doFindInPage(PlainPage page, String text2find,
@@ -972,7 +975,7 @@ public class U {
 				List<String> all = new ArrayList<String>();
 				while (true) {
 					all.add(String.format("%s:%s", p.y + 1,
-							page.roLines.getline(p.y)));
+							page.pageData.roLines.getline(p.y)));
 					Point p2 = U.find(page, text2find, 0, p.y + 1, ignoreCase);
 					if (p2 == null || p2.y <= p.y) {
 						break;
@@ -980,7 +983,8 @@ public class U {
 						p = p2;
 					}
 				}
-				showResult(page.uiComp, all, "file " + page.fn, text2find);
+				showResult(page, all, "file " + page.pageData.getFn(),
+						text2find);
 				page.uiComp.repaint();
 			}
 		}
@@ -1023,7 +1027,6 @@ public class U {
 	static void doReplaceInDir(PlainPage page, String text,
 			boolean ignoreCase2, String text2, boolean inDir, String dir)
 			throws Exception {
-		EditPanel editor = page.uiComp;
 		Iterable<File> it = new FileIterator(dir);
 		List<String> all = new ArrayList<String>();
 		for (File f : it) {
@@ -1033,12 +1036,12 @@ public class U {
 			try {
 				List<String> res = U.findInFile(f, text, page.ignoreCase);
 				if (!res.isEmpty()) {
-					PlainPage pi = new EditPanel(f).page;
+					PlainPage pi = new PlainPage(page.uiComp,
+							PageData.newFromFile(f.getCanonicalPath()));
 					if (pi != null) {
 						doReplaceAll(pi, text, ignoreCase2, false, text2,
 								false, null);
 					}
-					pi.uiComp.openWindow();
 				}
 				all.addAll(res);
 			} catch (Exception e) {
@@ -1046,8 +1049,8 @@ public class U {
 			}
 
 		}
-		showResult(editor, all, "dir " + dir, text);
-		editor.repaint();
+		showResult(page, all, "dir " + dir, text);
+		page.uiComp.repaint();
 	}
 
 	static int drawTwoColor(Graphics2D g2, String s, int x, int y, Color c1,
@@ -1068,31 +1071,34 @@ public class U {
 	}
 
 	static Point find(PlainPage page, String s, int x, int y, boolean ignoreCase) {
-		if (y >= page.roLines.getLinesize())
+		if (y >= page.pageData.roLines.getLinesize())
 			return null;
 		if (ignoreCase) {
 			s = s.toLowerCase();
 		}
-		x = Math.min(x, page.roLines.getline(y).toString(ignoreCase).length());
+		x = Math.min(x, page.pageData.roLines.getline(y).toString(ignoreCase)
+				.length());
 		// first half row
-		int p1 = page.roLines.getline(y).toString(ignoreCase).indexOf(s, x);
+		int p1 = page.pageData.roLines.getline(y).toString(ignoreCase)
+				.indexOf(s, x);
 		if (p1 >= 0) {
 			return new Point(p1, y);
 		}
 		// middle rows
 		int fy = y;
-		for (int i = 0; i < page.roLines.getLinesize() - 1; i++) {
+		for (int i = 0; i < page.pageData.roLines.getLinesize() - 1; i++) {
 			fy += 1;
-			if (fy >= page.roLines.getLinesize()) {
+			if (fy >= page.pageData.roLines.getLinesize()) {
 				fy = 0;
 			}
-			p1 = page.roLines.getline(fy).toString(ignoreCase).indexOf(s);
+			p1 = page.pageData.roLines.getline(fy).toString(ignoreCase)
+					.indexOf(s);
 			if (p1 >= 0) {
 				return new Point(p1, fy);
 			}
 		}
 		// last half row
-		p1 = page.roLines.getline(y).toString(ignoreCase).substring(x)
+		p1 = page.pageData.roLines.getline(y).toString(ignoreCase).substring(x)
 				.indexOf(s);
 		if (p1 >= 0) {
 			return new Point(p1, fy);
@@ -1103,7 +1109,7 @@ public class U {
 	static void findchar(PlainPage page, char ch, int inc, int[] c1, char chx) {
 		int cx1 = c1[0];
 		int cy1 = c1[1];
-		RoSb csb = page.roLines.getline(cy1);
+		RoSb csb = page.pageData.roLines.getline(cy1);
 		int lv = 1;
 		while (true) {
 			if (inc == -1) {
@@ -1115,7 +1121,7 @@ public class U {
 						c1[1] = -1;
 						return;
 					} else {
-						csb = page.roLines.getline(cy1);
+						csb = page.pageData.roLines.getline(cy1);
 						cx1 = csb.length() - 1;
 						if (cx1 < 0) {
 							continue;
@@ -1137,12 +1143,12 @@ public class U {
 				cx1++;
 				if (cx1 >= csb.length()) {
 					cy1++;
-					if (cy1 >= page.roLines.getLinesize()) {
+					if (cy1 >= page.pageData.roLines.getLinesize()) {
 						c1[0] = -1;
 						c1[1] = -1;
 						return;
 					} else {
-						csb = page.roLines.getline(cy1);
+						csb = page.pageData.roLines.getline(cy1);
 						cx1 = 0;
 						if (cx1 >= csb.length()) {
 							continue;
@@ -1256,18 +1262,19 @@ public class U {
 		return s.substring(0, p);
 	}
 
-	static String getText(PlainPage pp) {
+	static String getText(PlainPage page) {
 		StringBuffer sb = new StringBuffer();
-		int len = pp.roLines.getLinesize();
+		int len = page.pageData.roLines.getLinesize();
 		for (int i = 0; i < len; i++) {
 			if (i > 0)
-				sb.append(pp.lineSep);
-			sb.append(pp.roLines.getline(i).toString());
+				sb.append(page.pageData.lineSep);
+			sb.append(page.pageData.roLines.getline(i).toString());
 		}
 		return sb.toString();
 	}
 
-	static boolean gotoFileLine(String sb) throws Exception {
+	static boolean gotoFileLine(String sb, EditPanel ep,
+			boolean isInPageListPage) throws Exception {
 		int p1, p2;
 		if ((p1 = sb.indexOf("|")) >= 0) {
 			String fn = sb.substring(0, p1);
@@ -1278,7 +1285,9 @@ public class U {
 				} catch (Exception e) {
 				}
 				if (line >= 0) {
-					openFile(fn, line);
+					if (!U.findAndShowPageListPage(ep, fn, line)) {
+						openFile(fn, line, ep);
+					}
 					return true;
 				}
 			}
@@ -1286,28 +1295,28 @@ public class U {
 		return false;
 	}
 
-	static void listDir(PlainPage pp, int atLine) throws Exception {
-		String line = pp.roLines.getline(atLine).toString();
+	static void listDir(PlainPage page, int atLine) throws Exception {
+		String line = page.pageData.roLines.getline(atLine).toString();
 		String fn = line.trim();
 		int p1 = fn.indexOf('|');
 		if (p1 >= 0)
 			fn = fn.substring(0, p1).trim();
 		File f = new File(fn);
 		if (f.isFile() && f.exists()) {
-			openFile(fn, 0);
+			openFile(fn, 0, page.uiComp);
 		} else if (f.isDirectory()) {
 			File[] fs = f.listFiles();
-			pp.cx = line.length();
-			pp.ptEdit.insertString("\n{-----");
+			page.cx = line.length();
+			page.ptEdit.insertString("\n{-----");
 			for (File f1 : fs) {
 				if (f1.isDirectory()) {
-					pp.ptEdit.insertString("\n" + f1.getAbsolutePath()
+					page.ptEdit.insertString("\n" + f1.getAbsolutePath()
 							+ " | <DIR>");
 				} else {
-					pp.ptEdit.insertString("\n" + f1.getAbsolutePath());
+					page.ptEdit.insertString("\n" + f1.getAbsolutePath());
 				}
 			}
-			pp.ptEdit.insertString("\n-----}");
+			page.ptEdit.insertString("\n-----}");
 		}
 	}
 
@@ -1316,8 +1325,8 @@ public class U {
 		String[] commentchars = { "#", "%", "'", "//", "!", ";", "--", "/*",
 				"<!--" };
 		int[] cnts = new int[commentchars.length];
-		for (int i = 0; i < page.roLines.getLinesize(); i++) {
-			RoSb sb = page.roLines.getline(i);
+		for (int i = 0; i < page.pageData.roLines.getLinesize(); i++) {
+			RoSb sb = page.pageData.roLines.getline(i);
 			for (int j = 0; j < cnts.length; j++) {
 				if (sb.substring(0, Math.min(sb.length(), 80)).toString()
 						.trim().startsWith(commentchars[j])) {
@@ -1383,7 +1392,7 @@ public class U {
 			for (String enc : encodings) {
 				String s = new String(buf, enc);
 				if (new String(s.getBytes(enc), enc).equals(s)
-						&& s.indexOf("?�?�") < 0) {
+						&& s.indexOf("?�ｽ?�ｽ") < 0) {
 					return enc;
 				}
 				// byte[] b2 = new String(buf, enc).getBytes(enc);
@@ -1508,57 +1517,60 @@ public class U {
 		tabImgPrint = img.getScaledInstance(20, 8, Image.SCALE_SMOOTH);
 	}
 
-	static void openFile(File f) throws Exception {
+	static PlainPage openFile(File f, EditPanel ep) throws Exception {
 		if (isImageFile(f)) {
-			new PicView().show(f);
+			new PicView(ep).show(f);
+			return null;
 		} else {
-			new EditPanel(f).openWindow();
+			if (ep == null)
+				return null;// ignore
+			return new PlainPage(ep, PageData.newFromFile(f.getCanonicalPath()));
 		}
 	}
 
 	static void openFile(PlainPage page) throws Exception {
 		JFileChooser chooser = new JFileChooser();
 
-		if (page.fn != null) {
-			chooser.setSelectedFile(new File(page.fn));
-		} else if (page.workPath != null) {
-			chooser.setSelectedFile(new File(page.workPath));// Fixme:cannot
-			// set
-			// correctly
+		if (page.pageData.getFn() != null) {
+			chooser.setSelectedFile(new File(page.pageData.getFn()));
+		} else if (page.pageData.workPath != null) {
+			chooser.setSelectedFile(new File(page.pageData.workPath));
+			// check later:cannot set correctly
 		}
 		int returnVal = chooser.showOpenDialog(page.uiComp);
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			System.out.println("You chose to open this file: "
 					+ chooser.getSelectedFile().getAbsolutePath());
 			File f = chooser.getSelectedFile();
-			openFile(f);
+			openFile(f, page.uiComp);
 		}
 	}
 
-	static void openFile(String fn, int line) throws Exception {
+	static void openFile(String fn, int line, EditPanel ep) throws Exception {
 		File f = new File(fn);
 		if (isImageFile(f)) {
 			new PicView().show(f);
 			return;
 		}
-		final PlainPage pp = new EditPanel(new File(fn)).page;
-		if (pp != null && pp.lines.size() > 0) {
+		final PlainPage page = new PlainPage(ep, PageData.newFromFile(f
+				.getCanonicalPath()));
+		if (page != null && page.pageData.lines.size() > 0) {
 			line -= 1;
-			pp.cx = 0;
-			pp.cy = Math.max(0, Math.min(line, pp.lines.size() - 1));
-			pp.sy = Math.max(0, pp.cy - 3);
-			pp.uiComp.openWindow();
-			pp.uiComp.repaint();
+			page.cx = 0;
+			page.cy = Math.max(0,
+					Math.min(line, page.pageData.lines.size() - 1));
+			page.sy = Math.max(0, page.cy - 3);
+			page.uiComp.repaint();
 		}
 	}
 
-	static void openFileHistory() throws Exception {
+	static void openFileHistory(EditPanel ep) throws Exception {
 		File fhn = getFileHistoryName();
-		PlainPage pp = new EditPanel(fhn).page;
-		pp.cy = Math.max(0, pp.lines.size() - 1);
-		pp.sy = Math.max(0, pp.cy - 5);
-		pp.uiComp.openWindow();
-		pp.uiComp.repaint();
+		PlainPage page = new PlainPage(ep, PageData.newFromFile(fhn
+				.getCanonicalPath()));
+		page.cy = Math.max(0, page.pageData.lines.size() - 1);
+		page.sy = Math.max(0, page.cy - 5);
+		page.uiComp.repaint();
 	}
 
 	static void paintNoise(Graphics2D g2, Dimension dim) {
@@ -1574,14 +1586,16 @@ public class U {
 		}
 	}
 
-	static void readFile(PlainPage page, String fn) {
-		page.isCommentChecked = false;
-		if (page.encoding == null) {
-			page.encoding = U.guessEncodingForEditor(fn);
+	static void readFile(PageData data, String fn) {
+		data.isCommentChecked = false;
+		if (data.encoding == null) {
+			data.encoding = U.guessEncodingForEditor(fn);
 		}
-		page.lineSep = U.guessLineSepForEditor(fn);
-		page.ptEdit.setLines(U.readFileForEditor(fn, page.encoding));
-		page.fileLastModified = new File(fn).lastModified();
+		data.lineSep = U.guessLineSepForEditor(fn);
+		data.setLines(U.readFileForEditor(fn, data.encoding));
+		File f = new File(fn);
+		data.fileLastModified = f.lastModified();
+		data.workPath = f.getParent();
 	}
 
 	static List<StringBuffer> readFileForEditor(String fn, String encoding) {
@@ -1619,18 +1633,18 @@ public class U {
 			return;
 		}
 		setEncodingByUser(pp, "Reload with Encoding:");
-		readFile(pp, fn);
+		readFile(pp.pageData, fn);
 	}
 
-	static void removeTrailingSpace(PlainPage page) {
-		for (int i = 0; i < page.roLines.getLinesize(); i++) {
-			RoSb sb = page.roLines.getline(i);
+	static void removeTrailingSpace(PageData data) {
+		for (int i = 0; i < data.roLines.getLinesize(); i++) {
+			RoSb sb = data.roLines.getline(i);
 			int p = sb.length() - 1;
 			while (p >= 0 && "\r\n\t ".indexOf(sb.charAt(p)) >= 0) {
 				p--;
 			}
 			if (p < sb.length() - 1) {
-				page.editRec.deleteInLine(i, p + 1, sb.length());
+				data.editRec.deleteInLine(i, p + 1, sb.length());
 			}
 		}
 	}
@@ -1651,14 +1665,15 @@ public class U {
 	static Point replace(PlainPage page, String s, int x, int y, String s2,
 			boolean all, boolean ignoreCase) {
 		int cnt = 0;
-		U.BasicEdit editRec = page.editRec;
+		U.BasicEdit editRec = page.pageData.editRec;
 		if (ignoreCase) {
 			s = s.toLowerCase();
 		}
 		// first half row
 		int p1 = x;
 		while (true) {
-			p1 = page.roLines.getline(y).toString(ignoreCase).indexOf(s, p1);
+			p1 = page.pageData.roLines.getline(y).toString(ignoreCase)
+					.indexOf(s, p1);
 			if (p1 >= 0) {
 				cnt++;
 				editRec.deleteInLine(y, p1, p1 + s.length());
@@ -1673,14 +1688,14 @@ public class U {
 		}
 		// middle rows
 		int fy = y;
-		for (int i = 0; i < page.roLines.getLinesize() - 1; i++) {
+		for (int i = 0; i < page.pageData.roLines.getLinesize() - 1; i++) {
 			fy += 1;
-			if (fy >= page.roLines.getLinesize()) {
+			if (fy >= page.pageData.roLines.getLinesize()) {
 				fy = 0;
 			}
 			p1 = 0;
 			while (true) {
-				p1 = page.roLines.getline(fy).toString(ignoreCase)
+				p1 = page.pageData.roLines.getline(fy).toString(ignoreCase)
 						.indexOf(s, p1);
 				if (p1 >= 0) {
 					cnt++;
@@ -1697,13 +1712,13 @@ public class U {
 		}
 		// last half row
 		fy += 1;
-		if (fy >= page.roLines.getLinesize()) {
+		if (fy >= page.pageData.roLines.getLinesize()) {
 			fy = 0;
 		}
 		p1 = 0;
 		while (true) {
-			p1 = page.roLines.getline(fy).toString(ignoreCase).substring(0, x)
-					.indexOf(s, p1);
+			p1 = page.pageData.roLines.getline(fy).toString(ignoreCase)
+					.substring(0, x).indexOf(s, p1);
 			if (p1 >= 0) {
 				cnt++;
 				editRec.deleteInLine(fy, p1, p1 + s.length());
@@ -1724,18 +1739,21 @@ public class U {
 		}
 	}
 
-	static void runScript(final PlainPage pp) throws Exception {
+	static void runScript(final PlainPage ppTarget) throws Exception {
 		final JFrame sf = new JFrame("Javascript");
 		sf.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		JPanel p = new JPanel();
 		sf.getContentPane().add(p);
 		SimpleLayout s = new SimpleLayout(p);
 		String sample = "var i=0; \nfunction run(s,cur,max){\nreturn s;\n}";
-		final EditPanel ed = new EditPanel(sample);
-		final PlainPage pp1 = ed.page;
+		final EditPanel ed = new EditPanel();// single window for js, because
+												// has 2 more buttons
+		final PlainPage ppJs = new PlainPage(ed, PageData.newEmpty("js for "
+				+ ppTarget.pageData.getTitle() + " #" + randomID()));
+		ppJs.pageData.setText(sample);
 		ed.frame = sf;
-		pp1.workPath = pp.workPath;
-		s.add(pp1.uiComp);
+		ppJs.pageData.workPath = ppTarget.pageData.workPath;
+		s.add(ppJs.uiComp);
 		s.newline();
 		JButton jb1 = new JButton("run");
 		JButton jb2 = new JButton("close");
@@ -1746,20 +1764,22 @@ public class U {
 			public void actionPerformed(ActionEvent e) {
 				try {
 					ed.grabFocus();
-					List<StringBuffer> newLines = JS
-							.run(pp.lines, getText(pp1));
-					PlainPage pp = new EditPanel("").page;
-					pp.workPath = pp1.workPath;
-					pp.ptEdit.setLines(newLines);
-					pp.uiComp.openWindow();
-					pp.ui.applyColorMode(pp1.ui.colorMode);
+					List<StringBuffer> newLines = JS.run(
+							ppTarget.pageData.lines, getText(ppJs));
+					PlainPage ppResult = new PlainPage(ppTarget.uiComp,
+							PageData.newEmpty("js result for "
+									+ ppTarget.pageData.getTitle() + " #"
+									+ randomID()));
+					ppResult.pageData.workPath = ppTarget.pageData.workPath;
+					ppResult.pageData.setLines(newLines);
+					ppResult.ui.applyColorMode(ppTarget.ui.colorMode);
 				} catch (Exception e1) {
 					System.out.println(e1);
 					String s1 = "" + e1;
 					String expect = "javax.script.ScriptException: sun.org.mozilla.javascript.internal.EvaluatorException:";
 					if (s1.startsWith(expect))
 						s1 = s1.substring(expect.length());
-					pp1.ptEdit.append("\n//Error:" + s1 + "\n");
+					ppJs.ptEdit.append("\n//Error:" + s1 + "\n");
 					ed.repaint();
 				}
 
@@ -1767,7 +1787,7 @@ public class U {
 		});
 		jb2.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if (pp1.history.size() != 0
+				if (ppJs.pageData.history.size() != 0
 						&& JOptionPane.YES_OPTION != JOptionPane
 								.showConfirmDialog(ed,
 										"Are you sure to close?",
@@ -1783,67 +1803,9 @@ public class U {
 		sf.setVisible(true);
 	}
 
-	static void runScriptOnDir(String workPath) throws Exception {
-		final JFrame sf = new JFrame("Javascript On dir");
-		sf.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		JPanel p = new JPanel();
-		sf.getContentPane().add(p);
-		SimpleLayout s = new SimpleLayout(p);
-		String sample = "var dir=\"d:/tmp\";\nfunction onFile(f){\n  return f.getAbsolutePath()+'\t'+f.length();\n}\n";
-		final EditPanel ed = new EditPanel(sample);
-		final PlainPage pp1 = ed.page;
-		ed.frame = sf;
-		pp1.workPath = workPath;
-		s.add(pp1.uiComp);
-		s.newline();
-		JButton jb1 = new JButton("run");
-		JButton jb2 = new JButton("close");
-		s.add(jb1);
-		s.add(jb2);
-		s.newline();
-		jb1.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				try {
-					ed.grabFocus();
-					List<StringBuffer> newLines = JS.runOnDir(getText(pp1));
-					PlainPage pp = new EditPanel("").page;
-					pp.workPath = pp1.workPath;
-					pp.ptEdit.setLines(newLines);
-					pp.uiComp.openWindow();
-					pp.ui.applyColorMode(pp1.ui.colorMode);
-				} catch (Exception e1) {
-					e1.printStackTrace();
-					String s1 = "" + e1;
-					String expect = "javax.script.ScriptException: sun.org.mozilla.javascript.internal.EvaluatorException:";
-					if (s1.startsWith(expect))
-						s1 = s1.substring(expect.length());
-					pp1.ptEdit.append("\n//Error:" + s1 + "\n");
-					ed.repaint();
-				}
-
-			}
-		});
-		jb2.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				if (pp1.history.size() != 0
-						&& JOptionPane.YES_OPTION != JOptionPane
-								.showConfirmDialog(ed,
-										"Are you sure to close?",
-										"Changes made",
-										JOptionPane.YES_NO_OPTION)) {
-					ed.grabFocus();
-					return;
-				}
-				sf.dispose();
-			}
-		});
-		sf.setSize(new Dimension(800, 600));
-		sf.setVisible(true);
-	}
-
 	static void saveAs(PlainPage page) throws Exception {
 		EditPanel editor = page.uiComp;
-		JFileChooser chooser = new JFileChooser(page.fn);
+		JFileChooser chooser = new JFileChooser(page.pageData.getFn());
 		int returnVal = chooser.showSaveDialog(editor);
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			String fn = chooser.getSelectedFile().getAbsolutePath();
@@ -1854,7 +1816,7 @@ public class U {
 				page.ui.message("not renamed");
 				return;
 			}
-			page.fn = fn;
+			page.pageData.setFn(fn);
 			editor.changeTitle();
 			page.ui.message("file renamed");
 			savePageToFile(page);
@@ -1862,8 +1824,8 @@ public class U {
 	}
 
 	static boolean saveFile(PlainPage page) throws Exception {
-		if (page.fn == null) {
-			JFileChooser chooser = new JFileChooser(page.workPath);
+		if (page.pageData.getFn() == null) {
+			JFileChooser chooser = new JFileChooser(page.pageData.workPath);
 			int returnVal = chooser.showSaveDialog(page.uiComp);
 			if (returnVal == JFileChooser.APPROVE_OPTION) {
 				page.isCommentChecked = false;
@@ -1877,7 +1839,7 @@ public class U {
 					page.ui.message("not saved");
 					return false;
 				}
-				page.fn = fn;
+				page.pageData.setFn(fn);
 				page.uiComp.changeTitle();
 
 			} else {
@@ -1898,18 +1860,20 @@ public class U {
 	}
 
 	static boolean savePageToFile(PlainPage page) throws Exception {
-		System.out.println("save " + page.fn);
-		if (page.encoding == null) {
-			page.encoding = UTF8;
+		System.out.println("save " + page.pageData.getFn());
+		if (page.pageData.encoding == null) {
+			page.pageData.encoding = UTF8;
 		}
 		BufferedWriter out = new BufferedWriter(new OutputStreamWriter(
-				new FileOutputStream(page.fn), page.encoding));
-		for (int i = 0; i < page.roLines.getLinesize(); i++) {
-			out.write(page.roLines.getline(i).toString());
-			out.write(page.lineSep);
+				new FileOutputStream(page.pageData.getFn()),
+				page.pageData.encoding));
+		for (int i = 0; i < page.pageData.roLines.getLinesize(); i++) {
+			out.write(page.pageData.roLines.getline(i).toString());
+			out.write(page.pageData.lineSep);
 		}
 		out.close();
-		page.fileLastModified = new File(page.fn).lastModified();
+		page.pageData.fileLastModified = new File(page.pageData.getFn())
+				.lastModified();
 		return true;
 	}
 
@@ -1945,7 +1909,7 @@ public class U {
 
 	static void setEncodingByUser(PlainPage plainPage, String msg) {
 		String s = JOptionPane.showInputDialog(plainPage.uiComp, msg,
-				plainPage.encoding);
+				plainPage.pageData.encoding);
 		if (s == null) {
 			return;
 		}
@@ -1955,7 +1919,7 @@ public class U {
 			plainPage.ui.message("bad encoding:" + s);
 			return;
 		}
-		plainPage.encoding = s;
+		plainPage.pageData.encoding = s;
 	}
 
 	static void setFrameSize(JFrame f, int w, int h) {
@@ -2011,26 +1975,24 @@ public class U {
 
 	}
 
-	static void showResult(EditPanel editor, List<String> all, String dir,
+	static void showResult(PlainPage pp, List<String> all, String dir,
 			String text) throws Exception {
-		EditPanel ep = new EditPanel("");
-		PlainPage p2 = ep.page;
-		p2.workPath = editor.page.workPath;
-		p2.ui.applyColorMode(editor.page.ui.colorMode);
+		PlainPage p2 = new PlainPage(pp.uiComp, PageData.newEmpty(String
+				.format("(%s)'%s' in %s - %s", all.size(), text, dir,
+						PlainPage.WINDOW_NAME)));
+		p2.pageData.workPath = pp.pageData.workPath;
+		p2.ui.applyColorMode(pp.ui.colorMode);
 		List<StringBuffer> sbs = new ArrayList<StringBuffer>();
 		sbs.add(new StringBuffer(String.format(
 				"find %s results in %s for '%s'", all.size(), dir, text)));
 		for (Object o : all) {
 			sbs.add(new StringBuffer(o.toString()));
 		}
-		p2.ptEdit.setLines(sbs);
-		ep.openWindow();
+		p2.pageData.setLines(sbs);
 		if (dir.startsWith("file ")) {
 			File f = new File(dir.substring(5));
 			dir = "file " + f.getName() + " " + f.getParent();
 		}
-		ep.frame.setTitle(String.format("(%s)'%s' in %s - %s", all.size(),
-				text, dir, PlainPage.WINDOW_NAME));
 		gc();
 	}
 
@@ -2179,4 +2141,79 @@ public class U {
 			dt.open(new File(s));
 		}
 	}
+
+	public static int randomID() {
+		return (int) (System.currentTimeMillis() % 1000000);
+	}
+
+	final static String TITLE_OF_PAGES = "__PAGES__";
+
+	public static void showPageListPage(EditPanel ep) throws Exception {
+		if (findAndShowPageListPage(ep, TITLE_OF_PAGES)) {
+			ep.getPage().pageData.setLines(getPageListStrings(ep));// refresh
+			ep.repaint();
+			return;
+		}
+		// boolean isFirstTime = !PageData.dataPool.containsKey(TITLE_OF_PAGES);
+		PageData pd = PageData.newEmpty(TITLE_OF_PAGES);
+		new PlainPage(ep, pd);
+		pd.setLines(getPageListStrings(ep));
+		ep.repaint();
+	}
+
+	static boolean findAndShowPageListPage(EditPanel ep, String title) {
+		for (PlainPage pp : ep.pageSet) {
+			if (pp.pageData.getTitle().equals(title)) {
+				ep.setPage(pp);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	static boolean findAndShowPageListPage(EditPanel ep, String title,
+			int lineNo) {
+		boolean isPLP = title.equals(TITLE_OF_PAGES);
+		for (PlainPage pp : ep.pageSet) {
+			if (pp.pageData.getTitle().equals(title)
+					&& (pp.cy == lineNo || isPLP)) {
+				ep.setPage(pp);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static List<StringBuffer> getPageListStrings(EditPanel ep) {
+		List<StringBuffer> ss = new ArrayList<StringBuffer>();
+		sort(ep.pageSet);
+		for (PlainPage pp : ep.pageSet) {
+			StringBuffer sb = new StringBuffer();
+			sb.append(pp.pageData.getTitle() + "|" + pp.cy + ": "
+					+ (changedOutside(pp) ? "<Changed Outside>" : "")
+					+ " Edited:" + pp.pageData.history.size());
+			ss.add(sb);
+		}
+		return ss;
+	}
+
+	private static boolean changedOutside(PlainPage pp) {
+		PageData page = pp.pageData;
+		if (page.getFn() != null && page.fileLastModified != 0) {
+			long t = new File(page.getFn()).lastModified();
+			if (t > page.fileLastModified + 100) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	static void sort(List<PlainPage> pageSet) {
+		Collections.sort(pageSet, new Comparator<PlainPage>() {
+			public int compare(PlainPage o1, PlainPage o2) {
+				return o1.pageData.getTitle().compareTo(o2.pageData.getTitle());
+			}
+		});
+	}
+
 }

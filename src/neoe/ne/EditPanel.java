@@ -13,10 +13,11 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 public class EditPanel extends JPanel implements MouseMotionListener,
@@ -26,7 +27,7 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 
 	private boolean debugFPS = false;
 
-	private EditPanel() {
+	public EditPanel() throws Exception {
 		setFocusable(true);
 		addMouseMotionListener(this);
 		addMouseListener(this);
@@ -35,17 +36,10 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 		setOpaque(false);
 		setCursor(new Cursor(Cursor.TEXT_CURSOR));
 		setFocusTraversalKeysEnabled(false);
+		new PlainPage(this, PageData.newEmpty("untitled"));
 	}
 
-	public EditPanel(File f) throws Exception {
-		this();
-		page = new PlainPage(this, f);
-	}
-
-	public EditPanel(String text) throws Exception {
-		this();
-		page = new PlainPage(this, text);
-	}
+	List<PlainPage> pageSet = new ArrayList<PlainPage>();
 
 	public void paint(Graphics g) {
 		long t1 = 0;
@@ -64,8 +58,12 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 		}
 	}
 
-	PlainPage page;
+	private PlainPage page;
 	JFrame frame;
+
+	PlainPage getPage() {
+		return page;
+	}
 
 	public void openWindow() throws IOException {
 		if (frame != null)
@@ -78,35 +76,27 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 		frame.getContentPane().add(this);
 		frame.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
-				PlainPage pp = page;
-				pp.ui.closed = true;
-				if (pp.fn != null) {
-					try {
-						U.saveFileHistory(pp.fn, pp.cy);
-					} catch (Exception e1) {
-						e1.printStackTrace();
-					}
-				}
+				// TODO:saveFileHistory, see U.saveFileHistory
 			}
 		});
 
-		frame.setTransferHandler(U.TH);
+		frame.setTransferHandler(new U.TH(this));
 		frame.setVisible(true);
 
 		frame.addWindowListener(new WindowAdapter() {
 			public void windowActivated(WindowEvent e) {
-				if (page.fn != null && page.fileLastModified != 0) {
-					long t = new File(page.fn).lastModified();
-					if (t > page.fileLastModified + 100) {
-						page.fileLastModified = t;
-						JOptionPane.showMessageDialog(frame,
-								"File changed outside.");
-					}
-				}
+				// TODO;check file modified outside
+				/*
+				 * if (page.fn != null && page.fileLastModified != 0) { long t =
+				 * new File(page.fn).lastModified(); if (t >
+				 * page.fileLastModified + 100) { page.fileLastModified = t;
+				 * JOptionPane.showMessageDialog(frame,
+				 * "File changed outside."); } }
+				 */
 
 			}
 		});
-		// page.getFindWindow();
+
 		changeTitle();
 		repaint();
 	}
@@ -118,7 +108,6 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 
 	@Override
 	public void mouseMoved(MouseEvent arg0) {
-		// TODO Auto-generated method stub
 
 	}
 
@@ -130,13 +119,11 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 
 	@Override
 	public void mouseEntered(MouseEvent arg0) {
-		// TODO Auto-generated method stub
 
 	}
 
 	@Override
 	public void mouseExited(MouseEvent arg0) {
-		// TODO Auto-generated method stub
 
 	}
 
@@ -147,7 +134,6 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 
 	@Override
 	public void mouseReleased(MouseEvent arg0) {
-		// TODO Auto-generated method stub
 
 	}
 
@@ -187,20 +173,23 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 		}
 	}
 
-	String getWorkPath() {
-		return page.workPath;
-	}
-
 	void changeTitle() {
 		if (frame == null)
 			return;
-		String fn = page.fn;
+		String fn = page.pageData.getFn();
 		if (fn != null) {
 			frame.setTitle(new File(fn).getName() + " "
-					+ new File(fn).getParent() + " - " + PlainPage.WINDOW_NAME);
+					+ new File(fn).getParent() + " - (" + pageSet.size()
+					+ ") - " + PlainPage.WINDOW_NAME);
 		} else {
-			frame.setTitle(PlainPage.WINDOW_NAME);
+			frame.setTitle(page.pageData.getTitle() + " - (" + pageSet.size()
+					+ ") - " + PlainPage.WINDOW_NAME);
 		}
+	}
+
+	public void setPage(PlainPage pp) {
+		page=pp;
+		changeTitle();		
 	}
 
 }
