@@ -1214,7 +1214,7 @@ public class PlainPage {
 		} else if (kc == KeyEvent.VK_G) {
 			if (cy < pageData.lines.size())
 				if (!U.gotoFileLine(pageData.roLines.getline(cy).toString(),
-						uiComp, pageData.getTitle().equals(U.TITLE_OF_PAGES))) {
+						uiComp, pageData.getTitle().equals(U.titleOfPages(uiComp)))) {
 					U.listDir(PlainPage.this, cy);
 				}
 		} else if (kc == KeyEvent.VK_H) {
@@ -1299,7 +1299,7 @@ public class PlainPage {
 				} else if (kc == KeyEvent.VK_F3) {
 					ptFind.findNext();
 				} else if (kc == KeyEvent.VK_F5) {
-					if (pageData.getTitle().equals(U.TITLE_OF_PAGES)) {
+					if (pageData.getTitle().equals(U.titleOfPages(uiComp))) {
 						pageData.setLines(U.getPageListStrings(uiComp));
 					}
 					U.reloadWithEncodingByUser(pageData.getFn(), this);
