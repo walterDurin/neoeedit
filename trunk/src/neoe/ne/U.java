@@ -2146,16 +2146,20 @@ public class U {
 		return (int) (System.currentTimeMillis() % 1000000);
 	}
 
-	final static String TITLE_OF_PAGES = "__PAGES__";
+	private final static String _TITLE_OF_PAGES = "__PAGES__";
+
+	static String titleOfPages(EditPanel ep) {
+		return _TITLE_OF_PAGES + "@" + ep.hashCode();
+	}
 
 	public static void showPageListPage(EditPanel ep) throws Exception {
-		if (findAndShowPageListPage(ep, TITLE_OF_PAGES)) {
+		if (findAndShowPageListPage(ep, titleOfPages(ep))) {
 			ep.getPage().pageData.setLines(getPageListStrings(ep));// refresh
 			ep.repaint();
 			return;
 		}
 		// boolean isFirstTime = !PageData.dataPool.containsKey(TITLE_OF_PAGES);
-		PageData pd = PageData.newEmpty(TITLE_OF_PAGES);
+		PageData pd = PageData.newEmpty(titleOfPages(ep));
 		new PlainPage(ep, pd);
 		pd.setLines(getPageListStrings(ep));
 		ep.repaint();
@@ -2173,7 +2177,7 @@ public class U {
 
 	static boolean findAndShowPageListPage(EditPanel ep, String title,
 			int lineNo) {
-		boolean isPLP = title.equals(TITLE_OF_PAGES);
+		boolean isPLP = title.equals(titleOfPages(ep));
 		for (PlainPage pp : ep.pageSet) {
 			if (pp.pageData.getTitle().equals(title)
 					&& (pp.cy == lineNo || isPLP)) {
