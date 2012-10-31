@@ -153,6 +153,24 @@ public class PlainPage {
 			}
 		}
 
+		void moveToPair() {
+			// move cursor between (){}[]<> pair
+			if (cx - 1 < pageData.roLines.getline(cy).length() && cx - 1 >= 0) {
+				char c = pageData.roLines.getline(cy).charAt(cx - 1);
+				String pair = "(){}[]<>";
+				int p1 = pair.indexOf(c);
+				if (p1 >= 0) {
+					if (p1 % 2 == 0) {
+						PlainPage.this.ui.commentor.moveToPairMark(cx - 1, cy,
+								pair.charAt(p1 + 1), c, 1);
+					} else {
+						PlainPage.this.ui.commentor.moveToPairMark(cx - 1, cy,
+								pair.charAt(p1 - 1), c, -1);
+					}
+				}
+			}
+		}
+
 		void moveUp() {
 			cy -= 1;
 			if (cy < 0) {
@@ -183,29 +201,272 @@ public class PlainPage {
 			cx = Math
 					.max(0, Math.min(pageData.roLines.getline(cy).length(), x));
 		}
+	}
 
-		void moveToPair() {
-			// move cursor between (){}[]<> pair
-			if (cx - 1 < pageData.roLines.getline(cy).length() && cx - 1 >= 0) {
-				char c = pageData.roLines.getline(cy).charAt(cx - 1);
-				String pair = "(){}[]<>";
-				int p1 = pair.indexOf(c);
-				if (p1 >= 0) {
-					if (p1 % 2 == 0) {
-						PlainPage.this.ui.commentor.moveToPairMark(cx - 1, cy,
-								pair.charAt(p1 + 1), c, 1);
-					} else {
-						PlainPage.this.ui.commentor.moveToPairMark(cx - 1, cy,
-								pair.charAt(p1 - 1), c, -1);
+	class EasyEdit {
+		void append(String s) {
+			cy = pageData.roLines.getLinesize() - 1;
+			cx = pageData.roLines.getline(cy).length();
+			insertString(s);
+		}
+
+		void deleteLine(int cy) {
+			cx = 0;
+			int len = pageData.roLines.getline(cy).length();
+			if (len > 0) {
+				pageData.editRec.deleteInLine(cy, 0, len);
+			}
+			pageData.editRec.deleteEmptyLine(cy);
+		}
+
+		void deleteRect(Rectangle r) {
+			int x1 = r.x;
+			int y1 = r.y;
+			int x2 = r.width;
+			int y2 = r.height;
+			if (rectSelectMode) {
+				for (int i = y1; i <= y2; i++) {
+					pageData.editRec.deleteInLine(i, x1, x2);
+				}
+				selectstartx = x1;
+				selectstopx = x1;
+			} else {
+				if (y1 == y2 && x1 < x2) {
+					pageData.editRec.deleteInLine(y1, x1, x2);
+				} else if (y1 < y2) {
+					pageData.editRec.deleteInLine(y1, x1, Integer.MAX_VALUE);
+					pageData.editRec.deleteInLine(y2, 0, x2);
+					for (int i = y1 + 1; i < y2; i++) {
+						deleteLine(y1 + 1);
 					}
+					pageData.editRec.mergeLine(y1);
 				}
 			}
+			cx = x1;
+			cy = y1;
+			if (y2 - y1 > 400) {
+				U.gc();
+			}
+			focusCursor();
+		}
+
+		void insert(char ch) {
+			if (ch == KeyEvent.VK_ENTER) {
+				if (ptSelection.isSelected()) {
+					deleteRect(ptSelection.getSelectRect());
+				}
+				RoSb sb = pageData.roLines.getline(cy);
+				String indent = U.getIndent(sb.toString());
+				String s = sb.substring(cx, sb.length());
+				pageData.editRec.insertEmptyLine(cy + 1);
+				pageData.editRec
+						.insertInLine(cy + 1, 0, indent + U.trimLeft(s));
+				pageData.editRec.deleteInLine(cy, cx, Integer.MAX_VALUE);
+				cy += 1;
+				cx = indent.length();
+			} else if (ch == KeyEvent.VK_BACK_SPACE) {
+				if (ptSelection.isSelected()) {
+					deleteRect(ptSelection.getSelectRect());
+				} else {
+					if (rectSelectMode) {
+						if (cx > 0) {
+							Rectangle r = ptSelection.getSelectRect();
+							for (int i = r.y; i <= r.height; i++) {
+								pageData.editRec.deleteInLine(i, cx - 1, cx);
+							}
+							cx--;
+							selectstartx = cx;
+							selectstopx = cx;
+						}
+					} else {
+						if (cx > 0) {
+							pageData.editRec.deleteInLine(cy, cx - 1, cx);
+							cx -= 1;
+						} else {
+							if (cy > 0) {
+								cx = pageData.roLines.getline(cy - 1).length();
+								pageData.editRec.mergeLine(cy - 1);
+								cy -= 1;
+							}
+						}
+					}
+				}
+			} else if (ch == KeyEvent.VK_DELETE) {
+				if (ptSelection.isSelected()) {
+					deleteRect(ptSelection.getSelectRect());
+				} else {
+					if (rectSelectMode) {
+						Rectangle r = ptSelection.getSelectRect();
+						for (int i = r.y; i <= r.height; i++) {
+							pageData.editRec.deleteInLine(i, cx, cx + 1);
+						}
+						selectstartx = cx;
+						selectstopx = cx;
+					} else {
+						if (cx < pageData.roLines.getline(cy).length()) {
+							pageData.editRec.deleteInLine(cy, cx, cx + 1);
+						} else {
+							if (cy < pageData.roLines.getLinesize() - 1) {
+								pageData.editRec.mergeLine(cy);
+							}
+						}
+					}
+				}
+			} else if (ch == KeyEvent.VK_ESCAPE) {
+				ptSelection.cancelSelect();
+			} else {
+				if (ptSelection.isSelected()) {
+					deleteRect(ptSelection.getSelectRect());
+				}
+				if (rectSelectMode) {
+					Rectangle r = ptSelection.getSelectRect();
+					for (int i = r.y; i <= r.height; i++) {
+						pageData.editRec.insertInLine(i, cx, "" + ch);
+					}
+					cx += 1;
+					selectstartx = cx;
+					selectstopx = cx;
+				} else {
+					pageData.editRec.insertInLine(cy, cx, "" + ch);
+					cx += 1;
+				}
+			}
+			focusCursor();
+			if (!rectSelectMode) {
+				ptSelection.cancelSelect();
+			}
+			uiComp.repaint();
+		}
+
+		void insertString(String s) {
+			String[] ss = U.splitLine(s);
+			insertString(ss);
+		}
+
+		void insertString(String[] ss) {
+			if (rectSelectMode) {
+				Rectangle rect = ptSelection.getSelectRect();
+				int pi = 0;
+				for (int iy = rect.y; iy <= rect.height; iy++) {
+					String s1 = ss[pi];
+					pageData.editRec.insertInLine(iy, cx, s1);
+					pi++;
+					if (pi >= ss.length)
+						pi = 0;
+				}
+				if (ss.length == 1) {
+					selectstartx += ss[0].length();
+					selectstopx += ss[0].length();
+					cx += ss[0].length();
+					saveSelectionCancel = true;
+				}
+			} else {
+				if (ss.length == 1) {
+					pageData.editRec.insertInLine(cy, cx, ss[0]);
+					cx += ss[0].length();
+				} else {
+					String rem = pageData.roLines.getInLine(cy, cx,
+							Integer.MAX_VALUE);
+					pageData.editRec.deleteInLine(cy, cx, Integer.MAX_VALUE);
+					pageData.editRec.insertInLine(cy, cx, ss[0]);
+					for (int i = 1; i < ss.length; i++) {
+						pageData.editRec.insertEmptyLine(cy + i);
+						pageData.editRec.insertInLine(cy + i, 0, ss[i]);
+					}
+					cy += ss.length - 1;
+					cx = ss[ss.length - 1].length();
+					pageData.editRec.insertInLine(cy, cx, rem);
+				}
+			}
+			if (ss.length >= 5 && ui.comment == null) {
+				new Thread() {
+					public void run() {
+						U.guessComment(PlainPage.this);
+					}
+				}.start();
+			}
+			focusCursor();
+		}
+
+		void moveLineLeft(int cy) {
+			String s = pageData.roLines.getline(cy).toString();
+			if (s.length() > 0 && (s.charAt(0) == '\t' || s.charAt(0) == ' ')) {
+				pageData.editRec.deleteInLine(cy, 0, 1);
+			}
+			cx -= 1;
+			if (cx < 0) {
+				cx = 0;
+			}
+		}
+
+		void moveLineRight(int cy) {
+			pageData.editRec.insertInLine(cy, 0, "\t");
+			cx += 1;
+		}
+
+		void moveRectLeft(int from, int to) {
+			for (int i = from; i <= to; i++) {
+				moveLineLeft(i);
+			}
+		}
+
+		void moveRectRight(int from, int to) {
+			for (int i = from; i <= to; i++) {
+				moveLineRight(i);
+			}
+		}
+
+		void setLength(int cy, int cx) {
+			int oldLen = pageData.roLines.getline(cy).length();
+			if (cx - oldLen > 0)
+				pageData.editRec
+						.insertInLine(cy, oldLen, U.spaces(cx - oldLen));
+		}
+
+		void wrapLines(int cx) throws Exception {
+			int lineLen = 0;
+			{
+				int len = 0;
+				String sb = pageData.roLines.getInLine(cy, 0, cx);
+				for (int i = 0; i < sb.length(); i++) {
+					len += (sb.charAt(i) > 255) ? 2 : 1;
+				}
+				lineLen = Math.max(10, len);
+			}
+			ui.message("wrapLine at " + lineLen);
+			if (ptSelection.isSelected()) {
+				ptSelection.cancelSelect();
+			}
+			List<StringBuffer> newtext = new ArrayList<StringBuffer>();
+			for (int y = 0; y < pageData.lines.size(); y++) {
+				if (pageData.lines.get(y).length() * 2 > lineLen) {
+					int len = 0;
+					RoSb sb = pageData.roLines.getline(y);
+					int start = 0;
+					for (int i = 0; i < sb.length(); i++) {
+						len += (sb.charAt(i) > 255) ? 2 : 1;
+						if (len >= lineLen) {
+							newtext.add(new StringBuffer(sb.substring(start,
+									i + 1)));
+							start = i + 1;
+							len = 0;
+						}
+					}
+					if (start < sb.length()) {
+						newtext.add(new StringBuffer(sb.substring(start)));
+					}
+				} else {
+					newtext.add(new StringBuffer(pageData.lines.get(y)));
+				}
+			}
+			String title = "wrapped " + pageData.getTitle() + " #"
+					+ U.randomID();
+			PlainPage p2 = new PlainPage(uiComp, PageData.newEmpty(title));
+			p2.pageData.setLines(newtext);
 		}
 	}
 
 	class Paint {
-		long MSG_VANISH_TIME = 3000;
-
 		class Comment {
 			void markBox(Graphics2D g2, int x, int y) {
 				if (y >= sy && y <= sy + showLineCnt && x >= sx) {
@@ -258,6 +519,16 @@ public class PlainPage {
 				}
 			}
 
+			void moveToPairMark(int cx2, int cy2, char ch, char ch2, int inc) {
+				int[] c1 = new int[] { cx2, cy2 };
+				U.findchar(PlainPage.this, ch, inc, c1, ch2);
+				if (c1[0] >= 0) {// found
+					cx = c1[0] + 1;
+					cy = c1[1];
+					focusCursor();
+				}
+			}
+
 			void pairMark(Graphics2D g2, int cx2, int cy2, char ch, char ch2,
 					int inc) {
 				int[] c1 = new int[] { cx2, cy2 };
@@ -270,16 +541,6 @@ public class PlainPage {
 					}
 				}
 			}
-
-			void moveToPairMark(int cx2, int cy2, char ch, char ch2, int inc) {
-				int[] c1 = new int[] { cx2, cy2 };
-				U.findchar(PlainPage.this, ch, inc, c1, ch2);
-				if (c1[0] >= 0) {// found
-					cx = c1[0] + 1;
-					cy = c1[1];
-					focusCursor();
-				}
-			}
 		}
 
 		static final int TABWIDTH = 40;
@@ -287,6 +548,7 @@ public class PlainPage {
 		BufferedImage aboutImg;
 
 		boolean aboutOn;
+
 		int aboutY;
 		boolean closed = false;
 		Color colorBg, colorComment, colorComment2, colorCurrentLineBg,
@@ -314,6 +576,7 @@ public class PlainPage {
 		int gutterWidth = 40;
 		int lineGap = 5;
 		int lineHeight = 10;
+		long MSG_VANISH_TIME = 3000;
 
 		boolean noise = false;
 
@@ -407,17 +670,6 @@ public class PlainPage {
 			return w;
 		}
 
-		private int getCommentPos(String s) {
-			if (comment == null)
-				return -1;
-			for (String c : comment) {
-				int p = s.indexOf(c);
-				if (p >= 0)
-					return p;
-			}
-			return -1;
-		}
-
 		int drawText(Graphics2D g2, String s, int x, int y, boolean isComment) {
 			int w = 0;
 			if (isComment) {
@@ -502,6 +754,17 @@ public class PlainPage {
 					g2.drawString(msg, dim.width - w, lineHeight);
 				}
 			}
+		}
+
+		private int getCommentPos(String s) {
+			if (comment == null)
+				return -1;
+			for (String c : comment) {
+				int p = s.indexOf(c);
+				if (p >= 0)
+					return p;
+			}
+			return -1;
 		}
 
 		void message(final String s) {
@@ -828,298 +1091,37 @@ public class PlainPage {
 	}
 
 	static final String WINDOW_NAME = "neoeedit " + Version.REV;
-
 	Cursor cursor = new Cursor();
-	PageData pageData;
 
 	int cx;
 	int cy;
+	boolean ignoreCase = true;
+	boolean isCommentChecked = false;
 	int mcount;
 	String msg;
 	long msgtime;
 	boolean mshift;
-	int mx, my;
-	int toolbarHeight = 25;
 
 	//
 
-	boolean ignoreCase = true;
-	boolean isCommentChecked = false;
-
-	class EasyEdit {
-		void append(String s) {
-			cy = pageData.roLines.getLinesize() - 1;
-			cx = pageData.roLines.getline(cy).length();
-			insertString(s);
-		}
-
-		void deleteLine(int cy) {
-			cx = 0;
-			int len = pageData.roLines.getline(cy).length();
-			if (len > 0) {
-				pageData.editRec.deleteInLine(cy, 0, len);
-			}
-			pageData.editRec.deleteEmptyLine(cy);
-		}
-
-		void deleteRect(Rectangle r) {
-			int x1 = r.x;
-			int y1 = r.y;
-			int x2 = r.width;
-			int y2 = r.height;
-			if (rectSelectMode) {
-				for (int i = y1; i <= y2; i++) {
-					pageData.editRec.deleteInLine(i, x1, x2);
-				}
-				selectstartx = x1;
-				selectstopx = x1;
-			} else {
-				if (y1 == y2 && x1 < x2) {
-					pageData.editRec.deleteInLine(y1, x1, x2);
-				} else if (y1 < y2) {
-					pageData.editRec.deleteInLine(y1, x1, Integer.MAX_VALUE);
-					pageData.editRec.deleteInLine(y2, 0, x2);
-					for (int i = y1 + 1; i < y2; i++) {
-						deleteLine(y1 + 1);
-					}
-					pageData.editRec.mergeLine(y1);
-				}
-			}
-			cx = x1;
-			cy = y1;
-			if (y2 - y1 > 400) {
-				U.gc();
-			}
-			focusCursor();
-		}
-
-		void insert(char ch) {
-			if (ch == KeyEvent.VK_ENTER) {
-				if (ptSelection.isSelected()) {
-					deleteRect(ptSelection.getSelectRect());
-				}
-				RoSb sb = pageData.roLines.getline(cy);
-				String indent = U.getIndent(sb.toString());
-				String s = sb.substring(cx, sb.length());
-				pageData.editRec.insertEmptyLine(cy + 1);
-				pageData.editRec
-						.insertInLine(cy + 1, 0, indent + U.trimLeft(s));
-				pageData.editRec.deleteInLine(cy, cx, Integer.MAX_VALUE);
-				cy += 1;
-				cx = indent.length();
-			} else if (ch == KeyEvent.VK_BACK_SPACE) {
-				if (ptSelection.isSelected()) {
-					deleteRect(ptSelection.getSelectRect());
-				} else {
-					if (rectSelectMode) {
-						if (cx > 0) {
-							Rectangle r = ptSelection.getSelectRect();
-							for (int i = r.y; i <= r.height; i++) {
-								pageData.editRec.deleteInLine(i, cx - 1, cx);
-							}
-							cx--;
-							selectstartx = cx;
-							selectstopx = cx;
-						}
-					} else {
-						if (cx > 0) {
-							pageData.editRec.deleteInLine(cy, cx - 1, cx);
-							cx -= 1;
-						} else {
-							if (cy > 0) {
-								cx = pageData.roLines.getline(cy - 1).length();
-								pageData.editRec.mergeLine(cy - 1);
-								cy -= 1;
-							}
-						}
-					}
-				}
-			} else if (ch == KeyEvent.VK_DELETE) {
-				if (ptSelection.isSelected()) {
-					deleteRect(ptSelection.getSelectRect());
-				} else {
-					if (rectSelectMode) {
-						Rectangle r = ptSelection.getSelectRect();
-						for (int i = r.y; i <= r.height; i++) {
-							pageData.editRec.deleteInLine(i, cx, cx + 1);
-						}
-						selectstartx = cx;
-						selectstopx = cx;
-					} else {
-						if (cx < pageData.roLines.getline(cy).length()) {
-							pageData.editRec.deleteInLine(cy, cx, cx + 1);
-						} else {
-							if (cy < pageData.roLines.getLinesize() - 1) {
-								pageData.editRec.mergeLine(cy);
-							}
-						}
-					}
-				}
-			} else if (ch == KeyEvent.VK_ESCAPE) {
-				ptSelection.cancelSelect();
-			} else {
-				if (ptSelection.isSelected()) {
-					deleteRect(ptSelection.getSelectRect());
-				}
-				if (rectSelectMode) {
-					Rectangle r = ptSelection.getSelectRect();
-					for (int i = r.y; i <= r.height; i++) {
-						pageData.editRec.insertInLine(i, cx, "" + ch);
-					}
-					cx += 1;
-					selectstartx = cx;
-					selectstopx = cx;
-				} else {
-					pageData.editRec.insertInLine(cy, cx, "" + ch);
-					cx += 1;
-				}
-			}
-			focusCursor();
-			if (!rectSelectMode) {
-				ptSelection.cancelSelect();
-			}
-			uiComp.repaint();
-		}
-
-		void insertString(String s) {
-			String[] ss = U.splitLine(s);
-			insertString(ss);
-		}
-
-		void insertString(String[] ss) {
-			if (rectSelectMode) {
-				Rectangle rect = ptSelection.getSelectRect();
-				int pi = 0;
-				for (int iy = rect.y; iy <= rect.height; iy++) {
-					String s1 = ss[pi];
-					pageData.editRec.insertInLine(iy, cx, s1);
-					pi++;
-					if (pi >= ss.length)
-						pi = 0;
-				}
-				if (ss.length == 1) {
-					selectstartx += ss[0].length();
-					selectstopx += ss[0].length();
-					cx += ss[0].length();
-					saveSelectionCancel = true;
-				}
-			} else {
-				if (ss.length == 1) {
-					pageData.editRec.insertInLine(cy, cx, ss[0]);
-					cx += ss[0].length();
-				} else {
-					String rem = pageData.roLines.getInLine(cy, cx,
-							Integer.MAX_VALUE);
-					pageData.editRec.deleteInLine(cy, cx, Integer.MAX_VALUE);
-					pageData.editRec.insertInLine(cy, cx, ss[0]);
-					for (int i = 1; i < ss.length; i++) {
-						pageData.editRec.insertEmptyLine(cy + i);
-						pageData.editRec.insertInLine(cy + i, 0, ss[i]);
-					}
-					cy += ss.length - 1;
-					cx = ss[ss.length - 1].length();
-					pageData.editRec.insertInLine(cy, cx, rem);
-				}
-			}
-			if (ss.length >= 5 && ui.comment == null) {
-				new Thread() {
-					public void run() {
-						U.guessComment(PlainPage.this);
-					}
-				}.start();
-			}
-			focusCursor();
-		}
-
-		void moveLineLeft(int cy) {
-			String s = pageData.roLines.getline(cy).toString();
-			if (s.length() > 0 && (s.charAt(0) == '\t' || s.charAt(0) == ' ')) {
-				pageData.editRec.deleteInLine(cy, 0, 1);
-			}
-			cx -= 1;
-			if (cx < 0) {
-				cx = 0;
-			}
-		}
-
-		void moveLineRight(int cy) {
-			pageData.editRec.insertInLine(cy, 0, "\t");
-			cx += 1;
-		}
-
-		void moveRectLeft(int from, int to) {
-			for (int i = from; i <= to; i++) {
-				moveLineLeft(i);
-			}
-		}
-
-		void moveRectRight(int from, int to) {
-			for (int i = from; i <= to; i++) {
-				moveLineRight(i);
-			}
-		}
-
-		void setLength(int cy, int cx) {
-			int oldLen = pageData.roLines.getline(cy).length();
-			if (cx - oldLen > 0)
-				pageData.editRec
-						.insertInLine(cy, oldLen, U.spaces(cx - oldLen));
-		}
-
-		void wrapLines(int cx) throws Exception {
-			int lineLen = 0;
-			{
-				int len = 0;
-				String sb = pageData.roLines.getInLine(cy, 0, cx);
-				for (int i = 0; i < sb.length(); i++) {
-					len += (sb.charAt(i) > 255) ? 2 : 1;
-				}
-				lineLen = Math.max(10, len);
-			}
-			ui.message("wrapLine at " + lineLen);
-			if (ptSelection.isSelected()) {
-				ptSelection.cancelSelect();
-			}
-			List<StringBuffer> newtext = new ArrayList<StringBuffer>();
-			for (int y = 0; y < pageData.lines.size(); y++) {
-				if (pageData.lines.get(y).length() * 2 > lineLen) {
-					int len = 0;
-					RoSb sb = pageData.roLines.getline(y);
-					int start = 0;
-					for (int i = 0; i < sb.length(); i++) {
-						len += (sb.charAt(i) > 255) ? 2 : 1;
-						if (len >= lineLen) {
-							newtext.add(new StringBuffer(sb.substring(start,
-									i + 1)));
-							start = i + 1;
-							len = 0;
-						}
-					}
-					if (start < sb.length()) {
-						newtext.add(new StringBuffer(sb.substring(start)));
-					}
-				} else {
-					newtext.add(new StringBuffer(pageData.lines.get(y)));
-				}
-			}
-			String title = "wrapped " + pageData.getTitle() + " #"
-					+ U.randomID();
-			PlainPage p2 = new PlainPage(uiComp, PageData.newEmpty(title));
-			p2.pageData.setLines(newtext);
-		}
-	}
+	int mx, my;
+	PageData pageData;
 
 	EasyEdit ptEdit = new EasyEdit();
+
 	U.FindAndReplace ptFind = new U.FindAndReplace(this);
 	Selection ptSelection = new Selection();
 	boolean rectSelectMode = false;
-
 	boolean saveSelectionCancel;
+
+	String searchResultOf;
 	int selectstartx, selectstarty, selectstopx, selectstopy;
 	int showLineCnt;
 	int sy, sx;
 
+	int toolbarHeight = 25;
 	Paint ui = new Paint();
+
 	EditPanel uiComp;
 
 	private PlainPage() {
@@ -1132,6 +1134,27 @@ public class PlainPage {
 		editor.pageSet.add(this);
 		editor.setPage(this);
 		editor.changeTitle();
+		data.ref++;
+	}
+
+	public void close() {
+		int index = uiComp.pageSet.indexOf(this);
+		uiComp.pageSet.remove(this);
+
+		pageData.ref--;
+		if (pageData.ref == 0)
+			pageData.close();
+
+		index++;
+		if (index >= uiComp.pageSet.size()) {
+			index = uiComp.pageSet.size() - 1;
+		}
+		if (index >= 0) {
+			uiComp.setPage(uiComp.pageSet.get(index));
+		} else {
+			// nothing to show
+			uiComp.frame.dispose();
+		}
 	}
 
 	void focusCursor() {
@@ -1142,139 +1165,6 @@ public class PlainPage {
 			if (sy + showLineCnt - 1 < cy) {
 				sy = Math.max(0, cy - showLineCnt / 2 + 1);
 			}
-		}
-	}
-
-	void keyPressedWithControlDown(KeyEvent env) throws Exception {
-		int kc = env.getKeyCode();
-		if (kc == KeyEvent.VK_C) {
-			ptSelection.copySelected();
-		} else if (kc == KeyEvent.VK_V) {
-			if (ptSelection.isSelected()) {
-				ptEdit.deleteRect(ptSelection.getSelectRect());
-			}
-			ptEdit.insertString(U.getClipBoard());
-		} else if (kc == KeyEvent.VK_X) {
-			ptSelection.cutSelected();
-		} else if (kc == KeyEvent.VK_A) {
-			ptSelection.selectAll();
-		} else if (kc == KeyEvent.VK_D) {
-			if (ptSelection.isSelected()) {
-				ptEdit.deleteRect(ptSelection.getSelectRect());
-			} else {
-				ptEdit.deleteLine(cy);
-			}
-			focusCursor();
-		} else if (kc == KeyEvent.VK_O) {
-			U.openFile(this);
-		} else if (kc == KeyEvent.VK_N) {
-			new PlainPage(uiComp, PageData.newEmpty("unsaved #" + U.randomID()));
-		} else if (kc == KeyEvent.VK_M) {
-			EditPanel ep = new EditPanel();
-			ep.openWindow();
-		} else if (kc == KeyEvent.VK_S) {
-			if (U.saveFile(this)) {
-				System.out.println("saved");
-				ui.message("saved");
-			}
-		} else if (kc == KeyEvent.VK_L) {
-			cursor.gotoLine();
-		} else if (kc == KeyEvent.VK_Z) {
-			pageData.history.undo(this);
-		} else if (kc == KeyEvent.VK_F) {
-			ptFind.showFindDialog();
-		} else if (kc == KeyEvent.VK_Y) {
-			pageData.history.redo(this);
-		} else if (kc == KeyEvent.VK_W) {
-			U.closePage(this);
-		} else if (kc == KeyEvent.VK_E) {
-			U.setEncodingByUser(this, "Set Encoding:");
-		} else if (kc == KeyEvent.VK_PAGE_UP) {
-			cy = 0;
-			cx = 0;
-			focusCursor();
-		} else if (kc == KeyEvent.VK_PAGE_DOWN) {
-			cy = pageData.roLines.getLinesize() - 1;
-			cx = 0;
-			focusCursor();
-		} else if (kc == KeyEvent.VK_R) {
-			U.removeTrailingSpace(pageData);
-		} else if (kc == KeyEvent.VK_LEFT) {
-			cursor.moveLeftWord();
-			focusCursor();
-		} else if (kc == KeyEvent.VK_RIGHT) {
-			cursor.moveRightWord();
-			focusCursor();
-		} else if (kc == KeyEvent.VK_UP) {
-			sy = Math.max(0, sy - 1);
-		} else if (kc == KeyEvent.VK_DOWN) {
-			sy = Math.min(sy + 1, pageData.roLines.getLinesize() - 1);
-		} else if (kc == KeyEvent.VK_0) {
-			ui.scalev = 1;
-		} else if (kc == KeyEvent.VK_G) {
-			if (cy < pageData.lines.size())
-				if (!U.gotoFileLine(pageData.roLines.getline(cy).toString(),
-						uiComp, pageData.getTitle().equals(U.titleOfPages(uiComp)))) {
-					U.listDir(PlainPage.this, cy);
-				}
-		} else if (kc == KeyEvent.VK_H) {
-			U.openFileHistory(uiComp);
-		} else if (kc == KeyEvent.VK_P) {
-			new U.Print(PlainPage.this).printPages();
-		} else if (kc == KeyEvent.VK_ENTER) {
-			cursor.moveEnd();
-			focusCursor();
-		} else if (kc == KeyEvent.VK_TAB) {
-			U.showPageListPage(uiComp);
-		} else if (!Character.isIdentifierIgnorable(kc)) {
-			unknownCommand(env);
-		}
-	}
-
-	void keyPressedWithAltDown(KeyEvent env) throws Exception {
-		int kc = env.getKeyCode();
-		if (kc == KeyEvent.VK_LEFT) {
-			ptEdit.moveLineLeft(cy);
-			focusCursor();
-		} else if (kc == KeyEvent.VK_RIGHT) {
-			ptEdit.moveLineRight(cy);
-			focusCursor();
-		} else if (kc == KeyEvent.VK_BACK_SLASH) {
-			rectSelectMode = !rectSelectMode;
-		} else if (kc == KeyEvent.VK_N) {
-			ui.noise = !ui.noise;
-			if (ui.noise) {
-				U.startNoiseThread(ui, uiComp);
-			}
-		} else if (kc == KeyEvent.VK_S) {
-			if (pageData.lineSep.equals("\n"))
-				pageData.lineSep = "\r\n";
-			else
-				pageData.lineSep = "\n";
-		} else if (kc == KeyEvent.VK_W) {
-			ptEdit.wrapLines(cx);
-			focusCursor();
-		} else if (kc == KeyEvent.VK_J) {
-			U.runScript(this);
-			// } else if (kc == KeyEvent.VK_D) {
-			// U.runScriptOnDir(pageData.workPath);
-			// i never used this function, so delete it
-		} else if (kc == KeyEvent.VK_PAGE_UP) {
-			cx = Math.max(0, cx - uiComp.getWidth() / 10);
-			focusCursor();
-		} else if (kc == KeyEvent.VK_PAGE_DOWN) {
-			cx = cx + uiComp.getWidth() / 10;
-			focusCursor();
-		} else if (kc == KeyEvent.VK_C) {
-			ui.setNextColorMode();
-			ui.applyColorMode(ui.colorMode);
-		} else if (kc == KeyEvent.VK_P) {
-			cursor.moveToPair();
-		} else if (kc == KeyEvent.VK_L) {
-			if (cy < pageData.lines.size())
-				U.launch(pageData.roLines.getline(cy).toString());
-		} else if (!Character.isIdentifierIgnorable(kc)) {
-			unknownCommand(env);
 		}
 	}
 
@@ -1353,19 +1243,143 @@ public class PlainPage {
 		pageData.history.endAtom();
 	}
 
-	private void unknownCommand(KeyEvent env) {
-		StringBuilder sb = new StringBuilder();
-		if (env.isControlDown())
-			sb.append("Ctrl");
-		if (env.isAltDown()) {
-			if (sb.length() > 0)
-				sb.append("-");
-			sb.append("Alt");
+	void keyPressedWithAltDown(KeyEvent env) throws Exception {
+		int kc = env.getKeyCode();
+		if (kc == KeyEvent.VK_LEFT) {
+			ptEdit.moveLineLeft(cy);
+			focusCursor();
+		} else if (kc == KeyEvent.VK_RIGHT) {
+			ptEdit.moveLineRight(cy);
+			focusCursor();
+		} else if (kc == KeyEvent.VK_BACK_SLASH) {
+			rectSelectMode = !rectSelectMode;
+		} else if (kc == KeyEvent.VK_N) {
+			ui.noise = !ui.noise;
+			if (ui.noise) {
+				U.startNoiseThread(ui, uiComp);
+			}
+		} else if (kc == KeyEvent.VK_S) {
+			if (pageData.lineSep.equals("\n"))
+				pageData.lineSep = "\r\n";
+			else
+				pageData.lineSep = "\n";
+		} else if (kc == KeyEvent.VK_W) {
+			ptEdit.wrapLines(cx);
+			focusCursor();
+		} else if (kc == KeyEvent.VK_J) {
+			U.runScript(this);
+			// } else if (kc == KeyEvent.VK_D) {
+			// U.runScriptOnDir(pageData.workPath);
+			// i never used this function, so delete it
+		} else if (kc == KeyEvent.VK_PAGE_UP) {
+			cx = Math.max(0, cx - uiComp.getWidth() / 10);
+			focusCursor();
+		} else if (kc == KeyEvent.VK_PAGE_DOWN) {
+			cx = cx + uiComp.getWidth() / 10;
+			focusCursor();
+		} else if (kc == KeyEvent.VK_C) {
+			ui.setNextColorMode();
+			ui.applyColorMode(ui.colorMode);
+		} else if (kc == KeyEvent.VK_P) {
+			cursor.moveToPair();
+		} else if (kc == KeyEvent.VK_L) {
+			if (cy < pageData.lines.size())
+				U.launch(pageData.roLines.getline(cy).toString());
+		} else if (!Character.isIdentifierIgnorable(kc)) {
+			unknownCommand(env);
 		}
-		if (sb.length() > 0)
-			sb.append("-");
-		sb.append((char) env.getKeyCode());
-		ui.message("Unknow Command:" + sb);
+	}
+
+	void keyPressedWithControlDown(KeyEvent env) throws Exception {
+		int kc = env.getKeyCode();
+		if (kc == KeyEvent.VK_C) {
+			ptSelection.copySelected();
+		} else if (kc == KeyEvent.VK_V) {
+			if (ptSelection.isSelected()) {
+				ptEdit.deleteRect(ptSelection.getSelectRect());
+			}
+			ptEdit.insertString(U.getClipBoard());
+		} else if (kc == KeyEvent.VK_X) {
+			ptSelection.cutSelected();
+		} else if (kc == KeyEvent.VK_A) {
+			ptSelection.selectAll();
+		} else if (kc == KeyEvent.VK_D) {
+			if (ptSelection.isSelected()) {
+				ptEdit.deleteRect(ptSelection.getSelectRect());
+			} else {
+				ptEdit.deleteLine(cy);
+			}
+			focusCursor();
+		} else if (kc == KeyEvent.VK_O) {
+			U.openFile(this);
+		} else if (kc == KeyEvent.VK_N) {
+			new PlainPage(uiComp, PageData.newEmpty("unsaved #" + U.randomID()));
+		} else if (kc == KeyEvent.VK_M) {
+			EditPanel ep = new EditPanel();
+			ep.openWindow();
+		} else if (kc == KeyEvent.VK_S) {
+			if (U.saveFile(this)) {
+				System.out.println("saved");
+				ui.message("saved");
+			}
+		} else if (kc == KeyEvent.VK_L) {
+			cursor.gotoLine();
+		} else if (kc == KeyEvent.VK_Z) {
+			pageData.history.undo(this);
+		} else if (kc == KeyEvent.VK_F) {
+			ptFind.showFindDialog();
+		} else if (kc == KeyEvent.VK_Y) {
+			pageData.history.redo(this);
+		} else if (kc == KeyEvent.VK_W) {
+			U.closePage(this);
+		} else if (kc == KeyEvent.VK_E) {
+			U.setEncodingByUser(this, "Set Encoding:");
+		} else if (kc == KeyEvent.VK_PAGE_UP) {
+			cy = 0;
+			cx = 0;
+			focusCursor();
+		} else if (kc == KeyEvent.VK_PAGE_DOWN) {
+			cy = pageData.roLines.getLinesize() - 1;
+			cx = 0;
+			focusCursor();
+		} else if (kc == KeyEvent.VK_R) {
+			U.removeTrailingSpace(pageData);
+		} else if (kc == KeyEvent.VK_LEFT) {
+			cursor.moveLeftWord();
+			focusCursor();
+		} else if (kc == KeyEvent.VK_RIGHT) {
+			cursor.moveRightWord();
+			focusCursor();
+		} else if (kc == KeyEvent.VK_UP) {
+			sy = Math.max(0, sy - 1);
+		} else if (kc == KeyEvent.VK_DOWN) {
+			sy = Math.min(sy + 1, pageData.roLines.getLinesize() - 1);
+		} else if (kc == KeyEvent.VK_0) {
+			ui.scalev = 1;
+		} else if (kc == KeyEvent.VK_G) {
+			if (cy < pageData.lines.size()) {
+				String line = pageData.roLines.getline(cy).toString();
+				if (searchResultOf == null
+						|| !U.gotoFileLine2(uiComp, line, searchResultOf)) {
+					if (!U.gotoFileLine(line, uiComp, pageData.getTitle()
+							.equals(U.titleOfPages(uiComp)))) {
+						U.listDir(PlainPage.this, cy);
+					}
+				}
+			}
+		} else if (kc == KeyEvent.VK_H) {
+			U.openFileHistory(uiComp);
+		} else if (kc == KeyEvent.VK_P) {
+			new U.Print(PlainPage.this).printPages();
+		} else if (kc == KeyEvent.VK_ENTER) {
+			cursor.moveEnd();
+			focusCursor();
+		} else if (kc == KeyEvent.VK_TAB) {
+			U.switchToPageListPage(this);
+
+		} else if (!Character.isIdentifierIgnorable(kc)) {
+			unknownCommand(env);
+		}
 	}
 
 	public void keyReleased(KeyEvent env) {
@@ -1449,32 +1463,23 @@ public class PlainPage {
 
 	}
 
-	public void xpaint(Graphics g, Dimension size) {
-		ui.xpaint(g, size);
+	private void unknownCommand(KeyEvent env) {
+		StringBuilder sb = new StringBuilder();
+		if (env.isControlDown())
+			sb.append("Ctrl");
+		if (env.isAltDown()) {
+			if (sb.length() > 0)
+				sb.append("-");
+			sb.append("Alt");
+		}
+		if (sb.length() > 0)
+			sb.append("-");
+		sb.append((char) env.getKeyCode());
+		ui.message("Unknow Command:" + sb);
 	}
 
-	public void close() {
-		int index = uiComp.pageSet.indexOf(this);
-		uiComp.pageSet.remove(this);
-		boolean found = false;
-		for (PlainPage pp : uiComp.pageSet) {
-			if (pp.pageData == pageData) {
-				found = true;
-				break;
-			}
-		}
-		if (!found)
-			pageData.close();
-		index++;
-		if (index >= uiComp.pageSet.size()) {
-			index = uiComp.pageSet.size() - 1;
-		}
-		if (index >= 0) {
-			uiComp.setPage(uiComp.pageSet.get(index));
-		} else {
-			// nothing to show
-			uiComp.frame.dispose();
-		}
+	public void xpaint(Graphics g, Dimension size) {
+		ui.xpaint(g, size);
 	}
 
 }

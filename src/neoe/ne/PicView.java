@@ -36,6 +36,7 @@ public class PicView {
 		private File f;
 		int fi;
 		List<File> files;
+		private JFrame frame;
 		private BufferedImage img;
 		private int mx;
 		private int my;
@@ -44,12 +45,11 @@ public class PicView {
 		double rate = 1.0;
 		private boolean small = true;
 		private int vx;
+
 		private int vx1;
 
 		private int vy;
-
 		private int vy1;
-		private JFrame frame;
 
 		public Panel(JFrame f, File fn) throws IOException {
 			this.frame = f;
@@ -300,6 +300,11 @@ public class PicView {
 
 	}
 
+	public static void main(String[] args) throws IOException {
+		new PicView().show(new File(args[0]));
+
+	}
+
 	private EditPanel ep;
 
 	public PicView() {
@@ -307,11 +312,6 @@ public class PicView {
 
 	public PicView(EditPanel ep) {
 		this.ep = ep;
-	}
-
-	public static void main(String[] args) throws IOException {
-		new PicView().show(new File(args[0]));
-
 	}
 
 	public void show(File fn) throws IOException {
