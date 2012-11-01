@@ -1131,7 +1131,10 @@ public class PlainPage {
 		this();
 		this.uiComp = editor;
 		this.pageData = data;
-		editor.pageSet.add(this);
+		int index = editor.pageSet.indexOf(editor.getPage());
+		if (index >= editor.pageSet.size() || index < 0)
+			index = 0;
+		editor.pageSet.add(index, this);
 		editor.setPage(this);
 		editor.changeTitle();
 		data.ref++;
@@ -1145,7 +1148,6 @@ public class PlainPage {
 		if (pageData.ref == 0)
 			pageData.close();
 
-		index++;
 		if (index >= uiComp.pageSet.size()) {
 			index = uiComp.pageSet.size() - 1;
 		}
