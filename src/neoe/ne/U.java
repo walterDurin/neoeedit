@@ -912,7 +912,14 @@ public class U {
 
 	static boolean changedOutside(PlainPage pp) {
 		PageData page = pp.pageData;
-		if (page.getFn() != null && page.fileLastModified != 0) {
+		String his = "";
+		try {
+			his = getFileHistoryName().getCanonicalPath();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		if (page.getFn() != null && (!page.getFn().equals(his))
+				&& page.fileLastModified != 0) {
 			long t = new File(page.getFn()).lastModified();
 			if (t > page.fileLastModified + 100) {
 				return true;
@@ -928,7 +935,8 @@ public class U {
 			opt = JOptionPane.showConfirmDialog(editor,
 					"Are you sure to SAVE and close?", "Changes made",
 					JOptionPane.YES_NO_CANCEL_OPTION);
-			if (opt == JOptionPane.CANCEL_OPTION)
+			System.out.println(opt);
+			if (opt == JOptionPane.CANCEL_OPTION || opt == -1)
 				return;
 		}
 		if (opt == JOptionPane.YES_OPTION) {
@@ -1003,7 +1011,8 @@ public class U {
 						p = p2;
 					}
 				}
-				showResult(page, all, "file", page.pageData.getTitle(), text2find);
+				showResult(page, all, "file", page.pageData.getTitle(),
+						text2find);
 				page.uiComp.repaint();
 			}
 		}
@@ -1130,15 +1139,16 @@ public class U {
 
 	static boolean findAndShowPageListPage(EditPanel ep, String title,
 			int lineNo) {
-		boolean isPLP = title.equals(titleOfPages(ep));
-		for (PlainPage pp : ep.pageSet) {
-			if (pp.pageData.getTitle().equals(title)
-					&& (pp.cy + 1 == lineNo || isPLP)) {
-				ep.setPage(pp);
-				return true;
-			}
-		}
-		return false;
+		return findAndShowPageListPage(ep, title);
+		// boolean isPLP = title.equals(titleOfPages(ep));
+		// for (PlainPage pp : ep.pageSet) {
+		// if (pp.pageData.getTitle().equals(title)
+		// && (pp.cy + 1 == lineNo || isPLP)) {
+		// ep.setPage(pp);
+		// return true;
+		// }
+		// }
+		// return false;
 	}
 
 	static void findchar(PlainPage page, char ch, int inc, int[] c1, char chx) {
@@ -1297,7 +1307,8 @@ public class U {
 		return s.substring(0, p);
 	}
 
-	public static List<StringBuffer> getPageListStrings(EditPanel ep) {
+	public static List<StringBuffer> getPageListStrings(EditPanel ep)
+			throws IOException {
 		List<StringBuffer> ss = new ArrayList<StringBuffer>();
 		sort(ep.pageSet);
 		for (PlainPage pp : ep.pageSet) {
@@ -1597,6 +1608,7 @@ public class U {
 		} else {
 			if (ep == null)
 				return null;// ignore
+			if (findAndShowPageListPage(ep, f.getCanonicalPath()))return ep.getPage();
 			return new PlainPage(ep, PageData.newFromFile(f.getCanonicalPath()));
 		}
 	}
@@ -1642,6 +1654,8 @@ public class U {
 			new PicView().show(f);
 			return;
 		}
+		if (findAndShowPageListPage(ep, title))
+			return;
 		PageData pd = PageData.dataPool.get(title);
 		// including titles not saved
 		if (pd == null)
