@@ -1139,7 +1139,11 @@ public class U {
 
 	static boolean findAndShowPageListPage(EditPanel ep, String title,
 			int lineNo) {
-		return findAndShowPageListPage(ep, title);
+		boolean b= findAndShowPageListPage(ep, title);
+		if (b){
+			ep.getPage().cursor.setSafePos(0, lineNo-1);
+		}
+		return b;
 		// boolean isPLP = title.equals(titleOfPages(ep));
 		// for (PlainPage pp : ep.pageSet) {
 		// if (pp.pageData.getTitle().equals(title)
