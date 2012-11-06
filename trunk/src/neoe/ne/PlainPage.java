@@ -1159,7 +1159,7 @@ public class PlainPage {
 		}
 	}
 
-	void focusCursor() {
+	public void focusCursor() {
 		if (cy < sy) {
 			sy = Math.max(0, cy - showLineCnt / 2 + 1);
 		}

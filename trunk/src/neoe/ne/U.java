@@ -1139,9 +1139,11 @@ public class U {
 
 	static boolean findAndShowPageListPage(EditPanel ep, String title,
 			int lineNo) {
-		boolean b= findAndShowPageListPage(ep, title);
-		if (b){
-			ep.getPage().cursor.setSafePos(0, lineNo-1);
+		boolean b = findAndShowPageListPage(ep, title);
+		if (b) {
+			ep.getPage().cursor.setSafePos(0, lineNo - 1);
+			ep.getPage().focusCursor();
+			ep.repaint();
 		}
 		return b;
 		// boolean isPLP = title.equals(titleOfPages(ep));
@@ -1317,8 +1319,15 @@ public class U {
 		sort(ep.pageSet);
 		for (PlainPage pp : ep.pageSet) {
 			StringBuffer sb = new StringBuffer();
-			sb.append(pp.pageData.getTitle() + "|" + (pp.cy + 1) + ":"
-					+ " Edited:" + pp.pageData.history.size() + " "
+			sb.append(pp.pageData.getTitle()
+					+ "|"
+					+ (pp.cy + 1)
+					+ ":"
+					+ " Edited:"
+					+ pp.pageData.history.size()
+					+ " "
+					+ (pp.pageData.encoding == null ? "" : pp.pageData.encoding
+							+ " ")
 					+ (changedOutside(pp) ? "[Changed Outside!!]" : ""));
 			ss.add(sb);
 		}
@@ -1612,7 +1621,8 @@ public class U {
 		} else {
 			if (ep == null)
 				return null;// ignore
-			if (findAndShowPageListPage(ep, f.getCanonicalPath()))return ep.getPage();
+			if (findAndShowPageListPage(ep, f.getCanonicalPath()))
+				return ep.getPage();
 			return new PlainPage(ep, PageData.newFromFile(f.getCanonicalPath()));
 		}
 	}
