@@ -1359,7 +1359,7 @@ public class PlainPage {
 			sy = Math.min(sy + 1, pageData.roLines.getLinesize() - 1);
 		} else if (kc == KeyEvent.VK_0) {
 			ui.scalev = 1;
-		} else if (kc == KeyEvent.VK_G) {
+		} else if (kc == KeyEvent.VK_G || kc == KeyEvent.VK_1) {
 			if (cy < pageData.lines.size()) {
 				String line = pageData.roLines.getline(cy).toString();
 				if (searchResultOf == null

@@ -1022,18 +1022,16 @@ public class U {
 			boolean selected2, String text2, boolean all, boolean inDir,
 			String dir) {
 		page.ptFind.text2find = text;
+		Point p0 = all ? new Point(0, 0) : new Point(page.cx, page.cy);
 		if (text != null && text.length() > 0) {
-			Point p = replace(page, text, page.cx, page.cy, text2, all,
-					ignoreCase);
+			Point p = replace(page, text, p0.x, p0.y, text2, all, ignoreCase);
 			if (p == null) {
 				page.ui.message("string not found");
 			} else {
-				page.cx = p.x;
-				page.cy = p.y;
-				// page.selectstartx = page.cx;
-				// page.selectstarty = page.cy;
-				// page.selectstopx = page.cx + text2.length();
-				// page.selectstopy = page.cy;
+				if (!all) {
+					page.cx = p.x;
+					page.cy = p.y;
+				}
 				page.focusCursor();
 				page.ptSelection.cancelSelect();
 			}

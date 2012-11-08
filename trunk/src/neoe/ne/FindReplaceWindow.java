@@ -53,6 +53,8 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 		jrb1.setSelected(true);
 		s.add(jrb2 = new JRadioButton("RegularExpression"));
 		s.newline();
+		jrb1.setVisible(false);
+		jrb2.setVisible(false);
 		s.add(jb1 = new JButton("Find"));
 		s.add(jb4 = new JButton("FindAll"));
 		s.add(jb2 = new JButton("Replace"));
@@ -129,7 +131,7 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 				U.doFindInPage(page, jta1.getText(), jrb1.isSelected());
 			} else if (command.equals("replace")) {
 				U.doReplace(page, jta1.getText(), jrb1.isSelected(),
-						jrb2.isSelected(), jta2.getText(), true, false, null);
+						jrb2.isSelected(), jta2.getText(), false, false, null);
 			} else if (command.equals("replaceall")) {
 				U.doReplaceAll(page, jta1.getText(), jrb1.isSelected(),
 						jrb2.isSelected(), jta2.getText(), jcb1.isSelected(),
