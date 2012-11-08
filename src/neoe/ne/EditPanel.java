@@ -44,7 +44,8 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 		setOpaque(false);
 		setCursor(new Cursor(Cursor.TEXT_CURSOR));
 		setFocusTraversalKeysEnabled(false);
-		new PlainPage(this, PageData.newEmpty("untitled"));
+		PlainPage pp = new PlainPage(this, PageData.newEmpty("untitled"));
+		pp.ptSelection.selectAll();
 	}
 
 	void changeTitle() {
@@ -174,8 +175,17 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 							lastWarning = t;
 							JOptionPane.showMessageDialog(frame,
 									"File changed outside.");
-							U.findAndShowPageListPage(EditPanel.this,
-									U.titleOfPages(EditPanel.this));
+							String title = U.titleOfPages(EditPanel.this);
+							if (U.findAndShowPageListPage(EditPanel.this, title)) {
+								try {
+									PageData.dataPool
+											.get(title)
+											.setLines(
+													U.getPageListStrings(EditPanel.this));
+								} catch (Exception e1) {
+									e1.printStackTrace();
+								}
+							}
 							EditPanel.this.repaint();
 							break;
 						}
