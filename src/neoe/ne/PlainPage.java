@@ -734,10 +734,16 @@ public class PlainPage {
 			String s1 = "<F1>:Help, "
 					+ (pageData.encoding == null ? "-" : pageData.encoding)
 					+ (pageData.lineSep.equals("\n") ? ", U" : ", W")
-					+ ", Line:" + pageData.roLines.getLinesize() + ", X:"
-					+ (cx + 1) + ", undo:" + pageData.history.size() + ", "
+					+ ", Line:"
+					+ pageData.roLines.getLinesize()
+					+ ", X:"
+					+ (cx + 1)
+					+ ", undo:"
+					+ pageData.history.size()
+					+ ", "
 					+ (rectSelectMode ? "R, " : "")
-					+ (pageData.getFn() == null ? "-" : pageData.getFn());
+					+ (pageData.getFn() == null ? "-" : pageData.getFn()
+							+ (changedOutside ? " [ChangedOutside!]" : ""));
 			g2.setColor(Color.WHITE);
 			g2.drawString(s1, 2, lineHeight + 2);
 			g2.setColor(Color.BLACK);
@@ -1097,6 +1103,7 @@ public class PlainPage {
 	int cy;
 	boolean ignoreCase = true;
 	boolean isCommentChecked = false;
+	boolean changedOutside = false;
 	int mcount;
 	String msg;
 	long msgtime;
@@ -1195,6 +1202,7 @@ public class PlainPage {
 						pageData.setLines(U.getPageListStrings(uiComp));
 					}
 					U.reloadWithEncodingByUser(pageData.getFn(), this);
+					PlainPage.this.changedOutside=false;
 				} else if (kc == KeyEvent.VK_LEFT) {
 					cursor.moveLeft();
 					focusCursor();
