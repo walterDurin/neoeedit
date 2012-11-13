@@ -1717,7 +1717,7 @@ public class U {
 		data.lineSep = U.guessLineSepForEditor(fn);
 		data.setLines(U.readFileForEditor(fn, data.encoding));
 		File f = new File(fn);
-		data.fileLastModified = f.lastModified();
+		data.fileLastModified = f.lastModified();		
 		data.workPath = f.getParent();
 	}
 
@@ -2021,6 +2021,7 @@ public class U {
 		out.close();
 		page.pageData.fileLastModified = new File(page.pageData.getFn())
 				.lastModified();
+		page.changedOutside=false;
 		return true;
 	}
 

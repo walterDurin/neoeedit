@@ -173,21 +173,25 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 						long t = new File(pp.pageData.getFn()).lastModified();
 						if (t > lastWarning) {
 							lastWarning = t;
-							JOptionPane.showMessageDialog(frame,
-									"File changed outside.");
-							String title = U.titleOfPages(EditPanel.this);
-							if (U.findAndShowPageListPage(EditPanel.this, title)) {
-								try {
-									PageData.dataPool
-											.get(title)
-											.setLines(
-													U.getPageListStrings(EditPanel.this));
-								} catch (Exception e1) {
-									e1.printStackTrace();
+							if (!pp.changedOutside) {
+								pp.changedOutside = true;
+								JOptionPane.showMessageDialog(frame,
+										"File changed outside.");
+								String title = U.titleOfPages(EditPanel.this);
+								if (U.findAndShowPageListPage(EditPanel.this,
+										title)) {
+									try {
+										PageData.dataPool
+												.get(title)
+												.setLines(
+														U.getPageListStrings(EditPanel.this));
+									} catch (Exception e1) {
+										e1.printStackTrace();
+									}
 								}
+								EditPanel.this.repaint();
+								break;
 							}
-							EditPanel.this.repaint();
-							break;
 						}
 
 					}
