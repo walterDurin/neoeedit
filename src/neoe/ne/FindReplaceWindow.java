@@ -55,11 +55,7 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 		s.newline();
 		jrb1.setVisible(false);
 		jrb2.setVisible(false);
-		s.add(jb1 = new JButton("Find"));
-		s.add(jb4 = new JButton("FindAll"));
-		s.add(jb2 = new JButton("Replace"));
-		s.add(jb3 = new JButton("Replace All"));
-		s.newline();
+		
 		s.add(jcb1 = new JCheckBox("in files", false));
 		s.add(new JLabel("Dir:"));
 		s.add(jtadir = new JTextField());
@@ -67,6 +63,14 @@ public class FindReplaceWindow implements ActionListener, KeyListener {
 		s.add(jcb2 = new JCheckBox("include subdir", true));
 		s.add(jcb3 = new JCheckBox("skip binary", true));
 		s.newline();
+		
+		s.add(jb1 = new JButton("Find"));
+		s.add(jb4 = new JButton("FindAll"));
+		s.add(jb2 = new JButton("Replace"));
+		s.add(jb3 = new JButton("Replace All"));
+		s.newline();
+		
+		
 		jcb1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				jb4.setVisible(!jcb1.isSelected());
