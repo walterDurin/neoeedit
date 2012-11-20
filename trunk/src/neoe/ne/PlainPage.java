@@ -1367,7 +1367,7 @@ public class PlainPage {
 			sy = Math.min(sy + 1, pageData.roLines.getLinesize() - 1);
 		} else if (kc == KeyEvent.VK_0) {
 			ui.scalev = 1;
-		} else if (kc == KeyEvent.VK_G || kc == KeyEvent.VK_1) {
+		} else if (kc == KeyEvent.VK_1) {
 			if (cy < pageData.lines.size()) {
 				String line = pageData.roLines.getline(cy).toString();
 				if (searchResultOf == null
@@ -1385,7 +1385,7 @@ public class PlainPage {
 		} else if (kc == KeyEvent.VK_ENTER) {
 			cursor.moveEnd();
 			focusCursor();
-		} else if (kc == KeyEvent.VK_TAB || kc == KeyEvent.VK_Q) {
+		} else if (kc == KeyEvent.VK_Q) {
 			U.switchToPageListPage(this);
 
 		} else if (!Character.isIdentifierIgnorable(kc)) {

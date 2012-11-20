@@ -6,13 +6,20 @@ public class Main {
 	public static void main(String[] args) throws Exception {
 		EditPanel editor = new EditPanel();
 		if (args.length > 0) {
-			PlainPage emptyPage = editor.getPage();
-			new PlainPage(editor, PageData.newFromFile(new File(args[0])
-					.getCanonicalPath()));
-			emptyPage.close();
+			File f = new File(args[0]);
+			if (U.isImageFile(f)) {
+				new PicView(editor).show(f);
+			} else {
+				PlainPage emptyPage = editor.getPage();
+				new PlainPage(editor,
+						PageData.newFromFile(f.getCanonicalPath()));
+				emptyPage.close();
+				editor.openWindow();
+			}
 		} else {
 			editor.getPage().ptSelection.selectAll();
+			editor.openWindow();
 		}
-		editor.openWindow();
+		
 	}
 }
