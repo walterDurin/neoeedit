@@ -1126,9 +1126,12 @@ public class U {
 	}
 
 	static boolean findAndShowPageListPage(EditPanel ep, String title) {
+		return findAndShowPageListPage(ep,title,true);
+	}
+	static boolean findAndShowPageListPage(EditPanel ep, String title, boolean show) {
 		for (PlainPage pp : ep.pageSet) {
 			if (pp.pageData.getTitle().equals(title)) {
-				ep.setPage(pp);
+				if (show)ep.setPage(pp);
 				return true;
 			}
 		}
@@ -1717,7 +1720,7 @@ public class U {
 		data.lineSep = U.guessLineSepForEditor(fn);
 		data.setLines(U.readFileForEditor(fn, data.encoding));
 		File f = new File(fn);
-		data.fileLastModified = f.lastModified();		
+		data.fileLastModified = f.lastModified();
 		data.workPath = f.getParent();
 	}
 
@@ -1971,6 +1974,17 @@ public class U {
 	}
 
 	static boolean saveFile(PlainPage page) throws Exception {
+		if (page.changedOutside
+				&& JOptionPane.YES_OPTION != JOptionPane
+						.showConfirmDialog(
+								page.uiComp,
+								"File Changed Outside!! Do you really want to overwrite it?",
+								"File Changed Outside!!",
+								JOptionPane.YES_NO_OPTION)) {
+			page.ui.message("saved canceled");
+			return false;
+		}
+
 		if (page.pageData.getFn() == null) {
 			JFileChooser chooser = new JFileChooser(page.pageData.workPath);
 			int returnVal = chooser.showSaveDialog(page.uiComp);
@@ -1983,12 +1997,11 @@ public class U {
 										"Are you sure to overwrite?",
 										"File exists",
 										JOptionPane.YES_NO_OPTION)) {
-					page.ui.message("not saved");
+					page.ui.message("saved canceled");
 					return false;
 				}
 				page.pageData.setFn(fn);
 				page.uiComp.changeTitle();
-
 			} else {
 				return false;
 			}
@@ -2021,7 +2034,7 @@ public class U {
 		out.close();
 		page.pageData.fileLastModified = new File(page.pageData.getFn())
 				.lastModified();
-		page.changedOutside=false;
+		page.changedOutside = false;
 		return true;
 	}
 

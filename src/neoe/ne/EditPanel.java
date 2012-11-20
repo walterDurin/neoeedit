@@ -179,7 +179,7 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 										"File changed outside.");
 								String title = U.titleOfPages(EditPanel.this);
 								if (U.findAndShowPageListPage(EditPanel.this,
-										title)) {
+										title,false)) {
 									try {
 										PageData.dataPool
 												.get(title)
