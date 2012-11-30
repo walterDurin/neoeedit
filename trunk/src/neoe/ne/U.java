@@ -1126,12 +1126,15 @@ public class U {
 	}
 
 	static boolean findAndShowPageListPage(EditPanel ep, String title) {
-		return findAndShowPageListPage(ep,title,true);
+		return findAndShowPageListPage(ep, title, true);
 	}
-	static boolean findAndShowPageListPage(EditPanel ep, String title, boolean show) {
+
+	static boolean findAndShowPageListPage(EditPanel ep, String title,
+			boolean show) {
 		for (PlainPage pp : ep.pageSet) {
 			if (pp.pageData.getTitle().equals(title)) {
-				if (show)ep.setPage(pp);
+				if (show)
+					ep.setPage(pp);
 				return true;
 			}
 		}
@@ -1456,17 +1459,15 @@ public class U {
 
 	static String guessEncoding(String fn) throws Exception {
 		// S/ystem.out.println("guessing encoding");
-		String[] encodings = { "sjis", "gbk", UTF8, "unicode", };
+		String[] encodings = { "sjis", "gbk", UTF8, "utf-8", "unicode", "euc-jp", "gb2312"};
 
 		FileInputStream in = new FileInputStream(fn);
 		final int defsize = 4096 * 2;
 		int len = Math.min(defsize, (int) new File(fn).length());
 		try {
-			// S/ystem.out.println("len:" + len);
 			byte[] buf = new byte[len];
 			len = in.read(buf);
 			in.close();
-			// S/ystem.out.println("len2:" + len);
 			if (len != defsize) {
 				byte[] b2 = new byte[len];
 				System.arraycopy(buf, 0, b2, 0, len);
@@ -1477,19 +1478,15 @@ public class U {
 				return encoding;
 			for (String enc : encodings) {
 				String s = new String(buf, enc);
+				if (s.toLowerCase().indexOf(enc.toLowerCase()) >= 0)
+					return enc;
+			}
+			for (String enc : encodings) {
+				String s = new String(buf, enc);
 				if (new String(s.getBytes(enc), enc).equals(s)
-						&& s.indexOf("?�ｽ?�ｽ") < 0) {
+						&& s.indexOf("�") < 0) {
 					return enc;
 				}
-				// byte[] b2 = new String(buf, enc).getBytes(enc);
-				// if (b2.length != buf.length) {
-				// continue;
-				// }
-				// int nlen = Math.max(0, len - 1);// for not last complete char
-				// if (Arrays.equals(Arrays.copyOf(buf, nlen), Arrays.copyOf(b2,
-				// nlen))) {
-				// return enc;
-				// }
 			}
 		} finally {
 			in.close();
