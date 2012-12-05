@@ -18,6 +18,7 @@ public class Main {
 			}
 		} else {
 			editor.getPage().ptSelection.selectAll();
+			//U.showSelfDispMessage(editor.getPage(),"hello ...",4000);
 			editor.openWindow();
 		}
 		

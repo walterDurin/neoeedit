@@ -18,7 +18,6 @@ import java.util.List;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 public class EditPanel extends JPanel implements MouseMotionListener,
@@ -175,22 +174,17 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 							lastWarning = t;
 							if (!pp.changedOutside) {
 								pp.changedOutside = true;
-								JOptionPane.showMessageDialog(frame,
-										"File changed outside.");
-								String title = U.titleOfPages(EditPanel.this);
-								if (U.findAndShowPageListPage(EditPanel.this,
-										title,false)) {
-									try {
-										PageData.dataPool
-												.get(title)
-												.setLines(
-														U.getPageListStrings(EditPanel.this));
-									} catch (Exception e1) {
-										e1.printStackTrace();
-									}
-								}
+								if (pp.pageData.history.size() == 0) {
+									U.readFile(pp.pageData, pp.pageData.getFn());// reload
+									U.showSelfDispMessage(pp,
+											"File changed outside.(reloaded)",
+											4000);
+								} else {
+									U.showSelfDispMessage(pp,
+											"File changed outside.", 4000);
+								}								
 								EditPanel.this.repaint();
-								break;
+								// break;
 							}
 						}
 

@@ -548,7 +548,7 @@ public class PlainPage {
 		BufferedImage aboutImg;
 
 		boolean aboutOn;
-
+		List<Object[]> msgs = new ArrayList<Object[]>();
 		int aboutY;
 		boolean closed = false;
 		Color colorBg, colorComment, colorComment2, colorCurrentLineBg,
@@ -573,6 +573,7 @@ public class PlainPage {
 		Comment commentor = new Comment();
 		Dimension dim;
 		Font font = new Font("Monospaced", Font.PLAIN, 12);
+		Font FONT_BIG = new Font("Monospaced", Font.PLAIN, 24);
 		int gutterWidth = 40;
 		int lineGap = 5;
 		int lineHeight = 10;
@@ -947,11 +948,42 @@ public class PlainPage {
 					g.setPaintMode();
 					g.drawImage(aboutImg, 0, aboutY, null);
 				}
+				
+				drawSelfDispMessages(g2);
 
 			} catch (Throwable th) {
 				th.printStackTrace();
 				ui.message("Bug:" + th);
 			}
+		}
+
+		private void drawSelfDispMessages(Graphics2D g) {
+			long now=System.currentTimeMillis();
+			for (int i=0;i<msgs.size();i++){
+				Object[] row=msgs.get(i);
+				long disapear=(Long) row[1];
+				if (disapear<now){
+					msgs.remove(i);
+					i--;
+				}
+			}
+			if (!msgs.isEmpty()){
+				//System.out.println("msgs:"+msgs.size());
+				g.setFont(FONT_BIG);				
+				int w=U.maxWidth(msgs, g, FONT_BIG)+100;
+				int h=30*msgs.size()+60;
+				g.setXORMode(Color.BLACK);
+				g.setPaintMode();
+				g.setColor(Color.decode("0xFFCCFF"));
+				g.fillRoundRect((dim.width-w)/2, (dim.height-h)/2, w, h, 3, 3);
+				g.setColor(Color.BLACK);
+				for (int i=0;i<msgs.size();i++){
+					Object[] row=msgs.get(i);
+					int w1=(Integer) row[2];
+					g.drawString(row[0].toString(), (dim.width-w1)/2, (10+dim.height/2+30*(i-msgs.size()/2)));
+				}
+			}
+			
 		}
 
 	}
@@ -1202,7 +1234,7 @@ public class PlainPage {
 						pageData.setLines(U.getPageListStrings(uiComp));
 					}
 					U.reloadWithEncodingByUser(pageData.getFn(), this);
-					PlainPage.this.changedOutside=false;
+					PlainPage.this.changedOutside = false;
 				} else if (kc == KeyEvent.VK_LEFT) {
 					cursor.moveLeft();
 					focusCursor();
@@ -1387,7 +1419,8 @@ public class PlainPage {
 			focusCursor();
 		} else if (kc == KeyEvent.VK_Q) {
 			U.switchToPageListPage(this);
-
+		} else if (kc == KeyEvent.VK_TAB) {
+			U.switchPageInOrder(this);
 		} else if (!Character.isIdentifierIgnorable(kc)) {
 			unknownCommand(env);
 		}

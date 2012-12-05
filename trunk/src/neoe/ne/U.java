@@ -1459,7 +1459,8 @@ public class U {
 
 	static String guessEncoding(String fn) throws Exception {
 		// S/ystem.out.println("guessing encoding");
-		String[] encodings = { "sjis", "gbk", UTF8, "utf-8", "unicode", "euc-jp", "gb2312"};
+		String[] encodings = { "sjis", "gbk", UTF8, "utf-8", "unicode",
+				"euc-jp", "gb2312" };
 
 		FileInputStream in = new FileInputStream(fn);
 		final int defsize = 4096 * 2;
@@ -2307,6 +2308,39 @@ public class U {
 		while (i < s.length() && (s.charAt(i) == ' ' || s.charAt(i) == '\t'))
 			i++;
 		return i > 0 ? s.substring(i) : s;
+	}
+
+	public static void showSelfDispMessage(PlainPage pp, String msg,
+			int disapearMS) {
+		long now = System.currentTimeMillis();
+		pp.ui.msgs
+				.add(new Object[] { msg, now + disapearMS, -1 /* draw width */});
+		// System.out.println("add msgs:"+pp.ui.msgs.size());
+		repaintAfter(4000, pp.uiComp);
+	}
+
+	public static int maxWidth(List<Object[]> msgs, Graphics2D g, Font font) {
+		int max = 0;
+		for (int i = 0; i < msgs.size(); i++) {
+			Object[] row = msgs.get(i);
+			int w1 = (Integer) row[2];
+			if (w1 == -1) {
+				w1 = g.getFontMetrics(font).stringWidth(row[0].toString());
+				row[2] = w1;
+			}
+			if (w1 > max)
+				max = w1;
+		}
+		return max;
+	}
+
+	public static void switchPageInOrder(PlainPage pp) {
+		List<PlainPage> pps = pp.uiComp.pageSet;
+		if (pps.size() <= 1)
+			return;
+		int i = (1+pps.indexOf(pp))%pps.size();
+		pp.uiComp.setPage(pps.get(i));
+		pp.uiComp.repaint();
 	}
 
 }
