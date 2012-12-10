@@ -1,6 +1,7 @@
 package neoe.ne;
 
 import java.awt.Cursor;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -33,6 +34,8 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 
 	private PlainPage page;
 	List<PlainPage> pageSet = new ArrayList<PlainPage>();
+
+	public Font _font;
 
 	public EditPanel() throws Exception {
 		setFocusable(true);

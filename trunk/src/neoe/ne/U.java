@@ -2390,7 +2390,10 @@ public class U {
 	}
 
 	public static void setFont(PlainPage pp, String font) {
-		pp.ui.font = new Font(font, Font.PLAIN, 12);
+		Font f = new Font(font, Font.PLAIN, 12);
+		for (PlainPage p : pp.uiComp.pageSet) {
+			p.ui.font = f;
+		}
 		showSelfDispMessage(pp, "set font:" + font, 3000);
 	}
 }
