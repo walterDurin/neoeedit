@@ -1334,9 +1334,11 @@ public class PlainPage {
 			if (s != null && s.length() > 0) {
 				U.showHexOfString(s, PlainPage.this);
 			}
+		} else if (kc == KeyEvent.VK_F) {
+			U.listFonts(this);
 		} else if (!Character.isIdentifierIgnorable(kc)) {
 			unknownCommand(env);
-		} 
+		}
 	}
 
 	void keyPressedWithControlDown(KeyEvent env) throws Exception {
@@ -1409,11 +1411,15 @@ public class PlainPage {
 		} else if (kc == KeyEvent.VK_1) {
 			if (cy < pageData.lines.size()) {
 				String line = pageData.roLines.getline(cy).toString();
-				if (searchResultOf == null
-						|| !U.gotoFileLine2(uiComp, line, searchResultOf)) {
-					if (!U.gotoFileLine(line, uiComp, pageData.getTitle()
-							.equals(U.titleOfPages(uiComp)))) {
-						U.listDir(PlainPage.this, cy);
+				if (line.startsWith("set-font:")) {
+					U.setFont(this, line.substring("set-font:".length()).trim());
+				} else {
+					if (searchResultOf == null
+							|| !U.gotoFileLine2(uiComp, line, searchResultOf)) {
+						if (!U.gotoFileLine(line, uiComp, pageData.getTitle()
+								.equals(U.titleOfPages(uiComp)))) {
+							U.listDir(PlainPage.this, cy);
+						}
 					}
 				}
 			}
@@ -1505,6 +1511,7 @@ public class PlainPage {
 		int amount = env.getWheelRotation() * env.getScrollAmount();
 		if (env.isControlDown()) {// scale
 			U.scale(amount, ui);
+			this.uiComp.repaint();
 		} else if (env.isAltDown()) {// horizon scroll
 			cursor.scrollHorizon(amount);
 		} else {// scroll

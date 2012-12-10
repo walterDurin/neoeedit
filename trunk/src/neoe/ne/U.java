@@ -6,6 +6,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GraphicsEnvironment;
 import java.awt.Image;
 import java.awt.Point;
 import java.awt.Rectangle;
@@ -2371,5 +2372,25 @@ public class U {
 			sbs.add(new StringBuffer(c + ":" + UnicodeFormatter.charToHex(c)));
 		}
 		p2.pageData.setLines(sbs);
+	}
+
+	public static void listFonts(PlainPage pp) throws Exception {
+		PlainPage p2 = new PlainPage(pp.uiComp, PageData.newEmpty(String
+				.format("<Fonts>")));
+		p2.pageData.workPath = pp.pageData.workPath;
+		p2.ui.applyColorMode(pp.ui.colorMode);
+		List<StringBuffer> sbs = new ArrayList<StringBuffer>();
+		String fonts[] = GraphicsEnvironment.getLocalGraphicsEnvironment()
+				.getAvailableFontFamilyNames();
+		for (String font : fonts) {
+			sbs.add(new StringBuffer("set-font:" + font));
+		}
+		p2.pageData.setLines(sbs);
+
+	}
+
+	public static void setFont(PlainPage pp, String font) {
+		pp.ui.font = new Font(font, Font.PLAIN, 12);
+		showSelfDispMessage(pp, "set font:" + font, 3000);
 	}
 }
