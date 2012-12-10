@@ -1459,7 +1459,7 @@ public class U {
 
 	static String guessEncoding(String fn) throws Exception {
 		// S/ystem.out.println("guessing encoding");
-		String[] encodings = { "sjis", "gbk", UTF8, "utf-8", "unicode",
+		String[] encodings = { UTF8, "utf-8", "sjis", "gbk", "unicode",
 				"euc-jp", "gb2312" };
 
 		FileInputStream in = new FileInputStream(fn);
@@ -2338,9 +2338,38 @@ public class U {
 		List<PlainPage> pps = pp.uiComp.pageSet;
 		if (pps.size() <= 1)
 			return;
-		int i = (1+pps.indexOf(pp))%pps.size();
+		int i = (1 + pps.indexOf(pp)) % pps.size();
 		pp.uiComp.setPage(pps.get(i));
 		pp.uiComp.repaint();
 	}
 
+	public static class UnicodeFormatter {
+		static public String byteToHex(byte b) {
+			// Returns hex String representation of byte b
+			char hexDigit[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8',
+					'9', 'a', 'b', 'c', 'd', 'e', 'f' };
+			char[] array = { hexDigit[(b >> 4) & 0x0f], hexDigit[b & 0x0f] };
+			return new String(array);
+		}
+
+		static public String charToHex(char c) {
+			// Returns hex String representation of char c
+			byte hi = (byte) (c >>> 8);
+			byte lo = (byte) (c & 0xff);
+			return byteToHex(hi) + byteToHex(lo);
+		}
+	}
+
+	public static void showHexOfString(String s, PlainPage pp) throws Exception {
+		PlainPage p2 = new PlainPage(pp.uiComp, PageData.newEmpty(String
+				.format("Hex for String #%s", randomID())));
+		p2.pageData.workPath = pp.pageData.workPath;
+		p2.ui.applyColorMode(pp.ui.colorMode);
+		List<StringBuffer> sbs = new ArrayList<StringBuffer>();
+		sbs.add(new StringBuffer(String.format("Hex for '%s'", s)));
+		for (char c : s.toCharArray()) {
+			sbs.add(new StringBuffer(c + ":" + UnicodeFormatter.charToHex(c)));
+		}
+		p2.pageData.setLines(sbs);
+	}
 }
