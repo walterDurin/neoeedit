@@ -948,7 +948,7 @@ public class PlainPage {
 					g.setPaintMode();
 					g.drawImage(aboutImg, 0, aboutY, null);
 				}
-				
+
 				drawSelfDispMessages(g2);
 
 			} catch (Throwable th) {
@@ -958,32 +958,34 @@ public class PlainPage {
 		}
 
 		private void drawSelfDispMessages(Graphics2D g) {
-			long now=System.currentTimeMillis();
-			for (int i=0;i<msgs.size();i++){
-				Object[] row=msgs.get(i);
-				long disapear=(Long) row[1];
-				if (disapear<now){
+			long now = System.currentTimeMillis();
+			for (int i = 0; i < msgs.size(); i++) {
+				Object[] row = msgs.get(i);
+				long disapear = (Long) row[1];
+				if (disapear < now) {
 					msgs.remove(i);
 					i--;
 				}
 			}
-			if (!msgs.isEmpty()){
-				//System.out.println("msgs:"+msgs.size());
-				g.setFont(FONT_BIG);				
-				int w=U.maxWidth(msgs, g, FONT_BIG)+100;
-				int h=30*msgs.size()+60;
+			if (!msgs.isEmpty()) {
+				// System.out.println("msgs:"+msgs.size());
+				g.setFont(FONT_BIG);
+				int w = U.maxWidth(msgs, g, FONT_BIG) + 100;
+				int h = 30 * msgs.size() + 60;
 				g.setXORMode(Color.BLACK);
 				g.setPaintMode();
 				g.setColor(Color.decode("0xFFCCFF"));
-				g.fillRoundRect((dim.width-w)/2, (dim.height-h)/2, w, h, 3, 3);
+				g.fillRoundRect((dim.width - w) / 2, (dim.height - h) / 2, w,
+						h, 3, 3);
 				g.setColor(Color.BLACK);
-				for (int i=0;i<msgs.size();i++){
-					Object[] row=msgs.get(i);
-					int w1=(Integer) row[2];
-					g.drawString(row[0].toString(), (dim.width-w1)/2, (10+dim.height/2+30*(i-msgs.size()/2)));
+				for (int i = 0; i < msgs.size(); i++) {
+					Object[] row = msgs.get(i);
+					int w1 = (Integer) row[2];
+					g.drawString(row[0].toString(), (dim.width - w1) / 2,
+							(10 + dim.height / 2 + 30 * (i - msgs.size() / 2)));
 				}
 			}
-			
+
 		}
 
 	}
@@ -1327,9 +1329,14 @@ public class PlainPage {
 		} else if (kc == KeyEvent.VK_L) {
 			if (cy < pageData.lines.size())
 				U.launch(pageData.roLines.getline(cy).toString());
+		} else if (kc == KeyEvent.VK_H) {
+			String s = ptSelection.getSelected();
+			if (s != null && s.length() > 0) {
+				U.showHexOfString(s, PlainPage.this);
+			}
 		} else if (!Character.isIdentifierIgnorable(kc)) {
 			unknownCommand(env);
-		}
+		} 
 	}
 
 	void keyPressedWithControlDown(KeyEvent env) throws Exception {
