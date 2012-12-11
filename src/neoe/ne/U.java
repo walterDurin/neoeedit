@@ -1720,7 +1720,7 @@ public class U {
 		data.setLines(U.readFileForEditor(fn, data.encoding));
 		File f = new File(fn);
 		data.fileLastModified = f.lastModified();
-		data.workPath = f.getParent();
+		data.workPath = f.getParent();		
 	}
 
 	static List<StringBuffer> readFileForEditor(String fn, String encoding) {
