@@ -1643,7 +1643,7 @@ public class U {
 		// File f = chooser.getSelectedFile();
 		// openFile(f, page.uiComp);
 		// }
-		String dir = page.pageData.workPath;
+		String dir = page.pageData.workPath;		
 		if (dir == null)
 			dir = new File(".").getCanonicalPath();
 		String title = "[Dir]" + dir;
