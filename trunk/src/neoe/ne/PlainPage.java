@@ -1364,9 +1364,10 @@ public class PlainPage {
 		} else if (kc == KeyEvent.VK_O) {
 			U.openFile(this);
 		} else if (kc == KeyEvent.VK_N) {
-			new PlainPage(uiComp,
-					PageData.newEmpty("UNTITLED #" + U.randomID())).ptSelection
-					.selectAll();
+			PlainPage pp=new PlainPage(uiComp,
+					PageData.newEmpty("UNTITLED #" + U.randomID()));
+			pp.pageData.workPath=this.pageData.workPath;
+			pp.ptSelection.selectAll();			
 		} else if (kc == KeyEvent.VK_M) {
 			EditPanel ep = new EditPanel();
 			ep.openWindow();

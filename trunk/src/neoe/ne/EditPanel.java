@@ -57,10 +57,19 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 		if (fn != null) {
 			frame.setTitle(new File(fn).getName() + " "
 					+ new File(fn).getParent() + " - (" + pageSet.size()
-					+ ") - " + PlainPage.WINDOW_NAME);
+					+ ") - " + PlainPage.WINDOW_NAME + suNotice());
 		} else {
 			frame.setTitle(page.pageData.getTitle() + " - (" + pageSet.size()
-					+ ") - " + PlainPage.WINDOW_NAME);
+					+ ") - " + PlainPage.WINDOW_NAME + suNotice());
+		}
+	}
+
+	private String suNotice() {
+		String user = System.getProperty("user.name");
+		if ("root".equals(user)) {
+			return " [su]";
+		} else {
+			return "";
 		}
 	}
 
@@ -165,7 +174,6 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 
 		frame.setTransferHandler(new U.TH(this));
 		frame.setVisible(true);
-
 		frame.addWindowListener(new WindowAdapter() {
 			private long lastWarning;
 
@@ -182,19 +190,25 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 									U.showSelfDispMessage(pp,
 											"File changed outside.(reloaded)",
 											4000);
+									pp.changedOutside = false;
 								} else {
 									U.showSelfDispMessage(pp,
 											"File changed outside.", 4000);
-								}								
-								EditPanel.this.repaint();
+								}
 								// break;
 							}
 						}
 
 					}
 				}
+				// EditPanel.this.requestFocus();
 			}
 		});
+		// frame.addWindowFocusListener(new WindowAdapter() {
+		// public void windowGainedFocus(WindowEvent e) {
+		// EditPanel.this.requestFocusInWindow();
+		// }
+		// });
 
 		changeTitle();
 		repaint();
