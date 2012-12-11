@@ -1,5 +1,6 @@
 package neoe.ne;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -79,6 +80,7 @@ public class PageData {
 		dataPool.remove(key);
 		title = null;
 		fn = fn2;
+		workPath=new File(fn).getParent();
 		dataPool.put(fn2, this);
 	}
 
