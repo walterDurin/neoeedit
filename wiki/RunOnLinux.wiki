@@ -2,7 +2,7 @@
 
 = Introduction =
 
-make a script
+use neoeedit itself to make a script for neoeedit
 
 
 = Details =
