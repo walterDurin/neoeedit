@@ -1,0 +1,21 @@
+#How to use neoeedit on linux
+
+= Introduction =
+
+make a script
+
+
+= Details =
+
+Command line usage:
+  * change to root(because need to write file to /usr/bin) use "su"
+  * $ java -jar neoeedit.jar
+  * edit the page like:
+{{{
+#!/bin/sh
+java -Xmx1024M -jar /home/xxx/Downloads/neoeedit.jar $1 &
+}}}
+  * press ctrl-s to save it to /usr/bin/neoeedit.sh
+  * close neoeedit
+  * $ chmod +x /usr/bin/neoeedit.sh
+  * now use can use neoeedit.sh your-file on command line or select it on GUI.
