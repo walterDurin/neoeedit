@@ -12,16 +12,20 @@ public class PageData {
 
 	static Map<String, PageData> dataPool = new HashMap<String, PageData>();
 
-	public static PageData newEmpty(String title) {
+	public static PageData newEmpty(String title, String initStr) {
 		PageData pd = dataPool.get(title);
 		if (pd != null)
 			return pd;
 		pd = new PageData();
 		pd.title = title;
 		pd.lines = new ArrayList<StringBuffer>();
-		pd.lines.add(new StringBuffer("empty"));
+		pd.lines.add(new StringBuffer(initStr));
 		dataPool.put(title, pd);
 		return pd;
+	}
+
+	public static PageData newEmpty(String title) {
+		return newEmpty(title, "empty");
 	}
 
 	public static PageData newFromFile(String fn) {
@@ -80,7 +84,7 @@ public class PageData {
 		dataPool.remove(key);
 		title = null;
 		fn = fn2;
-		workPath=new File(fn).getParent();
+		workPath = new File(fn).getParent();
 		dataPool.put(fn2, this);
 	}
 

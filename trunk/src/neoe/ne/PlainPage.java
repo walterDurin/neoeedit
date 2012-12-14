@@ -1329,7 +1329,10 @@ public class PlainPage {
 		} else if (kc == KeyEvent.VK_L) {
 			if (cy < pageData.lines.size())
 				U.launch(pageData.roLines.getline(cy).toString());
-		} else if (kc == KeyEvent.VK_H) {
+		} else if (kc == KeyEvent.VK_E) {
+			if (cy < pageData.lines.size())
+				U.exec(this, pageData.roLines.getline(cy).toString());
+		}else if (kc == KeyEvent.VK_H) {
 			String s = ptSelection.getSelected();
 			if (s != null && s.length() > 0) {
 				U.showHexOfString(s, PlainPage.this);

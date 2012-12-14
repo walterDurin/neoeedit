@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -646,6 +647,11 @@ public class U {
 		}
 
 		RoSb getline(int i) {
+			if (i < 0 || i >= data.lines.size()) {
+				System.out.println("bug:?RoSb.getline(" + i + "),size="
+						+ data.lines.size());
+				return new RoSb(new StringBuffer());
+			}
 			return new RoSb(data.lines.get(i));
 		}
 
@@ -1132,14 +1138,23 @@ public class U {
 
 	static boolean findAndShowPageListPage(EditPanel ep, String title,
 			boolean show) {
+		PlainPage pp = findPage(ep, title);
+		if (pp == null)
+			return false;
+		else {
+			if (show)
+				ep.setPage(pp);
+			return true;
+		}
+	}
+
+	static PlainPage findPage(EditPanel ep, String title) {
 		for (PlainPage pp : ep.pageSet) {
 			if (pp.pageData.getTitle().equals(title)) {
-				if (show)
-					ep.setPage(pp);
-				return true;
+				return pp;
 			}
 		}
-		return false;
+		return null;
 	}
 
 	static boolean findAndShowPageListPage(EditPanel ep, String title,
@@ -1643,7 +1658,7 @@ public class U {
 		// File f = chooser.getSelectedFile();
 		// openFile(f, page.uiComp);
 		// }
-		String dir = page.pageData.workPath;		
+		String dir = page.pageData.workPath;
 		if (dir == null)
 			dir = new File(".").getCanonicalPath();
 		String title = "[Dir]" + dir;
@@ -1685,6 +1700,18 @@ public class U {
 		}
 	}
 
+	/** see findPage() */
+	static PlainPage getPage(EditPanel ep, String title) throws Exception {
+		PlainPage pp = findPage(ep, title);
+		if (pp != null)
+			return pp;
+		PageData pd = PageData.dataPool.get(title);
+		if (pd == null)
+			pd = PageData.newEmpty(title,"");
+		final PlainPage page = new PlainPage(ep, pd);
+		return page;
+	}
+
 	static void openFileHistory(EditPanel ep) throws Exception {
 		File fhn = getFileHistoryName();
 		PlainPage page = new PlainPage(ep, PageData.newFromFile(fhn
@@ -1720,7 +1747,7 @@ public class U {
 		data.setLines(U.readFileForEditor(fn, data.encoding));
 		File f = new File(fn);
 		data.fileLastModified = f.lastModified();
-		data.workPath = f.getParent();		
+		data.workPath = f.getParent();
 	}
 
 	static List<StringBuffer> readFileForEditor(String fn, String encoding) {
@@ -2395,5 +2422,38 @@ public class U {
 			p.ui.font = f;
 		}
 		showSelfDispMessage(pp, "set font:" + font, 3000);
+	}
+
+	public static void exec(PlainPage pp, String cmd) throws Exception {
+		if (cmd.trim().length() <= 0)
+			return;
+		Process proc = Runtime.getRuntime().exec(cmd);
+		InputStream stdout = proc.getInputStream();
+		InputStream stderr = proc.getErrorStream();
+		attach(getPage(pp.uiComp, "[stderr]"), stderr);
+		attach(getPage(pp.uiComp, "[stdout]"), stdout);		
+	}
+
+	static void attach(final PlainPage page, final InputStream std) {
+		new Thread() {
+			public void run() {
+				try {
+					String enc = System.getProperty("sun.jnu.encoding");
+					if (enc == null)
+						enc = "utf8";
+					BufferedReader in = new BufferedReader(
+							new InputStreamReader(std,enc));
+					String line;
+					page.ptEdit.append("encoding:"+enc+"\n");
+					while ((line = in.readLine()) != null) {
+						page.ptEdit.append(line+"\n");
+						page.uiComp.repaint();
+					}
+					page.ptEdit.append("<EOF>\n");
+				} catch (Throwable e) {
+					page.ptEdit.append("error:" + e+"\n");
+				}
+			}
+		}.start();
 	}
 }
