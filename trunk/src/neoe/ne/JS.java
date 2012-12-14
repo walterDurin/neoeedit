@@ -10,24 +10,22 @@ import javax.script.ScriptEngineManager;
 
 import neoe.util.FileIterator;
 
-import sun.org.mozilla.javascript.internal.NativeArray;
+//import sun.org.mozilla.javascript.internal.NativeArray;
 
 public class JS {
 
 	private static void addResult(Object o, List<StringBuffer> res) {
 		if (o == null)
 			return;
-		else if (o instanceof NativeArray) {
-			NativeArray arr = (NativeArray) o;
-			int len = (int) arr.getLength();
+		else if (o instanceof String[]) {
+			String[] arr = (String[]) o;
+			int len = arr.length;
 			for (int j = 0; j < len; j++) {
-				Object obj = arr.get(j, arr);
-				res.add(new StringBuffer(obj.toString()));
+				res.add(new StringBuffer(arr[j]));
 			}
 		} else {
 			res.add(new StringBuffer(o.toString()));
 		}
-
 	}
 
 	public static List<StringBuffer> run(List<StringBuffer> lines,
@@ -35,13 +33,20 @@ public class JS {
 		List<StringBuffer> res = new ArrayList<StringBuffer>();
 		ScriptEngineManager manager = new ScriptEngineManager();
 		ScriptEngine engine = manager.getEngineByName("js");
+		engine.eval("function wrappedRun(a,b,c){var ret=run(a,b,c);if (Array.isArray(ret)){"
+				+ "  var jArr = java.lang.reflect.Array.newInstance(java.lang.String, ret.length);"
+				+ "  for (var i = 0; i < ret.length; i++) { "
+				+ "    jArr[i] = ret[i];"
+				+ "  }"
+				+ "  return jArr;"
+				+ "}else{return ret;}}");
 		engine.eval(userScript);
 		Invocable jsInvoke = (Invocable) engine;
 
 		int total = lines.size();
 		for (int i = 0; i < total; i++) {
-			Object o = jsInvoke.invokeFunction("run",
-					new Object[] { lines.get(i).toString(), i, total });
+			Object o = jsInvoke.invokeFunction("wrappedRun", new Object[] {
+					lines.get(i).toString(), i, total });
 			addResult(o, res);
 		}
 		if (res.size() == 0) {
