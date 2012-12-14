@@ -1,4 +1,4 @@
-#How to use neoeedit on linux
+# How to use neoeedit on linux
 
 = Introduction =
 
