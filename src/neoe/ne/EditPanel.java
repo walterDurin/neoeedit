@@ -46,7 +46,8 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 		setOpaque(false);
 		setCursor(new Cursor(Cursor.TEXT_CURSOR));
 		setFocusTraversalKeysEnabled(false);
-		PlainPage pp = new PlainPage(this, PageData.newEmpty("untitled"));
+		PlainPage pp = new PlainPage(this, PageData.newEmpty("UNTITLED #"
+				+ U.randomID()));
 		pp.ptSelection.selectAll();
 	}
 

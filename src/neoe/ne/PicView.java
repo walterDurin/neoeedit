@@ -29,9 +29,6 @@ public class PicView {
 	public class Panel extends JPanel implements MouseMotionListener,
 			MouseListener, MouseWheelListener, KeyListener {
 
-		/**
-		 * 
-		 */
 		private static final long serialVersionUID = -74255011004476996L;
 		private File f;
 		int fi;
