@@ -35,9 +35,7 @@ public class JS {
 		ScriptEngine engine = manager.getEngineByName("js");
 		engine.eval("function wrappedRun(a,b,c){var ret=run(a,b,c);if (Array.isArray(ret)){"
 				+ "  var jArr = java.lang.reflect.Array.newInstance(java.lang.String, ret.length);"
-				+ "  for (var i = 0; i < ret.length; i++) { "
-				+ "    jArr[i] = ret[i];"
-				+ "  }"
+				+ "  for (var i = 0; i < ret.length; i++) jArr[i] = ret[i];"
 				+ "  return jArr;"
 				+ "}else{return ret;}}");
 		engine.eval(userScript);

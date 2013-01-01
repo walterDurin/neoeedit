@@ -16,6 +16,7 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.awt.print.Book;
 import java.awt.print.PageFormat;
@@ -32,6 +33,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,6 +43,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import javax.imageio.ImageIO;
@@ -54,6 +58,7 @@ import javax.swing.TransferHandler;
 
 import neoe.ne.PlainPage.Paint;
 import neoe.util.FileIterator;
+import neoe.util.FileUtil;
 
 /**
  * util
@@ -211,6 +216,7 @@ public class U {
 		public final static int MAXSIZE = 200;
 		List<HistoryCell> atom;
 		LinkedList<List<HistoryCell>> data;
+		private boolean inAtom;
 		int p;
 		PageData pageData;
 
@@ -266,6 +272,11 @@ public class U {
 		}
 
 		public void beginAtom() {
+			if (inAtom) {
+				System.err.println("bug:double beginAtom");
+				new Exception("debug").printStackTrace();
+			}
+			inAtom = true;
 			if (!atom.isEmpty()) {
 				endAtom();
 			}
@@ -283,6 +294,7 @@ public class U {
 				add(atom);
 				atom = new ArrayList<HistoryCell>();
 			}
+			inAtom = false;
 		}
 
 		public List<HistoryCell> get() {
@@ -798,6 +810,23 @@ public class U {
 		}
 	}
 
+	public static class UnicodeFormatter {
+		static public String byteToHex(byte b) {
+			// Returns hex String representation of byte b
+			char hexDigit[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8',
+					'9', 'a', 'b', 'c', 'd', 'e', 'f' };
+			char[] array = { hexDigit[(b >> 4) & 0x0f], hexDigit[b & 0x0f] };
+			return new String(array);
+		}
+
+		static public String charToHex(char c) {
+			// Returns hex String representation of char c
+			byte hi = (byte) (c >>> 8);
+			byte lo = (byte) (c & 0xff);
+			return byteToHex(hi) + byteToHex(lo);
+		}
+	}
+
 	private final static String _TITLE_OF_PAGES = "__PAGES__";
 
 	static final Object[][] BOMS = new Object[][] {
@@ -805,7 +834,9 @@ public class U {
 			new Object[] { new int[] { 0xFE, 0xFF }, "UTF-16BE" },
 			new Object[] { new int[] { 0xFF, 0xFE }, "UTF-16LE" },
 			new Object[] { new int[] { 0, 0, 0xFE, 0xFF }, "UTF-32BE" },
-			new Object[] { new int[] { 0xFF, 0xFE, 0, 0 }, "UTF-32LE" }, };
+			new Object[] { new int[] { 0xFF, 0xFE, 0, 0 }, "UTF-32LE" }, };;
+
+	static Map<String, Commands> keys;
 
 	final static String[] KWS = { "ArithmeticError", "AssertionError",
 			"AttributeError", "BufferType", "BuiltinFunctionType",
@@ -900,7 +931,7 @@ public class U {
 			"vbnullchar", "vbnullstring", "vbobject", "vbred", "vbsingle",
 			"vbstring", "vbtab", "vbvariant", "vbverticaltab", "vbwhite",
 			"vbyellow", "void", "volatile", "weekday", "weekdayname", "wend",
-			"while", "with", "xor", "xrange", "year", "yield", "zip" };;
+			"while", "with", "xor", "xrange", "year", "yield", "zip" };
 
 	static Random random = new Random();
 
@@ -915,6 +946,29 @@ public class U {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	static void attach(final PlainPage page, final InputStream std) {
+		new Thread() {
+			public void run() {
+				try {
+					String enc = System.getProperty("sun.jnu.encoding");
+					if (enc == null)
+						enc = "utf8";
+					BufferedReader in = new BufferedReader(
+							new InputStreamReader(std, enc));
+					String line;
+					page.ptEdit.append("encoding:" + enc + "\n");
+					while ((line = in.readLine()) != null) {
+						page.ptEdit.append(line + "\n");
+						page.uiComp.repaint();
+					}
+					page.ptEdit.append("<EOF>\n");
+				} catch (Throwable e) {
+					page.ptEdit.append("error:" + e + "\n");
+				}
+			}
+		}.start();
 	}
 
 	static boolean changedOutside(PlainPage pp) {
@@ -1096,6 +1150,16 @@ public class U {
 
 	}
 
+	public static void exec(PlainPage pp, String cmd) throws Exception {
+		if (cmd.trim().length() <= 0)
+			return;
+		Process proc = Runtime.getRuntime().exec(cmd);
+		InputStream stdout = proc.getInputStream();
+		InputStream stderr = proc.getErrorStream();
+		attach(getPage(pp.uiComp, "[stderr]"), stderr);
+		attach(getPage(pp.uiComp, "[stdout]"), stdout);
+	}
+
 	static Point find(PlainPage page, String s, int x, int y, boolean ignoreCase) {
 		if (y >= page.pageData.roLines.getLinesize())
 			return null;
@@ -1146,15 +1210,6 @@ public class U {
 				ep.setPage(pp);
 			return true;
 		}
-	}
-
-	static PlainPage findPage(EditPanel ep, String title) {
-		for (PlainPage pp : ep.pageSet) {
-			if (pp.pageData.getTitle().equals(title)) {
-				return pp;
-			}
-		}
-		return null;
 	}
 
 	static boolean findAndShowPageListPage(EditPanel ep, String title,
@@ -1281,6 +1336,15 @@ public class U {
 		return a;
 	}
 
+	static PlainPage findPage(EditPanel ep, String title) {
+		for (PlainPage pp : ep.pageSet) {
+			if (pp.pageData.getTitle().equals(title)) {
+				return pp;
+			}
+		}
+		return null;
+	}
+
 	static void gc() {
 		System.out.print(km(Runtime.getRuntime().freeMemory()) + "/"
 				+ km(Runtime.getRuntime().totalMemory()) + " -> ");
@@ -1301,11 +1365,7 @@ public class U {
 	}
 
 	static File getFileHistoryName() throws IOException {
-		String home = System.getProperty("user.home");
-		File dir = new File(home, ".neoeedit");
-		dir.mkdirs();
-
-		File f = new File(dir, "fh.txt");
+		File f = new File(getMyDir(), "fh.txt");
 		if (!f.exists()) {
 			new FileOutputStream(f).close();
 		}
@@ -1331,6 +1391,44 @@ public class U {
 			p += 1;
 		}
 		return s.substring(0, p);
+	}
+
+	public static Reader getInstalledReader(String fn) throws IOException {
+		File installed = new File(getMyDir(), fn);
+		if (!installed.exists()) {
+			try {
+				FileUtil.copy(ClassLoader.getSystemResourceAsStream(fn),
+						new FileOutputStream(installed));
+			} catch (IOException e) {
+				e.printStackTrace();
+				return getJarReader(fn);
+			}
+		}
+		return new InputStreamReader(new FileInputStream(installed), "utf8");
+	}
+
+	static Reader getJarReader(String fn) throws UnsupportedEncodingException {
+		return new InputStreamReader(ClassLoader.getSystemResourceAsStream(fn),
+				"utf8");
+	}
+
+	public static File getMyDir() {
+		String home = System.getProperty("user.home");
+		File dir = new File(home, ".neoeedit");
+		dir.mkdirs();
+		return dir;
+	}
+
+	/** see findPage() */
+	static PlainPage getPage(EditPanel ep, String title) throws Exception {
+		PlainPage pp = findPage(ep, title);
+		if (pp != null)
+			return pp;
+		PageData pd = PageData.dataPool.get(title);
+		if (pd == null)
+			pd = PageData.newEmpty(title, "");
+		final PlainPage page = new PlainPage(ep, pd);
+		return page;
 	}
 
 	public static List<StringBuffer> getPageListStrings(EditPanel ep)
@@ -1622,11 +1720,57 @@ public class U {
 		}
 	}
 
+	public static void listFonts(PlainPage pp) throws Exception {
+		PlainPage p2 = new PlainPage(pp.uiComp, PageData.newEmpty(String
+				.format("<Fonts>")));
+		p2.pageData.workPath = pp.pageData.workPath;
+		p2.ui.applyColorMode(pp.ui.colorMode);
+		List<StringBuffer> sbs = new ArrayList<StringBuffer>();
+		String fonts[] = GraphicsEnvironment.getLocalGraphicsEnvironment()
+				.getAvailableFontFamilyNames();
+		for (String font : fonts) {
+			sbs.add(new StringBuffer("set-font:" + font));
+		}
+		p2.pageData.setLines(sbs);
+
+	}
+
 	static void loadTabImage() throws Exception {
 		BufferedImage img = ImageIO.read(U.class
 				.getResourceAsStream("/icontab.png"));
 		tabImg = img.getScaledInstance(40, 8, Image.SCALE_SMOOTH);
 		tabImgPrint = img.getScaledInstance(20, 8, Image.SCALE_SMOOTH);
+	}
+
+	public static Commands mappingToCommand(KeyEvent env) {
+		int kc = env.getKeyCode();
+		String name = "" + (char) kc;
+		if (env.isAltDown()) {
+			name = "A" + name;
+		}
+		if (env.isControlDown()) {
+			name = "C" + name;
+		}
+//		if (env.isShiftDown()) {
+//			name = "S" + name;
+//		}		
+		Commands cmd = keys.get(name);		
+		return cmd;
+	}
+
+	public static int maxWidth(List<Object[]> msgs, Graphics2D g, Font font) {
+		int max = 0;
+		for (int i = 0; i < msgs.size(); i++) {
+			Object[] row = msgs.get(i);
+			int w1 = (Integer) row[2];
+			if (w1 == -1) {
+				w1 = g.getFontMetrics(font).stringWidth(row[0].toString());
+				row[2] = w1;
+			}
+			if (w1 > max)
+				max = w1;
+		}
+		return max;
 	}
 
 	static PlainPage openFile(File f, EditPanel ep) throws Exception {
@@ -1698,18 +1842,6 @@ public class U {
 			page.sy = Math.max(0, page.cy - 3);
 			page.uiComp.repaint();
 		}
-	}
-
-	/** see findPage() */
-	static PlainPage getPage(EditPanel ep, String title) throws Exception {
-		PlainPage pp = findPage(ep, title);
-		if (pp != null)
-			return pp;
-		PageData pd = PageData.dataPool.get(title);
-		if (pd == null)
-			pd = PageData.newEmpty(title,"");
-		final PlainPage page = new PlainPage(ep, pd);
-		return page;
 	}
 
 	static void openFileHistory(EditPanel ep) throws Exception {
@@ -2092,6 +2224,14 @@ public class U {
 		plainPage.pageData.encoding = s;
 	}
 
+	public static void setFont(PlainPage pp, String font) {
+		Font f = new Font(font, Font.PLAIN, 12);
+		for (PlainPage p : pp.uiComp.pageSet) {
+			p.ui.font = f;
+		}
+		showSelfDispMessage(pp, "set font:" + font, 3000);
+	}
+
 	static void setFrameSize(JFrame f, int w, int h) {
 		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
 		f.setSize(Math.min(800, Math.min(dim.width, w)),
@@ -2145,6 +2285,19 @@ public class U {
 
 	}
 
+	public static void showHexOfString(String s, PlainPage pp) throws Exception {
+		PlainPage p2 = new PlainPage(pp.uiComp, PageData.newEmpty(String
+				.format("Hex for String #%s", randomID())));
+		p2.pageData.workPath = pp.pageData.workPath;
+		p2.ui.applyColorMode(pp.ui.colorMode);
+		List<StringBuffer> sbs = new ArrayList<StringBuffer>();
+		sbs.add(new StringBuffer(String.format("Hex for '%s'", s)));
+		for (char c : s.toCharArray()) {
+			sbs.add(new StringBuffer(c + ":" + UnicodeFormatter.charToHex(c)));
+		}
+		p2.pageData.setLines(sbs);
+	}
+
 	public static void showPageListPage(EditPanel ep) throws Exception {
 		if (findAndShowPageListPage(ep, titleOfPages(ep))) {
 			ep.getPage().pageData.setLines(getPageListStrings(ep));// refresh
@@ -2176,6 +2329,15 @@ public class U {
 			p2.searchResultOf = name;
 		}
 		// gc();
+	}
+
+	public static void showSelfDispMessage(PlainPage pp, String msg,
+			int disapearMS) {
+		long now = System.currentTimeMillis();
+		pp.ui.msgs
+				.add(new Object[] { msg, now + disapearMS, -1 /* draw width */});
+		// System.out.println("add msgs:"+pp.ui.msgs.size());
+		repaintAfter(4000, pp.uiComp);
 	}
 
 	static void sort(List<PlainPage> pageSet) {
@@ -2312,6 +2474,15 @@ public class U {
 		return sb.substring(a, b);
 	}
 
+	public static void switchPageInOrder(PlainPage pp) {
+		List<PlainPage> pps = pp.uiComp.pageSet;
+		if (pps.size() <= 1)
+			return;
+		int i = (1 + pps.indexOf(pp)) % pps.size();
+		pp.uiComp.setPage(pps.get(i));
+		pp.uiComp.repaint();
+	}
+
 	public static void switchToPageListPage(PlainPage pp) throws Exception {
 		EditPanel uiComp = pp.uiComp;
 		if (pp.pageData.getTitle().equals(U.titleOfPages(uiComp))
@@ -2326,134 +2497,13 @@ public class U {
 			showPageListPage(uiComp);
 		}
 	}
-
 	static String titleOfPages(EditPanel ep) {
 		return _TITLE_OF_PAGES + "@" + ep.hashCode();
 	}
-
 	static String trimLeft(String s) {
 		int i = 0;
 		while (i < s.length() && (s.charAt(i) == ' ' || s.charAt(i) == '\t'))
 			i++;
 		return i > 0 ? s.substring(i) : s;
-	}
-
-	public static void showSelfDispMessage(PlainPage pp, String msg,
-			int disapearMS) {
-		long now = System.currentTimeMillis();
-		pp.ui.msgs
-				.add(new Object[] { msg, now + disapearMS, -1 /* draw width */});
-		// System.out.println("add msgs:"+pp.ui.msgs.size());
-		repaintAfter(4000, pp.uiComp);
-	}
-
-	public static int maxWidth(List<Object[]> msgs, Graphics2D g, Font font) {
-		int max = 0;
-		for (int i = 0; i < msgs.size(); i++) {
-			Object[] row = msgs.get(i);
-			int w1 = (Integer) row[2];
-			if (w1 == -1) {
-				w1 = g.getFontMetrics(font).stringWidth(row[0].toString());
-				row[2] = w1;
-			}
-			if (w1 > max)
-				max = w1;
-		}
-		return max;
-	}
-
-	public static void switchPageInOrder(PlainPage pp) {
-		List<PlainPage> pps = pp.uiComp.pageSet;
-		if (pps.size() <= 1)
-			return;
-		int i = (1 + pps.indexOf(pp)) % pps.size();
-		pp.uiComp.setPage(pps.get(i));
-		pp.uiComp.repaint();
-	}
-
-	public static class UnicodeFormatter {
-		static public String byteToHex(byte b) {
-			// Returns hex String representation of byte b
-			char hexDigit[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8',
-					'9', 'a', 'b', 'c', 'd', 'e', 'f' };
-			char[] array = { hexDigit[(b >> 4) & 0x0f], hexDigit[b & 0x0f] };
-			return new String(array);
-		}
-
-		static public String charToHex(char c) {
-			// Returns hex String representation of char c
-			byte hi = (byte) (c >>> 8);
-			byte lo = (byte) (c & 0xff);
-			return byteToHex(hi) + byteToHex(lo);
-		}
-	}
-
-	public static void showHexOfString(String s, PlainPage pp) throws Exception {
-		PlainPage p2 = new PlainPage(pp.uiComp, PageData.newEmpty(String
-				.format("Hex for String #%s", randomID())));
-		p2.pageData.workPath = pp.pageData.workPath;
-		p2.ui.applyColorMode(pp.ui.colorMode);
-		List<StringBuffer> sbs = new ArrayList<StringBuffer>();
-		sbs.add(new StringBuffer(String.format("Hex for '%s'", s)));
-		for (char c : s.toCharArray()) {
-			sbs.add(new StringBuffer(c + ":" + UnicodeFormatter.charToHex(c)));
-		}
-		p2.pageData.setLines(sbs);
-	}
-
-	public static void listFonts(PlainPage pp) throws Exception {
-		PlainPage p2 = new PlainPage(pp.uiComp, PageData.newEmpty(String
-				.format("<Fonts>")));
-		p2.pageData.workPath = pp.pageData.workPath;
-		p2.ui.applyColorMode(pp.ui.colorMode);
-		List<StringBuffer> sbs = new ArrayList<StringBuffer>();
-		String fonts[] = GraphicsEnvironment.getLocalGraphicsEnvironment()
-				.getAvailableFontFamilyNames();
-		for (String font : fonts) {
-			sbs.add(new StringBuffer("set-font:" + font));
-		}
-		p2.pageData.setLines(sbs);
-
-	}
-
-	public static void setFont(PlainPage pp, String font) {
-		Font f = new Font(font, Font.PLAIN, 12);
-		for (PlainPage p : pp.uiComp.pageSet) {
-			p.ui.font = f;
-		}
-		showSelfDispMessage(pp, "set font:" + font, 3000);
-	}
-
-	public static void exec(PlainPage pp, String cmd) throws Exception {
-		if (cmd.trim().length() <= 0)
-			return;
-		Process proc = Runtime.getRuntime().exec(cmd);
-		InputStream stdout = proc.getInputStream();
-		InputStream stderr = proc.getErrorStream();
-		attach(getPage(pp.uiComp, "[stderr]"), stderr);
-		attach(getPage(pp.uiComp, "[stdout]"), stdout);		
-	}
-
-	static void attach(final PlainPage page, final InputStream std) {
-		new Thread() {
-			public void run() {
-				try {
-					String enc = System.getProperty("sun.jnu.encoding");
-					if (enc == null)
-						enc = "utf8";
-					BufferedReader in = new BufferedReader(
-							new InputStreamReader(std,enc));
-					String line;
-					page.ptEdit.append("encoding:"+enc+"\n");
-					while ((line = in.readLine()) != null) {
-						page.ptEdit.append(line+"\n");
-						page.uiComp.repaint();
-					}
-					page.ptEdit.append("<EOF>\n");
-				} catch (Throwable e) {
-					page.ptEdit.append("error:" + e+"\n");
-				}
-			}
-		}.start();
 	}
 }

@@ -22,6 +22,7 @@ import java.util.List;
 
 import javax.swing.JOptionPane;
 
+import neoe.ne.Ime.Param;
 import neoe.ne.U.RoSb;
 
 public class PlainPage {
@@ -548,7 +549,6 @@ public class PlainPage {
 		BufferedImage aboutImg;
 
 		boolean aboutOn;
-		List<Object[]> msgs = new ArrayList<Object[]>();
 		int aboutY;
 		boolean closed = false;
 		Color colorBg, colorComment, colorComment2, colorCurrentLineBg,
@@ -578,6 +578,7 @@ public class PlainPage {
 		int lineGap = 5;
 		int lineHeight = 10;
 		long MSG_VANISH_TIME = 3000;
+		List<Object[]> msgs = new ArrayList<Object[]>();
 
 		boolean noise = false;
 
@@ -655,6 +656,37 @@ public class PlainPage {
 							lineHeight + lineGap);
 				}
 			}
+		}
+
+		private void drawSelfDispMessages(Graphics2D g) {
+			long now = System.currentTimeMillis();
+			for (int i = 0; i < msgs.size(); i++) {
+				Object[] row = msgs.get(i);
+				long disapear = (Long) row[1];
+				if (disapear < now) {
+					msgs.remove(i);
+					i--;
+				}
+			}
+			if (!msgs.isEmpty()) {
+				// System.out.println("msgs:"+msgs.size());
+				g.setFont(FONT_BIG);
+				int w = U.maxWidth(msgs, g, FONT_BIG) + 100;
+				int h = 30 * msgs.size() + 60;
+				g.setXORMode(Color.BLACK);
+				g.setPaintMode();
+				g.setColor(Color.decode("0xFFCCFF"));
+				g.fillRoundRect((dim.width - w) / 2, (dim.height - h) / 2, w,
+						h, 3, 3);
+				g.setColor(Color.BLACK);
+				for (int i = 0; i < msgs.size(); i++) {
+					Object[] row = msgs.get(i);
+					int w1 = (Integer) row[2];
+					g.drawString(row[0].toString(), (dim.width - w1) / 2,
+							(10 + dim.height / 2 + 30 * (i - msgs.size() / 2)));
+				}
+			}
+
 		}
 
 		int drawStringLine(Graphics2D g2, String s, int x, int y) {
@@ -957,37 +989,6 @@ public class PlainPage {
 			}
 		}
 
-		private void drawSelfDispMessages(Graphics2D g) {
-			long now = System.currentTimeMillis();
-			for (int i = 0; i < msgs.size(); i++) {
-				Object[] row = msgs.get(i);
-				long disapear = (Long) row[1];
-				if (disapear < now) {
-					msgs.remove(i);
-					i--;
-				}
-			}
-			if (!msgs.isEmpty()) {
-				// System.out.println("msgs:"+msgs.size());
-				g.setFont(FONT_BIG);
-				int w = U.maxWidth(msgs, g, FONT_BIG) + 100;
-				int h = 30 * msgs.size() + 60;
-				g.setXORMode(Color.BLACK);
-				g.setPaintMode();
-				g.setColor(Color.decode("0xFFCCFF"));
-				g.fillRoundRect((dim.width - w) / 2, (dim.height - h) / 2, w,
-						h, 3, 3);
-				g.setColor(Color.BLACK);
-				for (int i = 0; i < msgs.size(); i++) {
-					Object[] row = msgs.get(i);
-					int w1 = (Integer) row[2];
-					g.drawString(row[0].toString(), (dim.width - w1) / 2,
-							(10 + dim.height / 2 + 30 * (i - msgs.size() / 2)));
-				}
-			}
-
-		}
-
 	}
 
 	class Selection {
@@ -1131,13 +1132,13 @@ public class PlainPage {
 	}
 
 	static final String WINDOW_NAME = "neoeedit " + Version.REV;
-	Cursor cursor = new Cursor();
+	boolean changedOutside = false;
 
+	Cursor cursor = new Cursor();
 	int cx;
 	int cy;
 	boolean ignoreCase = true;
 	boolean isCommentChecked = false;
-	boolean changedOutside = false;
 	int mcount;
 	String msg;
 	long msgtime;
@@ -1212,60 +1213,36 @@ public class PlainPage {
 	}
 
 	public void keyPressed(KeyEvent env) {
+		if (Ime.enabled&&Ime.instance!=null){
+			Param param = new Param();
+			Ime.instance.keyPressed(env, param);
+			if (param.yield!=null) {
+				pageData.history.beginAtom();
+				ptEdit.insertString(param.yield);
+				pageData.history.endAtom();
+			}
+			if (param.consumed){				
+				return;
+			}
+		}
+
 		pageData.history.beginAtom();
 		try {
 			mshift = env.isShiftDown();
-			// System.out.println("press " + env.getKeyChar());
 			int ocx = cx;
 			int ocy = cy;
-			int kc = env.getKeyCode();
-
-			if (env.isAltDown()) {
-				keyPressedWithAltDown(env);
-			} else if (env.isControlDown()) {
-				keyPressedWithControlDown(env);
-			} else {
-				if (kc == KeyEvent.VK_F1) {
-					U.showHelp(ui, uiComp);
-				} else if (kc == KeyEvent.VK_F2) {
-					U.saveAs(this);
-				} else if (kc == KeyEvent.VK_F3) {
-					ptFind.findNext();
-				} else if (kc == KeyEvent.VK_F5) {
-					if (pageData.getTitle().equals(U.titleOfPages(uiComp))) {
-						pageData.setLines(U.getPageListStrings(uiComp));
-					}
-					U.reloadWithEncodingByUser(pageData.getFn(), this);
-					PlainPage.this.changedOutside = false;
-				} else if (kc == KeyEvent.VK_LEFT) {
-					cursor.moveLeft();
-					focusCursor();
-				} else if (kc == KeyEvent.VK_RIGHT) {
-					cursor.moveRight();
-					focusCursor();
-				} else if (kc == KeyEvent.VK_UP) {
-					cursor.moveUp();
-					focusCursor();
-				} else if (kc == KeyEvent.VK_DOWN) {
-					cursor.moveDown();
-					focusCursor();
-				} else if (kc == KeyEvent.VK_HOME) {
-					cursor.moveHome();
-					focusCursor();
-				} else if (kc == KeyEvent.VK_END) {
-					cursor.moveEnd();
-					focusCursor();
-				} else if (kc == KeyEvent.VK_PAGE_UP) {
-					cursor.movePageUp();
-					focusCursor();
-				} else if (kc == KeyEvent.VK_PAGE_DOWN) {
-					cursor.movePageDown();
-					focusCursor();
-				} else if (kc == KeyEvent.VK_CONTROL || kc == KeyEvent.VK_SHIFT
-						|| kc == KeyEvent.VK_ALT) {
-					return;
+			
+			Commands cmd = U.mappingToCommand(env);
+			if (cmd == null) {
+				int kc = env.getKeyCode();
+				if (!Character.isIdentifierIgnorable(kc)
+						&& (env.isAltDown() || env.isControlDown())) {
+					unknownCommand(env);
 				}
+			} else {
+				processCommand(cmd);
 			}
+
 			boolean cmoved = !(ocx == cx && ocy == cy);
 			if (cmoved) {
 				if (env.isShiftDown()) {
@@ -1285,162 +1262,6 @@ public class PlainPage {
 			e.printStackTrace();
 		}
 		pageData.history.endAtom();
-	}
-
-	void keyPressedWithAltDown(KeyEvent env) throws Exception {
-		int kc = env.getKeyCode();
-		if (kc == KeyEvent.VK_LEFT) {
-			ptEdit.moveLineLeft(cy);
-			focusCursor();
-		} else if (kc == KeyEvent.VK_RIGHT) {
-			ptEdit.moveLineRight(cy);
-			focusCursor();
-		} else if (kc == KeyEvent.VK_BACK_SLASH) {
-			rectSelectMode = !rectSelectMode;
-		} else if (kc == KeyEvent.VK_N) {
-			ui.noise = !ui.noise;
-			if (ui.noise) {
-				U.startNoiseThread(ui, uiComp);
-			}
-		} else if (kc == KeyEvent.VK_S) {
-			if (pageData.lineSep.equals("\n"))
-				pageData.lineSep = "\r\n";
-			else
-				pageData.lineSep = "\n";
-		} else if (kc == KeyEvent.VK_W) {
-			ptEdit.wrapLines(cx);
-			focusCursor();
-		} else if (kc == KeyEvent.VK_J) {
-			U.runScript(this);
-			// } else if (kc == KeyEvent.VK_D) {
-			// U.runScriptOnDir(pageData.workPath);
-			// i never used this function, so delete it
-		} else if (kc == KeyEvent.VK_PAGE_UP) {
-			cx = Math.max(0, cx - uiComp.getWidth() / 10);
-			focusCursor();
-		} else if (kc == KeyEvent.VK_PAGE_DOWN) {
-			cx = cx + uiComp.getWidth() / 10;
-			focusCursor();
-		} else if (kc == KeyEvent.VK_C) {
-			ui.setNextColorMode();
-			ui.applyColorMode(ui.colorMode);
-		} else if (kc == KeyEvent.VK_P) {
-			cursor.moveToPair();
-		} else if (kc == KeyEvent.VK_L) {
-			if (cy < pageData.lines.size())
-				U.launch(pageData.roLines.getline(cy).toString());
-		} else if (kc == KeyEvent.VK_E) {
-			if (cy < pageData.lines.size())
-				U.exec(this, pageData.roLines.getline(cy).toString());
-		}else if (kc == KeyEvent.VK_H) {
-			String s = ptSelection.getSelected();
-			if (s != null && s.length() > 0) {
-				U.showHexOfString(s, PlainPage.this);
-			}
-		} else if (kc == KeyEvent.VK_F) {
-			U.listFonts(this);
-		} else if (!Character.isIdentifierIgnorable(kc)) {
-			unknownCommand(env);
-		}
-	}
-
-	void keyPressedWithControlDown(KeyEvent env) throws Exception {
-		int kc = env.getKeyCode();
-		if (kc == KeyEvent.VK_C) {
-			ptSelection.copySelected();
-		} else if (kc == KeyEvent.VK_V) {
-			if (ptSelection.isSelected()) {
-				ptEdit.deleteRect(ptSelection.getSelectRect());
-			}
-			ptEdit.insertString(U.getClipBoard());
-		} else if (kc == KeyEvent.VK_X) {
-			ptSelection.cutSelected();
-		} else if (kc == KeyEvent.VK_A) {
-			ptSelection.selectAll();
-		} else if (kc == KeyEvent.VK_D) {
-			if (ptSelection.isSelected()) {
-				ptEdit.deleteRect(ptSelection.getSelectRect());
-			} else {
-				ptEdit.deleteLine(cy);
-			}
-			focusCursor();
-		} else if (kc == KeyEvent.VK_O) {
-			U.openFile(this);
-		} else if (kc == KeyEvent.VK_N) {
-			PlainPage pp=new PlainPage(uiComp,
-					PageData.newEmpty("UNTITLED #" + U.randomID()));
-			pp.pageData.workPath=this.pageData.workPath;
-			pp.ptSelection.selectAll();			
-		} else if (kc == KeyEvent.VK_M) {
-			EditPanel ep = new EditPanel();
-			ep.openWindow();
-		} else if (kc == KeyEvent.VK_S) {
-			if (U.saveFile(this)) {
-				ui.message("saved");
-			}
-		} else if (kc == KeyEvent.VK_L) {
-			cursor.gotoLine();
-		} else if (kc == KeyEvent.VK_Z) {
-			pageData.history.undo(this);
-		} else if (kc == KeyEvent.VK_F) {
-			ptFind.showFindDialog();
-		} else if (kc == KeyEvent.VK_Y) {
-			pageData.history.redo(this);
-		} else if (kc == KeyEvent.VK_W) {
-			U.closePage(this);
-		} else if (kc == KeyEvent.VK_E) {
-			U.setEncodingByUser(this, "Set Encoding:");
-		} else if (kc == KeyEvent.VK_PAGE_UP) {
-			cy = 0;
-			cx = 0;
-			focusCursor();
-		} else if (kc == KeyEvent.VK_PAGE_DOWN) {
-			cy = pageData.roLines.getLinesize() - 1;
-			cx = 0;
-			focusCursor();
-		} else if (kc == KeyEvent.VK_R) {
-			U.removeTrailingSpace(pageData);
-		} else if (kc == KeyEvent.VK_LEFT) {
-			cursor.moveLeftWord();
-			focusCursor();
-		} else if (kc == KeyEvent.VK_RIGHT) {
-			cursor.moveRightWord();
-			focusCursor();
-		} else if (kc == KeyEvent.VK_UP) {
-			sy = Math.max(0, sy - 1);
-		} else if (kc == KeyEvent.VK_DOWN) {
-			sy = Math.min(sy + 1, pageData.roLines.getLinesize() - 1);
-		} else if (kc == KeyEvent.VK_0) {
-			ui.scalev = 1;
-		} else if (kc == KeyEvent.VK_1) {
-			if (cy < pageData.lines.size()) {
-				String line = pageData.roLines.getline(cy).toString();
-				if (line.startsWith("set-font:")) {
-					U.setFont(this, line.substring("set-font:".length()).trim());
-				} else {
-					if (searchResultOf == null
-							|| !U.gotoFileLine2(uiComp, line, searchResultOf)) {
-						if (!U.gotoFileLine(line, uiComp, pageData.getTitle()
-								.equals(U.titleOfPages(uiComp)))) {
-							U.listDir(PlainPage.this, cy);
-						}
-					}
-				}
-			}
-		} else if (kc == KeyEvent.VK_H) {
-			U.openFileHistory(uiComp);
-		} else if (kc == KeyEvent.VK_P) {
-			new U.Print(PlainPage.this).printPages();
-		} else if (kc == KeyEvent.VK_ENTER) {
-			cursor.moveEnd();
-			focusCursor();
-		} else if (kc == KeyEvent.VK_Q) {
-			U.switchToPageListPage(this);
-		} else if (kc == KeyEvent.VK_TAB) {
-			U.switchPageInOrder(this);
-		} else if (!Character.isIdentifierIgnorable(kc)) {
-			unknownCommand(env);
-		}
 	}
 
 	public void keyReleased(KeyEvent env) {
@@ -1463,7 +1284,16 @@ public class PlainPage {
 		} else if (env.isControlDown() || env.isAltDown()) {
 			// ignore
 		} else {
-			ptEdit.insert(kc);
+			if (Ime.enabled&&Ime.instance!=null){
+				Param param = new Param();
+				Ime.instance.keyPressed(env, param);
+				if (param.yield!=null) ptEdit.insertString(param.yield);
+				if (!param.consumed){
+					ptEdit.insert(kc);	
+				}
+			}else{
+				ptEdit.insert(kc);
+			}
 		}
 		pageData.history.endAtom();
 	}
@@ -1522,6 +1352,247 @@ public class PlainPage {
 			cursor.scroll(amount);
 		}
 
+	}
+
+	private void processCommand(Commands cmd) throws Exception {
+		switch (cmd) {
+		case showHelp:
+			U.showHelp(ui, uiComp);
+			break;
+		case saveAs:
+			U.saveAs(this);
+			break;
+		case findNext:
+			ptFind.findNext();
+			break;
+		case reloadWithEncoding:
+			if (pageData.getTitle().equals(U.titleOfPages(uiComp))) {
+				pageData.setLines(U.getPageListStrings(uiComp));
+			}
+			U.reloadWithEncodingByUser(pageData.getFn(), this);
+			PlainPage.this.changedOutside = false;
+			break;
+		case moveLeft:
+			cursor.moveLeft();
+			focusCursor();
+			break;
+		case moveRight:
+			cursor.moveRight();
+			focusCursor();
+			break;
+		case moveUp:
+			cursor.moveUp();
+			focusCursor();
+			break;
+		case moveDown:
+			cursor.moveDown();
+			focusCursor();
+			break;
+		case moveHome:
+			cursor.moveHome();
+			focusCursor();
+			break;
+		case moveEnd:
+			cursor.moveEnd();
+			focusCursor();
+			break;
+		case movePageUp:
+			cursor.movePageUp();
+			focusCursor();
+			break;
+		case movePageDown:
+			cursor.movePageDown();
+			focusCursor();
+			break;
+		case indentLeft:
+			ptEdit.moveLineLeft(cy);
+			focusCursor();
+			break;
+		case indentRight:
+			ptEdit.moveLineRight(cy);
+			focusCursor();
+			break;
+		case rectangleMode:
+			rectSelectMode = !rectSelectMode;
+			break;
+		case makeNoise:
+			ui.noise = !ui.noise;
+			if (ui.noise) {
+				U.startNoiseThread(ui, uiComp);
+			}
+			break;
+		case switchLineSeperator:
+			if (pageData.lineSep.equals("\n"))
+				pageData.lineSep = "\r\n";
+			else
+				pageData.lineSep = "\n";
+			break;
+		case wrapLines:
+			ptEdit.wrapLines(cx);
+			focusCursor();
+			break;
+		case Javascript:
+			U.runScript(this);
+			break;
+		case moveLeftBig:
+			cx = Math.max(0, cx - uiComp.getWidth() / 10);
+			focusCursor();
+			break;
+		case moveRightBig:
+			cx = cx + uiComp.getWidth() / 10;
+			focusCursor();
+			break;
+		case switchColorMode:
+			ui.setNextColorMode();
+			ui.applyColorMode(ui.colorMode);
+			break;
+		case moveBetweenPair:
+			cursor.moveToPair();
+			break;
+		case launch:
+			if (cy < pageData.lines.size())
+				U.launch(pageData.roLines.getline(cy).toString());
+			break;
+		case execute:
+			if (cy < pageData.lines.size())
+				U.exec(this, pageData.roLines.getline(cy).toString());
+			break;
+		case hex:
+			String s = ptSelection.getSelected();
+			if (s != null && s.length() > 0) {
+				U.showHexOfString(s, PlainPage.this);
+			}
+			break;
+		case listFonts:
+			U.listFonts(this);
+			break;
+		case copySelected:
+			ptSelection.copySelected();
+			break;
+		case paste:
+			if (ptSelection.isSelected()) {
+				ptEdit.deleteRect(ptSelection.getSelectRect());
+			}
+			ptEdit.insertString(U.getClipBoard());
+			break;
+		case cut:
+			ptSelection.cutSelected();
+			break;
+		case selectAll:
+			ptSelection.selectAll();
+			break;
+		case deleteLine:
+			if (ptSelection.isSelected()) {
+				ptEdit.deleteRect(ptSelection.getSelectRect());
+			} else {
+				ptEdit.deleteLine(cy);
+			}
+			focusCursor();
+			break;
+		case openFile:
+			U.openFile(this);
+			break;
+		case newPage:
+			PlainPage pp = new PlainPage(uiComp, PageData.newEmpty("UNTITLED #"
+					+ U.randomID()));
+			pp.pageData.workPath = this.pageData.workPath;
+			pp.ptSelection.selectAll();
+			break;
+		case newWindow:
+			EditPanel ep = new EditPanel();
+			ep.openWindow();
+			break;
+		case save:
+			if (U.saveFile(this)) {
+				ui.message("saved");
+			}
+			break;
+		case gotoLine:
+			cursor.gotoLine();
+			break;
+		case undo:
+			pageData.history.undo(this);
+			break;
+		case find:
+			ptFind.showFindDialog();
+			break;
+		case redo:
+			pageData.history.redo(this);
+			break;
+		case closePage:
+			U.closePage(this);
+			break;
+		case setEncoding:
+			U.setEncodingByUser(this, "Set Encoding:");
+			break;
+		case moveToHead:
+			cy = 0;
+			cx = 0;
+			focusCursor();
+			break;
+		case moveToTail:
+			cy = pageData.roLines.getLinesize() - 1;
+			cx = 0;
+			focusCursor();
+			break;
+		case removeTralingSpace:
+			U.removeTrailingSpace(pageData);
+			break;
+		case moveLeftWord:
+			cursor.moveLeftWord();
+			focusCursor();
+			break;
+		case moveRightWord:
+			cursor.moveRightWord();
+			focusCursor();
+			break;
+		case moveViewUp:
+			sy = Math.max(0, sy - 1);
+			break;
+		case moveViewDown:
+			sy = Math.min(sy + 1, pageData.roLines.getLinesize() - 1);
+			break;
+		case resetScale:
+			ui.scalev = 1;
+			break;
+		case go:
+			if (cy < pageData.lines.size()) {
+				String line = pageData.roLines.getline(cy).toString();
+				if (line.startsWith("set-font:")) {
+					U.setFont(this, line.substring("set-font:".length()).trim());
+				} else {
+					if (searchResultOf == null
+							|| !U.gotoFileLine2(uiComp, line, searchResultOf)) {
+						if (!U.gotoFileLine(line, uiComp, pageData.getTitle()
+								.equals(U.titleOfPages(uiComp)))) {
+							U.listDir(PlainPage.this, cy);
+						}
+					}
+				}
+			}
+			break;
+		case fileHistory:
+			U.openFileHistory(uiComp);
+			break;
+		case print:
+			new U.Print(PlainPage.this).printPages();
+			break;
+		case pageList:
+			U.switchToPageListPage(this);
+			break;
+		case quickSwitchPage:
+			U.switchPageInOrder(this);
+			break;
+		case toggleIME:
+			if (Ime.instance==null) ui.message("IME plugin not present.");
+			else{				
+				Ime.enabled=!Ime.enabled;
+				Ime.instance.setEnabled(Ime.enabled);
+			}
+			break;
+		default:
+
+		}
 	}
 
 	private void unknownCommand(KeyEvent env) {
