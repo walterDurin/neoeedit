@@ -88,6 +88,5 @@ public class Main {
 			// U.showSelfDispMessage(editor.getPage(),"hello ...",4000);
 			editor.openWindow();
 		}
-
 	}
 }
