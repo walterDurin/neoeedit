@@ -9,6 +9,7 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.HashSet;
 import java.util.Iterator;
 
 public class Shell {
@@ -77,7 +78,7 @@ public class Shell {
 			ret.append(" method:" + o);
 			return;
 		}
-		ret.append(" " + DumpToString.dump(o, 2));
+		ret.append(" " + DumpToString.dump(o, 0));
 	}
 
 }
@@ -88,21 +89,25 @@ class DumpToString {
 		ByteArrayOutputStream ba = new ByteArrayOutputStream();
 		Writer out = new BufferedWriter(new OutputStreamWriter(ba, "utf8"));
 		out.write("dump[");
-		dump(o, out, 0, maxLevel);
+		dump(o, out, 0, maxLevel, new HashSet());
 		out.write("\n]");
 		out.close();
 		return ba.toString();
 	}
 
-	public static void dump(Object o, Writer out, int indent, int maxLevel)
-			throws Exception {
+	public static void dump(Object o, Writer out, int indent, int maxLevel,
+			HashSet objSet) throws Exception {
 		if (o == null)
 			return;
+
 		String name = o.getClass().getName();
 		if (isPrimitive(name)) {
 			out.write(o.toString());
 		} else {
-			if (indent >= maxLevel){
+			if (objSet.contains(o))
+				return;
+			objSet.add(o);
+			if (indent >= maxLevel && maxLevel > 0) {
 				return;
 			}
 			if (o.getClass().isArray()) {
@@ -113,7 +118,7 @@ class DumpToString {
 						indent(indent + 1, out);
 						out.write(",");
 					}
-					dump(Array.get(o, i), out, indent + 1, maxLevel);
+					dump(Array.get(o, i), out, indent + 1, maxLevel, objSet);
 				}
 				out.write("]");
 			} else if (o instanceof Iterable) {
@@ -126,7 +131,7 @@ class DumpToString {
 						indent(indent, out);
 						out.write(",");
 					}
-					dump(i.next(), out, indent + 1, maxLevel);
+					dump(i.next(), out, indent + 1, maxLevel, objSet);
 					index++;
 				}
 				out.write("\n");
@@ -168,7 +173,7 @@ class DumpToString {
 								i2++;
 							out.write(fields[i].getName());
 							out.write("=");
-							dump(value, out, indent + 1, maxLevel);
+							dump(value, out, indent + 1, maxLevel, objSet);
 						}
 					}
 					oClass = oClass.getSuperclass();
