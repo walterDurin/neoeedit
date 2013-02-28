@@ -87,6 +87,8 @@ public class Shell {
 
 class DumpToString {
 
+	private static final int MAX_DUMP_ARR = 99;
+
 	public static String dump(Object o, int maxLevel) throws Exception {
 		ByteArrayOutputStream ba = new ByteArrayOutputStream();
 		Writer out = new BufferedWriter(new OutputStreamWriter(ba, "utf8"));
@@ -117,12 +119,20 @@ class DumpToString {
 			if (o.getClass().isArray()) {
 				out.write("arr[");
 				for (int i = 0; i < Array.getLength(o); i++) {
+					if(i>MAX_DUMP_ARR){
+						out.write("\n");
+						indent(indent + 1, out);
+						out.write(",...(more as " +Array.getLength(o)+
+								")");
+						break;
+					}
 					if (i > 0) {
 						out.write("\n");
 						indent(indent + 1, out);
 						out.write(",");
 					}
 					dump(Array.get(o, i), out, indent + 1, maxLevel, objSet);
+					
 				}
 				out.write("]");
 			} else if (o instanceof Iterable) {
