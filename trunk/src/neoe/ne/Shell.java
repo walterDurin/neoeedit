@@ -11,6 +11,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 public class Shell {
 
@@ -96,16 +98,18 @@ class DumpToString {
 	}
 
 	public static void dump(Object o, Writer out, int indent, int maxLevel,
-			HashSet objSet) throws Exception {
+			Set objSet) throws Exception {
 		if (o == null)
 			return;
 
 		String name = o.getClass().getName();
-		if (isPrimitive(name)) {
+		if (isPrimitive(name, o)) {
 			out.write(o.toString());
 		} else {
-			if (objSet.contains(o))
+			if (objSet.contains(o)) {
+				out.write(o.getClass().getName() + "@" +  Integer.toHexString(o.hashCode())+ "...");
 				return;
+			}
 			objSet.add(o);
 			if (indent >= maxLevel && maxLevel > 0) {
 				return;
@@ -123,7 +127,7 @@ class DumpToString {
 				out.write("]");
 			} else if (o instanceof Iterable) {
 				Iterator i = ((Iterable) o).iterator();
-				out.write("list[");
+				out.write(o.getClass() + "[");
 				int index = 0;
 				while (i.hasNext()) {
 					if (index > 0) {
@@ -137,6 +141,22 @@ class DumpToString {
 				out.write("\n");
 				indent(indent, out);
 				out.write("]");
+			} else if (o instanceof Map) {
+				Map m = (Map) o;
+				out.write(o.getClass().getName() + "{");
+				int i = 0;
+				for (Object o2 : m.keySet()) {
+					if (i > 0) {
+						out.write("\n");
+						indent(indent + 1, out);
+						out.write(",");
+					}
+					dump(o2, out, indent + 1, maxLevel, objSet);
+					out.write(":");
+					dump(m.get(o2), out, indent + 1, maxLevel, objSet);
+					i++;
+				}
+				out.write("}");
 			} else {
 				out.write(name);
 				out.write("{\n");
@@ -144,7 +164,8 @@ class DumpToString {
 				Class oClass = o.getClass();
 				int i2 = 0;
 				while (oClass != null) {
-					if (isPrimitive(oClass.getName())) {
+					if (isPrimitive(oClass.getName(), o)
+							|| definedToString(oClass)) {
 						if (i2 > 0) {
 							out.write("\n");
 							indent(indent + 1, out);
@@ -186,13 +207,26 @@ class DumpToString {
 
 	}
 
+	private static boolean definedToString(Class oClass) {
+		try {
+			Method m = oClass.getDeclaredMethod("toString", new Class[] {});
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
 	private static void indent(int i, Writer out) throws IOException {
 		for (; i > 0; i--)
 			out.write("\t");
 	}
 
-	private static boolean isPrimitive(String name) {
-		return name.startsWith("java.") || name.startsWith("javax.")
-				|| name.indexOf(".") < 0;
+	private static boolean isPrimitive(String name, Object o) {
+		if (o.getClass().isArray() || o instanceof Iterable || o instanceof Map)
+			return false;
+		return 
+				// name.startsWith("java.") || name.startsWith("javax.")|| name.startsWith("sun.")	||
+				name.startsWith("java.lang.") ||
+				name.indexOf(".") < 0;
 	}
 }
