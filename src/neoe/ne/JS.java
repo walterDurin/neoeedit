@@ -53,25 +53,5 @@ public class JS {
 		return res;
 
 	}
-
-	public static List<StringBuffer> runOnDir(String userScript)
-			throws Exception {
-		List<StringBuffer> res = new ArrayList<StringBuffer>();
-		ScriptEngineManager manager = new ScriptEngineManager();
-		ScriptEngine engine = manager.getEngineByName("js");
-		engine.eval(userScript);
-		Invocable jsInvoke = (Invocable) engine;
-		String dir = "" + engine.get("dir");
-		res.add(new StringBuffer("iterator on " + dir));
-		FileIterator it = new FileIterator(dir);
-		for (File f : it) {
-			Object o = jsInvoke.invokeFunction("onFile", new Object[] { f });
-			addResult(o, res);
-		}
-		if (res.size() == 0) {
-			res.add(new StringBuffer("no result"));
-		}
-
-		return res;
-	}
+	
 }

@@ -101,13 +101,21 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 
 	@Override
 	public void mouseClicked(MouseEvent evt) {
-		page.mouseClicked(evt);
+		try {
+			page.mouseClicked(evt);
+		} catch (Throwable e) {
+			page.ui.message("err:" + e);
+		}
 
 	}
 
 	@Override
 	public void mouseDragged(MouseEvent env) {
-		page.mouseDragged(env);
+		try {
+			page.mouseDragged(env);
+		} catch (Throwable e) {
+			page.ui.message("err:" + e);
+		}
 	}
 
 	@Override
@@ -122,12 +130,20 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 
 	@Override
 	public void mouseMoved(MouseEvent evt) {
-		page.mouseMoved(evt);
+		try {
+			page.mouseMoved(evt);
+		} catch (Throwable e) {
+			page.ui.message("err:" + e);
+		}
 	}
 
 	@Override
 	public void mousePressed(MouseEvent evt) {
-		page.mousePressed(evt);
+		try {
+			page.mousePressed(evt);
+		} catch (Throwable e) {
+			page.ui.message("err:" + e);
+		}
 	}
 
 	@Override
@@ -171,9 +187,11 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 				}
 				System.out.println("exit");
 			}
+
 			public void windowClosed(WindowEvent e) {
-				System.out.println("closed");				
+				System.out.println("closed");
 			}
+
 			@Override
 			public void windowActivated(WindowEvent e) {
 				for (PlainPage pp : pageSet) {
@@ -237,7 +255,7 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 
 	private String suNotice() {
 		String user = System.getProperty("user.name");
-		if ("root".equals(user)) {
+		if ("root".equals(user) || "administrator".equalsIgnoreCase(user)) {
 			return " [su]";
 		} else {
 			return "";
