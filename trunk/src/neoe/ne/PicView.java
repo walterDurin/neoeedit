@@ -271,8 +271,8 @@ public class PicView {
 		}
 
 		private void setSize(BufferedImage img) {
-			setPreferredSize(new Dimension(pw = img.getWidth(),
-					ph = img.getHeight()));
+			setPreferredSize(new Dimension(pw = img.getWidth()+20,
+					ph = img.getHeight()+50));
 		}
 
 		public void viewFile(int i) {
