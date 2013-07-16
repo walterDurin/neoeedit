@@ -92,9 +92,7 @@ public class U {
 			if (lines().size() > 1) {
 				lines().remove(y);
 				if (record) {
-					history().addOne(
-							new HistoryCell(BasicAction.DeleteEmtpyLine, -1,
-									-1, y, -1, null));
+					history().addOne(new HistoryCell(BasicAction.DeleteEmtpyLine, -1, -1, y, -1, null));
 				}
 			}
 		}
@@ -108,9 +106,7 @@ public class U {
 			if (d.length() > 0) {
 				sb.delete(x1, x2);
 				if (record) {
-					history().addOne(
-							new HistoryCell(BasicAction.Delete, x1, x2, y, -1,
-									d));
+					history().addOne(new HistoryCell(BasicAction.Delete, x1, x2, y, -1, d));
 				}
 			}
 		}
@@ -122,16 +118,13 @@ public class U {
 		void insertEmptyLine(int y) {
 			lines().add(y, new StringBuffer());
 			if (record) {
-				history().addOne(
-						new HistoryCell(BasicAction.InsertEmptyLine, -1, -1, y,
-								-1, null));
+				history().addOne(new HistoryCell(BasicAction.InsertEmptyLine, -1, -1, y, -1, null));
 			}
 		}
 
 		void insertInLine(int y, int x, String s) {
 			if (s.indexOf('\n') >= 0 || s.indexOf('\r') >= 0) {
-				throw new RuntimeException("cannot contains line-seperator:["
-						+ s + "]" + s.indexOf('\n'));
+				throw new RuntimeException("cannot contains line-seperator:[" + s + "]" + s.indexOf('\n'));
 			}
 			if (y == data.roLines.getLinesize()) {
 				data.editRec.insertEmptyLine(y);
@@ -142,9 +135,7 @@ public class U {
 			}
 			sb.insert(x, s);
 			if (record) {
-				history().addOne(
-						new HistoryCell(BasicAction.Insert, x, x + s.length(),
-								y, -1, null));
+				history().addOne(new HistoryCell(BasicAction.Insert, x, x + s.length(), y, -1, null));
 			}
 		}
 
@@ -159,9 +150,7 @@ public class U {
 			sb1.append(sb2);
 			lines().remove(y + 1);
 			if (record) {
-				history().addOne(
-						new HistoryCell(BasicAction.MergeLine, x1, -1, y, -1,
-								null));
+				history().addOne(new HistoryCell(BasicAction.MergeLine, x1, -1, y, -1, null));
 			}
 		}
 	}
@@ -175,8 +164,7 @@ public class U {
 			this.pp = plainPage;
 		}
 
-		void doFind(String text, boolean ignoreCase, boolean selected2,
-				boolean inDir, String dir) throws Exception {
+		void doFind(String text, boolean ignoreCase, boolean selected2, boolean inDir, String dir) throws Exception {
 			if (!inDir) {
 				text2find = text;
 				pp.ignoreCase = ignoreCase;
@@ -352,8 +340,7 @@ public class U {
 		String s1;
 		int x1, x2, y1, y2;
 
-		public HistoryCell(U.BasicAction action, int x1, int x2, int y1,
-				int y2, String s1) {
+		public HistoryCell(U.BasicAction action, int x1, int x2, int y1, int y2, String s1) {
 			super();
 			this.s1 = s1;
 			this.x1 = x1;
@@ -364,11 +351,9 @@ public class U {
 		}
 
 		public boolean canAppend(HistoryCell last) {
-			return ((last.action == U.BasicAction.Delete
-					&& this.action == U.BasicAction.Delete && //
+			return ((last.action == U.BasicAction.Delete && this.action == U.BasicAction.Delete && //
 			((last.x1 == this.x1 || last.x1 == this.x2) && last.y1 == this.y1))//
-			|| (last.action == U.BasicAction.Insert
-					&& this.action == U.BasicAction.Insert && //
+			|| (last.action == U.BasicAction.Insert && this.action == U.BasicAction.Insert && //
 			((last.x1 == this.x1 || last.x2 == this.x1) && last.y1 == this.y1)));
 		}
 
@@ -405,8 +390,7 @@ public class U {
 
 		@Override
 		public String toString() {
-			return "HistoryInfo [action=" + action + ", x1=" + x1 + ", x2="
-					+ x2 + ", y1=" + y1 + ", y2=" + y2 + ", s1=" + s1 + "]\n";
+			return "HistoryInfo [action=" + action + ", x1=" + x1 + ", x2=" + x2 + ", y1=" + y1 + ", y2=" + y2 + ", s1=" + s1 + "]\n";
 		}
 
 		public void undo(PlainPage page) {
@@ -445,18 +429,14 @@ public class U {
 	}
 
 	static class Print implements Printable {
-		Color colorLineNumber = new Color(0x30C200),
-				colorGutterLine = new Color(0x30C200),
-				colorNormal = Color.BLACK, colorDigit = new Color(0xA8002A),
-				colorKeyword = new Color(0x0099CC),
-				colorHeaderFooter = new Color(0x8A00B8),
-				colorComment = new Color(200, 80, 50);
+		Color colorLineNumber = new Color(0x30C200), colorGutterLine = new Color(0x30C200), colorNormal = Color.BLACK, colorDigit = new Color(0xA8002A), colorKeyword = new Color(
+				0x0099CC), colorHeaderFooter = new Color(0x8A00B8), colorComment = new Color(200, 80, 50);
 		Dimension dim;
 		String fn;
 		Font font = new Font("Monospaced", Font.PLAIN, 9);
+		Font font2 = new Font("SimSun", Font.PLAIN, 9);
 
-		int lineGap = 3, lineHeight = 8, headerHeight = 20, footerHeight = 20,
-				gutterWidth = 24, TAB_WIDTH_PRINT = 20;
+		int lineGap = 3, lineHeight = 8, headerHeight = 20, footerHeight = 20, gutterWidth = 24, TAB_WIDTH_PRINT = 20;
 
 		int linePerPage;
 		ReadonlyLines roLines;
@@ -475,8 +455,7 @@ public class U {
 
 		void drawReturn(Graphics2D g2, int w, int py) {
 			g2.setColor(Color.red);
-			g2.drawLine(w, py - lineHeight + font.getSize(), w + 3, py
-					- lineHeight + font.getSize());
+			g2.drawLine(w, py - lineHeight + font.getSize(), w + 3, py - lineHeight + font.getSize());
 		}
 
 		int drawStringLine(Graphics2D g2, String s, int x, int y) {
@@ -518,8 +497,7 @@ public class U {
 						w += TAB_WIDTH_PRINT;
 					} else {
 						// int highlightid =
-						U.getHighLightID(s1, g2, colorKeyword, colorDigit,
-								colorNormal);
+						U.getHighLightID(s1, g2, colorKeyword, colorDigit, colorNormal);
 						g2.drawString(s1, x + w, y);
 						w += g2.getFontMetrics().stringWidth(s1);
 					}
@@ -531,8 +509,7 @@ public class U {
 			return w;
 		}
 
-		void drawTextLine(Graphics2D g2, String s, int x0, int y0,
-				int charCntInLine) {
+		void drawTextLine(Graphics2D g2, String s, int x0, int y0, int charCntInLine) {
 			int w = drawStringLine(g2, s, x0, y0);
 			drawReturn(g2, w + gutterWidth + 2, y0);
 		}
@@ -550,20 +527,17 @@ public class U {
 		}
 
 		int getTotalPage(PageFormat pf) {
-			linePerPage = ((int) pf.getImageableHeight() - footerHeight - headerHeight)
-					/ (lineGap + lineHeight);
+			linePerPage = ((int) pf.getImageableHeight() - footerHeight - headerHeight) / (lineGap + lineHeight);
 			System.out.println("linePerPage=" + linePerPage);
 			if (linePerPage <= 0)
 				return 0;
 			int lines = roLines.getLinesize();
-			int page = (lines % linePerPage == 0) ? lines / linePerPage : lines
-					/ linePerPage + 1;
+			int page = (lines % linePerPage == 0) ? lines / linePerPage : lines / linePerPage + 1;
 			return page;
 		}
 
 		@Override
-		public int print(Graphics graphics, PageFormat pf, int pageIndex)
-				throws PrinterException {
+		public int print(Graphics graphics, PageFormat pf, int pageIndex) throws PrinterException {
 			if (pageIndex > totalPage)
 				return Printable.NO_SUCH_PAGE;
 			// print
@@ -572,29 +546,18 @@ public class U {
 			Graphics2D g2 = (Graphics2D) graphics;
 			g2.translate(pf.getImageableX(), pf.getImageableY());
 			if (ui.noise) {
-				U.paintNoise(g2, new Dimension((int) pf.getImageableWidth(),
-						(int) pf.getImageableHeight()));
+				U.paintNoise(g2, new Dimension((int) pf.getImageableWidth(), (int) pf.getImageableHeight()));
 			}
-			g2.setFont(font);
+			g2.setFont(font2);
 			g2.setColor(colorHeaderFooter);
-			g2.drawString(fn == null ? title : new File(fn).getName(), 0,
-					lineGap + lineHeight);
+			g2.drawString(fn == null ? title : new File(fn).getName(), 0, lineGap + lineHeight);
 			{
 				String s = (pageIndex + 1) + "/" + totalPage;
-				g2.drawString(
-						s,
-						(int) pf.getImageableWidth()
-								- U.strWidth(g2, s, TAB_WIDTH_PRINT) - 2,
-						lineGap + lineHeight);
+				g2.drawString(s, (int) pf.getImageableWidth() - U.strWidth(g2, s, TAB_WIDTH_PRINT) - 2, lineGap + lineHeight);
 				s = new Date().toString() + " - NeoeEdit";
-				g2.drawString(
-						s,
-						(int) pf.getImageableWidth()
-								- U.strWidth(g2, s, TAB_WIDTH_PRINT) - 2,
-						(int) pf.getImageableHeight() - 2);
+				g2.drawString(s, (int) pf.getImageableWidth() - U.strWidth(g2, s, TAB_WIDTH_PRINT) - 2, (int) pf.getImageableHeight() - 2);
 				g2.setColor(colorGutterLine);
-				g2.drawLine(gutterWidth - 4, headerHeight, gutterWidth - 4,
-						(int) pf.getImageableHeight() - footerHeight);
+				g2.drawLine(gutterWidth - 4, headerHeight, gutterWidth - 4, (int) pf.getImageableHeight() - footerHeight);
 			}
 			int p = linePerPage * pageIndex;
 			int charCntInLine = (int) pf.getImageableWidth() / 5 + 5;// inaccurate
@@ -626,8 +589,7 @@ public class U {
 						totalPage = getTotalPage(pf);
 						if (totalPage <= 0)
 							return;
-						dim = new Dimension((int) pf.getImageableWidth(),
-								(int) pf.getImageableHeight());
+						dim = new Dimension((int) pf.getImageableWidth(), (int) pf.getImageableHeight());
 						Book bk = new Book();
 						bk.append(Print.this, pf, totalPage);
 						job.setPageable(bk);
@@ -668,8 +630,7 @@ public class U {
 
 		RoSb getline(int i) {
 			if (i < 0 || i >= data.lines.size()) {
-				System.out.println("bug:?RoSb.getline(" + i + "),size="
-						+ data.lines.size());
+				System.out.println("bug:?RoSb.getline(" + i + "),size=" + data.lines.size());
 				return new RoSb(new StringBuffer());
 			}
 			return new RoSb(data.lines.get(i));
@@ -802,8 +763,7 @@ public class U {
 			}
 			Transferable t = support.getTransferable();
 			try {
-				List<File> l = (List<File>) t
-						.getTransferData(DataFlavor.javaFileListFlavor);
+				List<File> l = (List<File>) t.getTransferData(DataFlavor.javaFileListFlavor);
 				for (File f : l) {
 					if (f.isFile())
 						try {
@@ -824,8 +784,7 @@ public class U {
 	public static class UnicodeFormatter {
 		static public String byteToHex(byte b) {
 			// Returns hex String representation of byte b
-			char hexDigit[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8',
-					'9', 'a', 'b', 'c', 'd', 'e', 'f' };
+			char hexDigit[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
 			char[] array = { hexDigit[(b >> 4) & 0x0f], hexDigit[b & 0x0f] };
 			return new String(array);
 		}
@@ -840,11 +799,8 @@ public class U {
 
 	private final static String _TITLE_OF_PAGES = "__PAGES__";
 
-	static final Object[][] BOMS = new Object[][] {
-			new Object[] { new int[] { 0xEF, 0xBB, 0xBF }, "UTF-8" },
-			new Object[] { new int[] { 0xFE, 0xFF }, "UTF-16BE" },
-			new Object[] { new int[] { 0xFF, 0xFE }, "UTF-16LE" },
-			new Object[] { new int[] { 0, 0, 0xFE, 0xFF }, "UTF-32BE" },
+	static final Object[][] BOMS = new Object[][] { new Object[] { new int[] { 0xEF, 0xBB, 0xBF }, "UTF-8" }, new Object[] { new int[] { 0xFE, 0xFF }, "UTF-16BE" },
+			new Object[] { new int[] { 0xFF, 0xFE }, "UTF-16LE" }, new Object[] { new int[] { 0, 0, 0xFE, 0xFF }, "UTF-32BE" },
 			new Object[] { new int[] { 0xFF, 0xFE, 0, 0 }, "UTF-32LE" }, };;
 
 	static Map<String, Commands> keys;
@@ -867,6 +823,7 @@ public class U {
 			e.printStackTrace();
 		}
 	}
+
 	@SuppressWarnings("rawtypes")
 	static void initKeys() throws Exception {
 		BufferedReader in = new BufferedReader(U.getInstalledReader("data.py.ver2"));
@@ -883,14 +840,13 @@ public class U {
 				System.err.println("Error: duplicated key:" + key);
 			}
 			keys.add(key);
-			
+
 			addKey(U.keys, key, cmd);
 		}
 		addKey(U.keys, "alt-Enter", "ShellCommand");
 	}
 
-	static void addKey(Map<String, Commands> keys, String key,
-			String cmd) throws IllegalArgumentException, IllegalAccessException {
+	static void addKey(Map<String, Commands> keys, String key, String cmd) throws IllegalArgumentException, IllegalAccessException {
 		String k = key.toUpperCase();
 		String name = "";
 		int p1;
@@ -924,8 +880,9 @@ public class U {
 		} catch (NoSuchFieldException ex) {
 			System.err.println("Error: unknow key:" + key);
 		}
-		
+
 	}
+
 	static void attach(final PlainPage page, final InputStream std) {
 		new Thread() {
 			@Override
@@ -934,8 +891,7 @@ public class U {
 					String enc = System.getProperty("sun.jnu.encoding");
 					if (enc == null)
 						enc = "utf8";
-					BufferedReader in = new BufferedReader(
-							new InputStreamReader(std, enc));
+					BufferedReader in = new BufferedReader(new InputStreamReader(std, enc));
 					String line;
 					page.ptEdit.append("encoding:" + enc + "\n");
 					while ((line = in.readLine()) != null) {
@@ -958,8 +914,7 @@ public class U {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		if (page.getFn() != null && (!page.getFn().equals(his))
-				&& page.fileLastModified != 0) {
+		if (page.getFn() != null && (!page.getFn().equals(his)) && page.fileLastModified != 0) {
 			long t = new File(page.getFn()).lastModified();
 			if (t > page.fileLastModified + 100) {
 				return true;
@@ -972,9 +927,7 @@ public class U {
 		EditPanel editor = page.uiComp;
 		int opt = JOptionPane.NO_OPTION;
 		if (page.pageData.history.size() != 0) {
-			opt = JOptionPane.showConfirmDialog(editor,
-					"Are you sure to SAVE and close?", "Changes made",
-					JOptionPane.YES_NO_CANCEL_OPTION);
+			opt = JOptionPane.showConfirmDialog(editor, "Are you sure to SAVE and close?", "Changes made", JOptionPane.YES_NO_CANCEL_OPTION);
 			System.out.println(opt);
 			if (opt == JOptionPane.CANCEL_OPTION || opt == -1)
 				return;
@@ -1009,17 +962,14 @@ public class U {
 			}
 			int w = U.strWidth(g2, s.substring(0, i), TABWIDTH);
 			if (w <= width) {
-				return i
-						+ computeShowIndex(s.substring(i), width - w, g2,
-								TABWIDTH);
+				return i + computeShowIndex(s.substring(i), width - w, g2, TABWIDTH);
 			} else {
 				i = i / 2;
 			}
 		}
 	}
 
-	static void doFindInDir(PlainPage page, String text, boolean ignoreCase,
-			boolean selected2, boolean inDir, String dir) throws Exception {
+	static void doFindInDir(PlainPage page, String text, boolean ignoreCase, boolean selected2, boolean inDir, String dir) throws Exception {
 		Iterable<File> it = new FileIterator(dir);
 		List<String> all = new ArrayList<String>();
 		for (File f : it) {
@@ -1033,8 +983,7 @@ public class U {
 		page.uiComp.repaint();
 	}
 
-	static void doFindInPage(PlainPage page, String text2find,
-			boolean ignoreCase) throws Exception {
+	static void doFindInPage(PlainPage page, String text2find, boolean ignoreCase) throws Exception {
 		if (text2find != null && text2find.length() > 0) {
 			Point p = U.find(page, text2find, 0, 0, ignoreCase);
 			if (p == null) {
@@ -1042,8 +991,7 @@ public class U {
 			} else {
 				List<String> all = new ArrayList<String>();
 				while (true) {
-					all.add(String.format("%s:%s", p.y + 1,
-							page.pageData.roLines.getline(p.y)));
+					all.add(String.format("%s:%s", p.y + 1, page.pageData.roLines.getline(p.y)));
 					Point p2 = U.find(page, text2find, 0, p.y + 1, ignoreCase);
 					if (p2 == null || p2.y <= p.y) {
 						break;
@@ -1051,16 +999,13 @@ public class U {
 						p = p2;
 					}
 				}
-				showResult(page, all, "file", page.pageData.getTitle(),
-						text2find);
+				showResult(page, all, "file", page.pageData.getTitle(), text2find);
 				page.uiComp.repaint();
 			}
 		}
 	}
 
-	static void doReplace(PlainPage page, String text, boolean ignoreCase,
-			boolean selected2, String text2, boolean all, boolean inDir,
-			String dir) {
+	static void doReplace(PlainPage page, String text, boolean ignoreCase, boolean selected2, String text2, boolean all, boolean inDir, String dir) {
 		page.ptFind.text2find = text;
 		Point p0 = all ? new Point(0, 0) : new Point(page.cx, page.cy);
 		if (text != null && text.length() > 0) {
@@ -1079,20 +1024,15 @@ public class U {
 		page.uiComp.repaint();
 	}
 
-	static void doReplaceAll(PlainPage page, String text, boolean ignoreCase,
-			boolean selected2, String text2, boolean inDir, String dir)
-			throws Exception {
+	static void doReplaceAll(PlainPage page, String text, boolean ignoreCase, boolean selected2, String text2, boolean inDir, String dir) throws Exception {
 		if (inDir) {
 			U.doReplaceInDir(page, text, ignoreCase, text2, inDir, dir);
 		} else {
-			U.doReplace(page, text, ignoreCase, selected2, text2, true, inDir,
-					dir);
+			U.doReplace(page, text, ignoreCase, selected2, text2, true, inDir, dir);
 		}
 	}
 
-	static void doReplaceInDir(PlainPage page, String text,
-			boolean ignoreCase2, String text2, boolean inDir, String dir)
-			throws Exception {
+	static void doReplaceInDir(PlainPage page, String text, boolean ignoreCase2, String text2, boolean inDir, String dir) throws Exception {
 		Iterable<File> it = new FileIterator(dir);
 		List<String> all = new ArrayList<String>();
 		for (File f : it) {
@@ -1102,11 +1042,9 @@ public class U {
 			try {
 				List<String> res = U.findInFile(f, text, page.ignoreCase);
 				if (!res.isEmpty()) {
-					PlainPage pi = new PlainPage(page.uiComp,
-							PageData.newFromFile(f.getCanonicalPath()));
+					PlainPage pi = new PlainPage(page.uiComp, PageData.newFromFile(f.getCanonicalPath()));
 					if (pi != null) {
-						doReplaceAll(pi, text, ignoreCase2, false, text2,
-								false, null);
+						doReplaceAll(pi, text, ignoreCase2, false, text2, false, null);
 					}
 				}
 				all.addAll(res);
@@ -1119,8 +1057,7 @@ public class U {
 		page.uiComp.repaint();
 	}
 
-	static int drawTwoColor(Graphics2D g2, String s, int x, int y, Color c1,
-			Color c2, int d) {
+	static int drawTwoColor(Graphics2D g2, String s, int x, int y, Color c1, Color c2, int d) {
 		g2.setColor(c2);
 		g2.drawString(s, x + d, y + d);
 		g2.setColor(c1);
@@ -1145,11 +1082,9 @@ public class U {
 		if (ignoreCase) {
 			s = s.toLowerCase();
 		}
-		x = Math.min(x, page.pageData.roLines.getline(y).toString(ignoreCase)
-				.length());
+		x = Math.min(x, page.pageData.roLines.getline(y).toString(ignoreCase).length());
 		// first half row
-		int p1 = page.pageData.roLines.getline(y).toString(ignoreCase)
-				.indexOf(s, x);
+		int p1 = page.pageData.roLines.getline(y).toString(ignoreCase).indexOf(s, x);
 		if (p1 >= 0) {
 			return new Point(p1, y);
 		}
@@ -1160,15 +1095,13 @@ public class U {
 			if (fy >= page.pageData.roLines.getLinesize()) {
 				fy = 0;
 			}
-			p1 = page.pageData.roLines.getline(fy).toString(ignoreCase)
-					.indexOf(s);
+			p1 = page.pageData.roLines.getline(fy).toString(ignoreCase).indexOf(s);
 			if (p1 >= 0) {
 				return new Point(p1, fy);
 			}
 		}
 		// last half row
-		p1 = page.pageData.roLines.getline(y).toString(ignoreCase).substring(x)
-				.indexOf(s);
+		p1 = page.pageData.roLines.getline(y).toString(ignoreCase).substring(x).indexOf(s);
 		if (p1 >= 0) {
 			return new Point(p1, fy);
 		}
@@ -1179,8 +1112,7 @@ public class U {
 		return findAndShowPageListPage(ep, title, true);
 	}
 
-	static boolean findAndShowPageListPage(EditPanel ep, String title,
-			boolean show) {
+	static boolean findAndShowPageListPage(EditPanel ep, String title, boolean show) {
 		PlainPage pp = findPage(ep, title);
 		if (pp == null)
 			return false;
@@ -1191,8 +1123,7 @@ public class U {
 		}
 	}
 
-	static boolean findAndShowPageListPage(EditPanel ep, String title,
-			int lineNo) {
+	static boolean findAndShowPageListPage(EditPanel ep, String title, int lineNo) {
 		boolean b = findAndShowPageListPage(ep, title);
 		if (b) {
 			ep.getPage().cursor.setSafePos(0, lineNo - 1);
@@ -1288,8 +1219,7 @@ public class U {
 				if (ignoreCase2) {
 					text = text.toLowerCase();
 				}
-				BufferedReader in = new BufferedReader(new InputStreamReader(
-						new FileInputStream(f), enc));
+				BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(f), enc));
 				String line;
 				int lineno = 0;
 				while ((line = in.readLine()) != null) {
@@ -1301,8 +1231,7 @@ public class U {
 
 					if (line.indexOf(text) >= 0) {
 						if (line.length() > MAX_SHOW_CHARS_IN_LINE) {
-							line = line.substring(0, MAX_SHOW_CHARS_IN_LINE)
-									+ "...";
+							line = line.substring(0, MAX_SHOW_CHARS_IN_LINE) + "...";
 						}
 						a.add(String.format("%s|%s:%s", fn, lineno, oline));
 					}
@@ -1325,18 +1254,15 @@ public class U {
 	}
 
 	static void gc() {
-		System.out.print(km(Runtime.getRuntime().freeMemory()) + "/"
-				+ km(Runtime.getRuntime().totalMemory()) + " -> ");
+		System.out.print(km(Runtime.getRuntime().freeMemory()) + "/" + km(Runtime.getRuntime().totalMemory()) + " -> ");
 		Runtime.getRuntime().gc();
-		System.out.println(km(Runtime.getRuntime().freeMemory()) + "/"
-				+ km(Runtime.getRuntime().totalMemory()));
+		System.out.println(km(Runtime.getRuntime().freeMemory()) + "/" + km(Runtime.getRuntime().totalMemory()));
 	}
 
 	static String getClipBoard() {
 		String s;
 		try {
-			s = Toolkit.getDefaultToolkit().getSystemClipboard()
-					.getData(DataFlavor.stringFlavor).toString();
+			s = Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor).toString();
 		} catch (Exception e) {
 			s = "";
 		}
@@ -1351,10 +1277,8 @@ public class U {
 		return f;
 	}
 
-	static int getHighLightID(String s, Graphics2D g2, Color colorKeyword,
-			Color colorDigital, Color color) {
-		if (Arrays.binarySearch(KWS, s) >= 0
-				|| Arrays.binarySearch(KWS, s.toLowerCase()) >= 0) {
+	static int getHighLightID(String s, Graphics2D g2, Color colorKeyword, Color colorDigital, Color color) {
+		if (Arrays.binarySearch(KWS, s) >= 0 || Arrays.binarySearch(KWS, s.toLowerCase()) >= 0) {
 			g2.setColor(colorKeyword);
 		} else if (isAllDigital(s)) {
 			g2.setColor(colorDigital);
@@ -1376,8 +1300,7 @@ public class U {
 		File installed = new File(getMyDir(), fn);
 		if (!installed.exists()) {
 			try {
-				FileUtil.copy(ClassLoader.getSystemResourceAsStream(fn),
-						new FileOutputStream(installed));
+				FileUtil.copy(ClassLoader.getSystemResourceAsStream(fn), new FileOutputStream(installed));
 			} catch (IOException e) {
 				e.printStackTrace();
 				return getJarReader(fn);
@@ -1387,8 +1310,7 @@ public class U {
 	}
 
 	static Reader getJarReader(String fn) throws UnsupportedEncodingException {
-		return new InputStreamReader(ClassLoader.getSystemResourceAsStream(fn),
-				"utf8");
+		return new InputStreamReader(ClassLoader.getSystemResourceAsStream(fn), "utf8");
 	}
 
 	public static File getMyDir() {
@@ -1410,22 +1332,13 @@ public class U {
 		return page;
 	}
 
-	public static List<StringBuffer> getPageListStrings(EditPanel ep)
-			throws IOException {
+	public static List<StringBuffer> getPageListStrings(EditPanel ep) throws IOException {
 		List<StringBuffer> ss = new ArrayList<StringBuffer>();
 		sort(ep.pageSet);
 		for (PlainPage pp : ep.pageSet) {
 			StringBuffer sb = new StringBuffer();
-			sb.append(pp.pageData.getTitle()
-					+ "|"
-					+ (pp.cy + 1)
-					+ ":"
-					+ " Edited:"
-					+ pp.pageData.history.size()
-					+ " "
-					+ (pp.pageData.encoding == null ? "" : pp.pageData.encoding
-							+ " ")
-					+ (changedOutside(pp) ? "[Changed Outside!!]" : ""));
+			sb.append(pp.pageData.getTitle() + "|" + (pp.cy + 1) + ":" + " Edited:" + pp.pageData.history.size() + " "
+					+ (pp.pageData.encoding == null ? "" : pp.pageData.encoding + " ") + (changedOutside(pp) ? "[Changed Outside!!]" : ""));
 			ss.add(sb);
 		}
 		return ss;
@@ -1448,8 +1361,7 @@ public class U {
 		return sb.toString();
 	}
 
-	static boolean gotoFileLine(String sb, EditPanel ep,
-			boolean isInPageListPage) throws Exception {
+	static boolean gotoFileLine(String sb, EditPanel ep, boolean isInPageListPage) throws Exception {
 		int p1, p2;
 		if ((p1 = sb.indexOf("|")) >= 0) {
 			String fn = sb.substring(0, p1);
@@ -1470,8 +1382,7 @@ public class U {
 		return false;
 	}
 
-	public static boolean gotoFileLine2(EditPanel ep, String sb, String title)
-			throws Exception {
+	public static boolean gotoFileLine2(EditPanel ep, String sb, String title) throws Exception {
 		int p2;
 		if ((p2 = sb.indexOf(":")) >= 0) {
 			int line = -1;
@@ -1510,14 +1421,12 @@ public class U {
 
 	static void guessComment(PlainPage page) {
 		List<String> comment = new ArrayList<String>();
-		String[] commentchars = { "#", "%", "'", "//", "!", ";", "--", "/*",
-				"<!--" };
+		String[] commentchars = { "#", "%", "'", "//", "!", ";", "--", "/*", "<!--" };
 		int[] cnts = new int[commentchars.length];
 		for (int i = 0; i < page.pageData.roLines.getLinesize(); i++) {
 			RoSb sb = page.pageData.roLines.getline(i);
 			for (int j = 0; j < cnts.length; j++) {
-				if (sb.substring(0, Math.min(sb.length(), 80)).toString()
-						.trim().startsWith(commentchars[j])) {
+				if (sb.substring(0, Math.min(sb.length(), 80)).toString().trim().startsWith(commentchars[j])) {
 					cnts[j]++;
 				}
 			}
@@ -1551,15 +1460,13 @@ public class U {
 		} else {
 			page.ui.message("comment found:" + comment);
 		}
-		page.ui.comment = comment == null ? null : comment
-				.toArray(new String[comment.size()]);
+		page.ui.comment = comment == null ? null : comment.toArray(new String[comment.size()]);
 		page.uiComp.repaint();
 	}
 
 	static String guessEncoding(String fn) throws Exception {
 		// S/ystem.out.println("guessing encoding");
-		String[] encodings = { UTF8, "utf-8", "sjis", "gbk", "unicode",
-				"euc-jp", "gb2312" };
+		String[] encodings = { UTF8, "utf-8", "sjis", "gbk", "unicode", "euc-jp", "gb2312" };
 
 		FileInputStream in = new FileInputStream(fn);
 		final int defsize = 4096 * 2;
@@ -1583,8 +1490,7 @@ public class U {
 			}
 			for (String enc : encodings) {
 				String s = new String(buf, enc);
-				if (new String(s.getBytes(enc), enc).equals(s)
-						&& s.indexOf("�") < 0) {
+				if (new String(s.getBytes(enc), enc).equals(s) && s.indexOf("�") < 0) {
 					return enc;
 				}
 			}
@@ -1623,8 +1529,7 @@ public class U {
 					System.arraycopy(buf, 0, b2, 0, len);
 					buf = b2;
 				}
-				return new String(buf, "iso8859-1").indexOf("\r\n") >= 0 ? "\r\n"
-						: "\n";
+				return new String(buf, "iso8859-1").indexOf("\r\n") >= 0 ? "\r\n" : "\n";
 			} finally {
 				in.close();
 			}
@@ -1645,8 +1550,7 @@ public class U {
 
 	static boolean isImageFile(File f) {
 		String fn = f.getName().toLowerCase();
-		return (fn.endsWith(".gif") || fn.endsWith(".jpg")
-				|| fn.endsWith(".png") || fn.endsWith(".bmp"));
+		return (fn.endsWith(".gif") || fn.endsWith(".jpg") || fn.endsWith(".png") || fn.endsWith(".bmp"));
 	}
 
 	static boolean isSkipChar(char ch, char ch1) {
@@ -1695,8 +1599,7 @@ public class U {
 			page.ptEdit.insertString("\n{-----");
 			for (File f1 : fs) {
 				if (f1.isDirectory()) {
-					page.ptEdit.insertString("\n" + f1.getAbsolutePath()
-							+ " | <DIR>");
+					page.ptEdit.insertString("\n" + f1.getAbsolutePath() + " | <DIR>");
 				} else {
 					page.ptEdit.insertString("\n" + f1.getAbsolutePath());
 				}
@@ -1706,13 +1609,11 @@ public class U {
 	}
 
 	public static void listFonts(PlainPage pp) throws Exception {
-		PlainPage p2 = new PlainPage(pp.uiComp, PageData.newEmpty(String
-				.format("<Fonts>")));
+		PlainPage p2 = new PlainPage(pp.uiComp, PageData.newEmpty(String.format("<Fonts>")));
 		p2.pageData.workPath = pp.pageData.workPath;
 		p2.ui.applyColorMode(pp.ui.colorMode);
 		List<StringBuffer> sbs = new ArrayList<StringBuffer>();
-		String fonts[] = GraphicsEnvironment.getLocalGraphicsEnvironment()
-				.getAvailableFontFamilyNames();
+		String fonts[] = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
 		for (String font : fonts) {
 			sbs.add(new StringBuffer("set-font:" + font));
 		}
@@ -1721,8 +1622,7 @@ public class U {
 	}
 
 	static void loadTabImage() throws Exception {
-		BufferedImage img = ImageIO.read(U.class
-				.getResourceAsStream("/icontab.png"));
+		BufferedImage img = ImageIO.read(U.class.getResourceAsStream("/icontab.png"));
 		tabImg = img.getScaledInstance(40, 8, Image.SCALE_SMOOTH);
 		tabImgPrint = img.getScaledInstance(20, 8, Image.SCALE_SMOOTH);
 	}
@@ -1822,8 +1722,7 @@ public class U {
 		if (page != null && page.pageData.lines.size() > 0) {
 			line -= 1;
 			page.cx = 0;
-			page.cy = Math.max(0,
-					Math.min(line, page.pageData.lines.size() - 1));
+			page.cy = Math.max(0, Math.min(line, page.pageData.lines.size() - 1));
 			page.sy = Math.max(0, page.cy - 3);
 			page.uiComp.repaint();
 		}
@@ -1831,8 +1730,7 @@ public class U {
 
 	static void openFileHistory(EditPanel ep) throws Exception {
 		File fhn = getFileHistoryName();
-		PlainPage page = new PlainPage(ep, PageData.newFromFile(fhn
-				.getCanonicalPath()));
+		PlainPage page = new PlainPage(ep, PageData.newFromFile(fhn.getCanonicalPath()));
 		page.cy = Math.max(0, page.pageData.lines.size() - 1);
 		page.sy = Math.max(0, page.cy - 5);
 		page.uiComp.repaint();
@@ -1871,8 +1769,7 @@ public class U {
 		try {
 			List<StringBuffer> lines = new ArrayList<StringBuffer>();
 			try {
-				BufferedReader in = new BufferedReader(new InputStreamReader(
-						new FileInputStream(fn), encoding));
+				BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(fn), encoding));
 				String line;
 				while ((line = in.readLine()) != null) {
 					lines.add(new StringBuffer(line));
@@ -1956,8 +1853,7 @@ public class U {
 		}.start();
 	}
 
-	static Point replace(PlainPage page, String s, int x, int y, String s2,
-			boolean all, boolean ignoreCase) {
+	static Point replace(PlainPage page, String s, int x, int y, String s2, boolean all, boolean ignoreCase) {
 		int cnt = 0;
 		U.BasicEdit editRec = page.pageData.editRec;
 		if (ignoreCase) {
@@ -1966,8 +1862,7 @@ public class U {
 		// first half row
 		int p1 = x;
 		while (true) {
-			p1 = page.pageData.roLines.getline(y).toString(ignoreCase)
-					.indexOf(s, p1);
+			p1 = page.pageData.roLines.getline(y).toString(ignoreCase).indexOf(s, p1);
 			if (p1 >= 0) {
 				cnt++;
 				editRec.deleteInLine(y, p1, p1 + s.length());
@@ -1989,8 +1884,7 @@ public class U {
 			}
 			p1 = 0;
 			while (true) {
-				p1 = page.pageData.roLines.getline(fy).toString(ignoreCase)
-						.indexOf(s, p1);
+				p1 = page.pageData.roLines.getline(fy).toString(ignoreCase).indexOf(s, p1);
 				if (p1 >= 0) {
 					cnt++;
 					editRec.deleteInLine(fy, p1, p1 + s.length());
@@ -2011,8 +1905,7 @@ public class U {
 		}
 		p1 = 0;
 		while (true) {
-			p1 = page.pageData.roLines.getline(fy).toString(ignoreCase)
-					.substring(0, x).indexOf(s, p1);
+			p1 = page.pageData.roLines.getline(fy).toString(ignoreCase).substring(0, x).indexOf(s, p1);
 			if (p1 >= 0) {
 				cnt++;
 				editRec.deleteInLine(fy, p1, p1 + s.length());
@@ -2042,8 +1935,7 @@ public class U {
 		String sample = "var i=0; \nfunction run(s,cur,max){\nreturn s;\n}";
 		final EditPanel ed = new EditPanel();// single window for js, because
 												// has 2 more buttons
-		final PlainPage ppJs = new PlainPage(ed, PageData.newEmpty("js for "
-				+ ppTarget.pageData.getTitle() + " #" + randomID()));
+		final PlainPage ppJs = new PlainPage(ed, PageData.newEmpty("js for " + ppTarget.pageData.getTitle() + " #" + randomID()));
 		ppJs.pageData.setText(sample);
 		ed.frame = sf;
 		ppJs.pageData.workPath = ppTarget.pageData.workPath;
@@ -2059,12 +1951,8 @@ public class U {
 			public void actionPerformed(ActionEvent e) {
 				try {
 					ed.grabFocus();
-					List<StringBuffer> newLines = JS.run(
-							ppTarget.pageData.lines, getText(ppJs));
-					PlainPage ppResult = new PlainPage(ppTarget.uiComp,
-							PageData.newEmpty("js result for "
-									+ ppTarget.pageData.getTitle() + " #"
-									+ randomID()));
+					List<StringBuffer> newLines = JS.run(ppTarget.pageData.lines, getText(ppJs));
+					PlainPage ppResult = new PlainPage(ppTarget.uiComp, PageData.newEmpty("js result for " + ppTarget.pageData.getTitle() + " #" + randomID()));
 					ppResult.pageData.workPath = ppTarget.pageData.workPath;
 					ppResult.pageData.setLines(newLines);
 					ppResult.ui.applyColorMode(ppTarget.ui.colorMode);
@@ -2084,11 +1972,7 @@ public class U {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				if (ppJs.pageData.history.size() != 0
-						&& JOptionPane.YES_OPTION != JOptionPane
-								.showConfirmDialog(ed,
-										"Are you sure to close?",
-										"Changes made",
-										JOptionPane.YES_NO_OPTION)) {
+						&& JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(ed, "Are you sure to close?", "Changes made", JOptionPane.YES_NO_OPTION)) {
 					ed.grabFocus();
 					return;
 				}
@@ -2106,14 +1990,12 @@ public class U {
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			String fn = chooser.getSelectedFile().getAbsolutePath();
 			if (new File(fn).exists()
-					&& JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(
-							editor, "file exists, are you sure to overwrite?",
-							"save as...", JOptionPane.YES_NO_OPTION)) {
+					&& JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(editor, "file exists, are you sure to overwrite?", "save as...", JOptionPane.YES_NO_OPTION)) {
 				page.ui.message("not renamed");
 				return;
 			}
 			page.pageData.setFn(fn);
-			U.saveFileHistory(fn, page.cy+1);
+			U.saveFileHistory(fn, page.cy + 1);
 			editor.changeTitle();
 			page.ui.message("file renamed");
 			savePageToFile(page);
@@ -2122,12 +2004,8 @@ public class U {
 
 	static boolean saveFile(PlainPage page) throws Exception {
 		if (page.changedOutside
-				&& JOptionPane.YES_OPTION != JOptionPane
-						.showConfirmDialog(
-								page.uiComp,
-								"File Changed Outside!! Do you really want to overwrite it?",
-								"File Changed Outside!!",
-								JOptionPane.YES_NO_OPTION)) {
+				&& JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(page.uiComp, "File Changed Outside!! Do you really want to overwrite it?", "File Changed Outside!!",
+						JOptionPane.YES_NO_OPTION)) {
 			page.ui.message("saved canceled");
 			return false;
 		}
@@ -2139,17 +2017,13 @@ public class U {
 				page.isCommentChecked = false;
 				String fn = chooser.getSelectedFile().getAbsolutePath();
 				if (new File(fn).exists()
-						&& JOptionPane.YES_OPTION != JOptionPane
-								.showConfirmDialog(page.uiComp,
-										"Are you sure to overwrite?",
-										"File exists",
-										JOptionPane.YES_NO_OPTION)) {
+						&& JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(page.uiComp, "Are you sure to overwrite?", "File exists", JOptionPane.YES_NO_OPTION)) {
 					page.ui.message("saved canceled");
 					return false;
 				}
 				page.pageData.setFn(fn);
 				page.uiComp.changeTitle();
-				U.saveFileHistory(fn, page.cy+1);
+				U.saveFileHistory(fn, page.cy + 1);
 			} else {
 				return false;
 			}
@@ -2172,16 +2046,13 @@ public class U {
 		if (page.pageData.encoding == null) {
 			page.pageData.encoding = UTF8;
 		}
-		BufferedWriter out = new BufferedWriter(new OutputStreamWriter(
-				new FileOutputStream(page.pageData.getFn()),
-				page.pageData.encoding));
+		BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(page.pageData.getFn()), page.pageData.encoding));
 		for (int i = 0; i < page.pageData.roLines.getLinesize(); i++) {
 			out.write(page.pageData.roLines.getline(i).toString());
 			out.write(page.pageData.lineSep);
 		}
 		out.close();
-		page.pageData.fileLastModified = new File(page.pageData.getFn())
-				.lastModified();
+		page.pageData.fileLastModified = new File(page.pageData.getFn()).lastModified();
 		page.changedOutside = false;
 		return true;
 	}
@@ -2195,13 +2066,11 @@ public class U {
 	}
 
 	static void setClipBoard(String s) {
-		Toolkit.getDefaultToolkit().getSystemClipboard()
-				.setContents(new StringSelection(s), null);
+		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(s), null);
 	}
 
 	static void setEncodingByUser(PlainPage plainPage, String msg) {
-		String s = JOptionPane.showInputDialog(plainPage.uiComp, msg,
-				plainPage.pageData.encoding);
+		String s = JOptionPane.showInputDialog(plainPage.uiComp, msg, plainPage.pageData.encoding);
 		if (s == null) {
 			return;
 		}
@@ -2224,8 +2093,7 @@ public class U {
 
 	static void setFrameSize(JFrame f, int w, int h) {
 		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
-		f.setSize(Math.min(800, Math.min(dim.width, w)),
-				Math.min(600, Math.min(dim.height, h)));
+		f.setSize(Math.min(800, Math.min(dim.width, w)), Math.min(600, Math.min(dim.height, h)));
 	}
 
 	static void showHelp(final Paint ui, final EditPanel uiComp) {
@@ -2237,8 +2105,7 @@ public class U {
 				try {
 					int w = uiComp.getWidth();
 					int h = 60;
-					ui.aboutImg = new BufferedImage(w, h,
-							BufferedImage.TYPE_INT_ARGB);
+					ui.aboutImg = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
 					Graphics2D gi = ui.aboutImg.createGraphics();
 					gi.setColor(Color.BLUE);
 					gi.fillRect(0, 0, w, h);
@@ -2248,8 +2115,7 @@ public class U {
 					gi.setColor(Color.YELLOW);
 					gi.setFont(new Font("Arial", Font.PLAIN, 16));
 					String url = "http://code.google.com/p/neoeedit/";
-					gi.drawString("visit " + url
-							+ " for more info.(url copied)", 6, h - 6);
+					gi.drawString("visit " + url + " for more info.(url copied)", 6, h - 6);
 					setClipBoard(url);
 					gi.dispose();
 					ui.aboutY = -h;
@@ -2277,8 +2143,7 @@ public class U {
 	}
 
 	public static void showHexOfString(String s, PlainPage pp) throws Exception {
-		PlainPage p2 = new PlainPage(pp.uiComp, PageData.newEmpty(String
-				.format("Hex for String #%s", randomID())));
+		PlainPage p2 = new PlainPage(pp.uiComp, PageData.newEmpty(String.format("Hex for String #%s", randomID())));
 		p2.pageData.workPath = pp.pageData.workPath;
 		p2.ui.applyColorMode(pp.ui.colorMode);
 		List<StringBuffer> sbs = new ArrayList<StringBuffer>();
@@ -2302,16 +2167,12 @@ public class U {
 		ep.repaint();
 	}
 
-	static void showResult(PlainPage pp, List<String> all, String type,
-			String name, String text) throws Exception {
-		PlainPage p2 = new PlainPage(pp.uiComp, PageData.newEmpty(String
-				.format("(%s)'%s' in %s %s #%s", all.size(), text, type, name,
-						randomID())));
+	static void showResult(PlainPage pp, List<String> all, String type, String name, String text) throws Exception {
+		PlainPage p2 = new PlainPage(pp.uiComp, PageData.newEmpty(String.format("(%s)'%s' in %s %s #%s", all.size(), text, type, name, randomID())));
 		p2.pageData.workPath = pp.pageData.workPath;
 		p2.ui.applyColorMode(pp.ui.colorMode);
 		List<StringBuffer> sbs = new ArrayList<StringBuffer>();
-		sbs.add(new StringBuffer(String.format(
-				"find %s results in %s for '%s'", all.size(), name, text)));
+		sbs.add(new StringBuffer(String.format("find %s results in %s for '%s'", all.size(), name, text)));
 		for (Object o : all) {
 			sbs.add(new StringBuffer(o.toString()));
 		}
@@ -2322,11 +2183,9 @@ public class U {
 		// gc();
 	}
 
-	public static void showSelfDispMessage(PlainPage pp, String msg,
-			int disapearMS) {
+	public static void showSelfDispMessage(PlainPage pp, String msg, int disapearMS) {
 		long now = System.currentTimeMillis();
-		pp.ui.msgs
-				.add(new Object[] { msg, now + disapearMS, -1 /* draw width */});
+		pp.ui.msgs.add(new Object[] { msg, now + disapearMS, -1 /* draw width */});
 		// System.out.println("add msgs:"+pp.ui.msgs.size());
 		repaintAfter(4000, pp.uiComp);
 	}
@@ -2478,8 +2337,7 @@ public class U {
 
 	public static void switchToPageListPage(PlainPage pp) throws Exception {
 		EditPanel uiComp = pp.uiComp;
-		if (pp.pageData.getTitle().equals(U.titleOfPages(uiComp))
-				&& uiComp.lastPage != null) {
+		if (pp.pageData.getTitle().equals(U.titleOfPages(uiComp)) && uiComp.lastPage != null) {
 			if (uiComp.pageSet.contains(uiComp.lastPage)) {
 				uiComp.setPage(uiComp.lastPage);
 			} else {
