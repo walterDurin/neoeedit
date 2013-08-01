@@ -7,6 +7,7 @@ public abstract class Ime {
 		boolean consumed;
 		String yield;
 	}
+
 	public static boolean enabled;
 
 	public static Ime instance;

@@ -34,14 +34,15 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -59,6 +60,8 @@ import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.TransferHandler;
+import javax.swing.UIDefaults;
+import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 
 import neoe.ne.PlainPage.Paint;
@@ -152,6 +155,171 @@ public class U {
 			if (record) {
 				history().addOne(new HistoryCell(BasicAction.MergeLine, x1, -1, y, -1, null));
 			}
+		}
+	}
+
+	static class Config {
+		public static boolean configChanged() {
+			if (configFileLoadTime > 0) {
+				File installed = new File(getMyDir(), CONFIG_FN);
+				long time = installed.lastModified();
+				if (time <= configFileLoadTime) {
+					return false;
+				}
+			}
+			return true;
+		}
+
+		public static Map getConfig() throws IOException {
+			if (!configChanged())
+				return conf;
+
+			BufferedReader in = new BufferedReader(U.getInstalledReader(CONFIG_FN));
+			Map o = null;
+			try {
+				o = (Map) new PyData().parseAll(in);
+				conf = o;
+				File installed = new File(getMyDir(), CONFIG_FN);
+				configFileLoadTime = installed.lastModified() + 500;
+			} catch (Exception e) {
+				System.err.println("cannot parse config file:" + e + ", pls fix it. use orginal config.");
+				in = new BufferedReader(U.getResourceReader(CONFIG_FN));
+				try {
+					o = (Map) new PyData().parseAll(in);
+					configFileLoadTime = 0;
+				} catch (Exception e1) {// still fail?bug
+					e1.printStackTrace();
+				}
+			}
+			return o;
+		}
+
+		public static Color getDefaultBgColor() throws IOException {
+			Map conf = getConfig();
+			Map colorConf = (Map) conf.get("color");
+			String value = "" + colorConf.get("defaultBackgroundColor");
+			Color c = Color.WHITE;
+			if (value.startsWith("0x")) {
+				c = Color.decode(value);
+			} else {
+				c = Color.getColor(value, c);
+			}
+			return c;
+		}
+
+		public static Font getFont(String key, Font defaultIfFail) {
+			try {
+				Map config = getConfig();
+				Map m = (Map) config.get("font");
+				Object v = m.get(key);
+				if (v == null || "null".equals(v)) {
+					return defaultIfFail;
+				} else {
+					Font font;
+					List l = (List) m.get(key);
+					String fontname = (String) l.get(0);
+					int fontsize = ((BigDecimal) l.get(1)).intValue();
+					if (l.size() > 2 && l.get(2).equals("BOLD")) {
+						font = new Font(fontname, Font.BOLD, fontsize);
+					} else if (l.size() > 2 && l.get(2).equals("ITALIC")) {
+						font = new Font(fontname, Font.ITALIC, fontsize);
+					} else {
+						font = new Font(fontname, Font.PLAIN, fontsize);
+					}
+					return font;
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				return defaultIfFail;
+			}
+		}
+
+		@SuppressWarnings("rawtypes")
+		static void initKeys() throws Exception {
+
+			Map o = getConfig();
+			List o1 = (List) ((Map) o).get("keys");
+			U.originKeys = o1;
+			U.keys = new HashMap<String, Commands>();
+			Set<String> keys = new HashSet<String>();
+			for (Object o2 : o1) {
+				List row = (List) o2;
+				String cmd = row.get(0).toString();
+				String key = row.get(1).toString().toUpperCase();
+				if (keys.contains(key)) {
+					System.err.println("Error: duplicated key:" + key);
+				}
+				keys.add(key);
+
+				addKey(U.keys, key, cmd);
+			}
+			addKey(U.keys, "alt-Enter", "ShellCommand");
+		}
+
+		public static int[][] loadColorModes() throws IOException {
+			Map config = getConfig();
+			List l = (List) ((Map) config.get("color")).get("modes");
+			int colorCnt = 12;
+			int[][] modes = new int[l.size()][colorCnt];
+			for (int i = 0; i < l.size(); i++) {
+				List row = (List) l.get(i);
+				for (int j = 1; j <= colorCnt; j++) {
+					int v;
+					Object o = row.get(j);
+					if (o instanceof BigDecimal)
+						v = ((BigDecimal) o).intValue();
+					else {
+						v = U.parseInt(o.toString());
+					}
+					modes[i][j - 1] = v;
+				}
+			}
+			return modes;
+		}
+
+		public static int readTabWidth() {
+			try {
+				Map config = getConfig();
+				BigDecimal d = (BigDecimal) config.get("tabWidthInPixel");
+				if (d != null)
+					return d.intValue();
+			} catch (IOException e) {
+				e.printStackTrace();
+
+			}
+			return 40;
+		}
+
+		public static void setDefaultBKColor() throws IOException {
+			UIDefaults uiDefaults = UIManager.getDefaults();
+			for (Enumeration e = uiDefaults.keys(); e.hasMoreElements();) {
+				Object obj = e.nextElement();
+				if (obj instanceof String) {
+					if (((String) obj).contains("background") && uiDefaults.get(obj) instanceof Color) {
+						// System.out.println(obj);
+						uiDefaults.put(obj, getDefaultBgColor());
+						UIManager.put(obj, getDefaultBgColor());
+					}
+				}
+			}
+		}
+
+		public static void setDefaultLookAndFeel() throws IOException {
+			Map config = getConfig();
+			String v = "" + config.get("lookAndFeel");
+			if (v.length() == 0 || "null".equals(v))
+				return;
+			try {
+				Class.forName(v);
+				try {
+					UIManager.setLookAndFeel(v);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			} catch (ClassNotFoundException e) {
+				System.out.println("not found lookAndFeel:" + e);
+			}
+
 		}
 	}
 
@@ -803,7 +971,13 @@ public class U {
 			new Object[] { new int[] { 0xFF, 0xFE }, "UTF-16LE" }, new Object[] { new int[] { 0, 0, 0xFE, 0xFF }, "UTF-32BE" },
 			new Object[] { new int[] { 0xFF, 0xFE, 0, 0 }, "UTF-32LE" }, };;
 
+	static private Map conf;
+	public static final String CONFIG_FN = "/data.py.ver3";
+
+	private static long configFileLoadTime;
+
 	static Map<String, Commands> keys;
+
 	public final static String[] KWS = "ArithmeticError AssertionError AttributeError BufferType BuiltinFunctionType BuiltinMethodType ClassType CodeType ComplexType DeprecationWarning DictProxyType DictType DictionaryType EOFError EllipsisType EmitStreamVertex EmitVertex EndPrimitive EndStreamPrimitive EnvironmentError Err Exception False FileType FloatType FloatingPointError FrameType FunctionType GeneratorType IOError ImportError IndentationError IndexError InstanceType IntType KeyError KeyboardInterrupt LambdaType ListType LongType LookupError MemoryError MethodType ModuleType NameError None NoneType NotImplemented NotImplementedError OSError ObjectType OverflowError OverflowWarning ReferenceError RuntimeError RuntimeWarning SliceType StandardError StopIteration StringType StringTypes SyntaxError SyntaxWarning SystemError SystemExit TabError TracebackType True TupleType TypeError TypeType UnboundLocalError UnboundMethodType UnicodeError UnicodeType UserWarning ValueError Warning WindowsError XRangeType ZeroDivisionError __abs__ __add__ __all__ __author__ __bases__ __builtins__ __call__ __class__ __cmp__ __coerce__ __contains__ __debug__ __del__ __delattr__ __delitem__ __delslice__ __dict__ __div__ __divmod__ __doc__ __docformat__ __eq__ __file__ __float__ __floordiv__ __future__ __ge__ __getattr__ __getattribute__ __getitem__ __getslice__ __gt__ __hash__ __hex__ __iadd__ __import__ __imul__ __init__ __int__ __invert__ __iter__ __le__ __len__ __long__ __lshift__ __lt__ __members__ __metaclass__ __mod__ __mro__ __mul__ __name__ __ne__ __neg__ __new__ __nonzero__ __oct__ __or__ __path__ __pos__ __pow__ __radd__ __rdiv__ __rdivmod__ __reduce__ __repr__ __rfloordiv__ __rlshift__ __rmod__ __rmul__ __ror__ __rpow__ __rrshift__ __rsub__ __rtruediv__ __rxor__ __self__ __setattr__ __setitem__ __setslice__ __slots__ __str__ __sub__ __truediv__ __version__ __xor__ abs abstract acos acosh active all and any apply array as asc ascb ascw asin asinh asm assert atan atanh atn atomicAdd atomicAnd atomicCompSwap atomicCounter atomicCounterDecrement atomicCounterIncrement atomicExchange atomicMax atomicMin atomicOr atomicXor atomic_uint attribute auto barrier bitCount bitfieldExtract bitfieldInsert bitfieldReverse bool boolean break buffer bvec2 bvec3 bvec4 byref byte byval call callable case cast catch cbool cbyte ccur cdate cdbl ceil centroid char chr chrb chrw cint clamp class classmethod clng cmp coerce coherent common compile complex const continue cos cosh createobject cross csng cstr dFdx dFdy date dateadd datediff datepart dateserial datevalue day def default degrees del delattr determinant dict dim dir discard distance divmod dmat2 dmat2x2 dmat2x3 dmat2x4 dmat3 dmat3x2 dmat3x3 dmat3x4 dmat4 dmat4x2 dmat4x3 dmat4x4 do dot double dvec2 dvec3 dvec4 each elif else elseif empty end enum enumerate equal erase error eval except exec execfile execute exit exp exp2 explicit extends extern external faceforward false file filter final finally findLSB findMSB fix fixed flat float floatBitsToInt floatBitsToUint floor fma for formatcurrency formatdatetime formatnumber formatpercent fract frexp from frozenset function fvec2 fvec3 fvec4 fwidth get getattr getobject getref gl_ClipDistance gl_FragCoord gl_FragDepth gl_FrontFacing gl_GlobalInvocationID gl_InstanceID gl_InvocationID gl_Layer gl_LocalInvocationID gl_LocalInvocationIndex gl_NumSamples gl_NumWorkGroups gl_PatchVerticesIn gl_PointCoord gl_PointSize gl_Position gl_PrimitiveID gl_PrimitiveIDIn gl_SampleID gl_SampleMask gl_SampleMaskIn gl_SamplePosition gl_TessCoord gl_TessLevelInner gl_TessLevelOuter gl_VertexID gl_ViewportIndex gl_WorkGroupID gl_WorkGroupSize global globals goto greaterThan greaterThanEqual groupMemoryBarrier half hasattr hash hex highp hour hvec2 hvec3 hvec4 id if iimage1D iimage1DArray iimage2D iimage2DArray iimage2DMS iimage2DMSArray iimage2DRect iimage3D iimageBuffer iimageCube iimageCubeArray image1D image1DArray image2D image2DArray image2DMS image2DMSArray image2DRect image3D imageAtomicAdd imageAtomicAnd imageAtomicCompSwap imageAtomicExchange imageAtomicMax imageAtomicMin imageAtomicOr imageAtomicXor imageBuffer imageCube imageCubeArray imageLoad imageSize imageStore imp implements import imulExtended in inline inout input inputbox instanceof instr instrb instrrev int intBitsToFloat interface intern interpolateAtCentroid interpolateAtOffset interpolateAtSample invariant inverse inversesqrt is isampler1D isampler1DArray isampler2D isampler2DArray isampler2DMS isampler2DMSArray isampler2DRect isampler3D isamplerBuffer isamplerCube isamplerCubeArray isarray isdate isempty isinf isinstance isnan isnull isnumeric isobject issubclass iter ivec2 ivec3 ivec4 join lambda layout lbound lcase ldexp left leftb len lenb length lessThan lessThanEqual let list loadpicture locals log log2 long loop lowp ltrim map mat2 mat2x2 mat2x3 mat2x4 mat3 mat3x2 mat3x3 mat3x4 mat4 mat4x2 mat4x3 mat4x4 matrixCompMult max mediump memoryBarrier memoryBarrierAtomicCounter memoryBarrierBuffer memoryBarrierImage memoryBarrierShared mid midb min minute mix mod modf month monthname msgbox namespace native new next noinline noise noperspective normalize not notEqual nothing now null object oct on open option or ord out outerProduct output packDouble2x32 packHalf2x16 packSnorm2x16 packSnorm4x8 packUnorm2x16 packUnorm4x8 package packed partition pass patch pow precision preserve print private property protected public radians raise randomize range raw_input readonly redim reduce reflect refract register reload rem replace repr resource restrict resume return reversed rgb right rightb rnd round roundEven row_major rtrim sample sampler1D sampler1DArray sampler1DArrayShadow sampler1DShadow sampler2D sampler2DArray sampler2DArrayShadow sampler2DMS sampler2DMSArray sampler2DRect sampler2DRectShadow sampler2DShadow sampler3D sampler3DRect samplerBuffer samplerCube samplerCubeArray samplerCubeArrayShadow samplerCubeShadow scriptengine scriptenginebuildversion scriptenginemajorversion scriptengineminorversion second select self set setattr sgn shared short sign signed sin sinh sizeof slice smooth smoothstep sorted space split sqr sqrt static staticmethod step str strcomp strictfp string strreverse struct sub subroutine sum super superp switch synchronized tan tanh template texelFetch texelFetchOffset texture textureGather textureGatherOffset textureGatherOffsets textureGrad textureGradOffset textureLod textureLodOffset textureOffset textureProj textureProjGrad textureProjGradOffset textureProjLod textureProjLodOffset textureProjOffset textureQueryLevels textureQueryLod textureSize then this throw throws time timeserial timevalue to transient transpose trim true trunc try tuple type typedef typename uaddCarry ubound ucase uimage1D uimage1DArray uimage2D uimage2DArray uimage2DMS uimage2DMSArray uimage2DRect uimage3D uimageBuffer uimageCube uimageCubeArray uint uintBitsToFloat umulExtended unichr unicode uniform union unpackDouble2x32 unpackHalf2x16 unpackSnorm2x16 unpackSnorm4x8 unpackUnorm2x16 unpackUnorm4x8 unsigned until usampler1D usampler1DArray usampler2D usampler2DArray usampler2DMS usampler2DMSArray usampler2DRect usampler3D usamplerBuffer usamplerCube usamplerCubeArray using usubBorrow uvec2 uvec3 uvec4 vars vartype varying vbAbort vbAbortRetryIgnore vbApplicationModal vbCancel vbCritical vbDefaultButton1 vbDefaultButton2 vbDefaultButton3 vbDefaultButton4 vbExclamation vbFalse vbGeneralDate vbIgnore vbInformation vbLongDate vbLongTime vbNo vbOK vbOKCancel vbOKOnly vbObjectError vbQuestion vbRetry vbRetryCancel vbShortDate vbShortTime vbSystemModal vbTrue vbUseDefault vbYes vbYesNo vbYesNoCancel vbarray vbblack vbblue vbboolean vbbyte vbcr vbcrlf vbcurrency vbcyan vbdataobject vbdate vbdecimal vbdouble vbempty vberror vbformfeed vbgreen vbinteger vblf vblong vbmagenta vbnewline vbnull vbnullchar vbnullstring vbobject vbred vbsingle vbstring vbtab vbvariant vbverticaltab vbwhite vbyellow vec2 vec3 vec4 void volatile weekday weekdayname wend while with writeonly xor xrange year yield zip"
 			.split(" ");
 
@@ -822,28 +996,6 @@ public class U {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-	}
-
-	@SuppressWarnings("rawtypes")
-	static void initKeys() throws Exception {
-		BufferedReader in = new BufferedReader(U.getInstalledReader("data.py.ver2"));
-		Object o = new PyData().parseAll(in);
-		List o1 = (List) ((Map) o).get("keys");
-		U.originKeys = o1;
-		U.keys = new HashMap<String, Commands>();
-		Set<String> keys = new HashSet<String>();
-		for (Object o2 : o1) {
-			List row = (List) o2;
-			String cmd = row.get(0).toString();
-			String key = row.get(1).toString().toUpperCase();
-			if (keys.contains(key)) {
-				System.err.println("Error: duplicated key:" + key);
-			}
-			keys.add(key);
-
-			addKey(U.keys, key, cmd);
-		}
-		addKey(U.keys, "alt-Enter", "ShellCommand");
 	}
 
 	static void addKey(Map<String, Commands> keys, String key, String cmd) throws IllegalArgumentException, IllegalAccessException {
@@ -967,6 +1119,10 @@ public class U {
 				i = i / 2;
 			}
 		}
+	}
+
+	static void dialogMsg(String s) {
+		JOptionPane.showMessageDialog(null, s);
 	}
 
 	static void doFindInDir(PlainPage page, String text, boolean ignoreCase, boolean selected2, boolean inDir, String dir) throws Exception {
@@ -1300,17 +1456,13 @@ public class U {
 		File installed = new File(getMyDir(), fn);
 		if (!installed.exists()) {
 			try {
-				FileUtil.copy(ClassLoader.getSystemResourceAsStream(fn), new FileOutputStream(installed));
+				FileUtil.copy(U.class.getResourceAsStream(fn), new FileOutputStream(installed));
 			} catch (IOException e) {
 				e.printStackTrace();
-				return getJarReader(fn);
+				return getResourceReader(fn);
 			}
 		}
 		return new InputStreamReader(new FileInputStream(installed), "utf8");
-	}
-
-	static Reader getJarReader(String fn) throws UnsupportedEncodingException {
-		return new InputStreamReader(ClassLoader.getSystemResourceAsStream(fn), "utf8");
 	}
 
 	public static File getMyDir() {
@@ -1342,6 +1494,10 @@ public class U {
 			ss.add(sb);
 		}
 		return ss;
+	}
+
+	public static Reader getResourceReader(String fn) throws IOException {
+		return new InputStreamReader(U.class.getResourceAsStream(fn), "utf8");
 	}
 
 	public static String getStr(List row, int i) {
@@ -1672,21 +1828,7 @@ public class U {
 	}
 
 	static void openFile(PlainPage page) throws Exception {
-		// JFileChooser chooser = new JFileChooser();
-		//
-		// if (page.pageData.getFn() != null) {
-		// chooser.setSelectedFile(new File(page.pageData.getFn()));
-		// } else if (page.pageData.workPath != null) {
-		// chooser.setSelectedFile(new File(page.pageData.workPath));
-		// // check later:cannot set correctly
-		// }
-		// int returnVal = chooser.showOpenDialog(page.uiComp);
-		// if (returnVal == JFileChooser.APPROVE_OPTION) {
-		// System.out.println("You chose to open this file: "
-		// + chooser.getSelectedFile().getAbsolutePath());
-		// File f = chooser.getSelectedFile();
-		// openFile(f, page.uiComp);
-		// }
+
 		String dir = page.pageData.workPath;
 		if (dir == null)
 			dir = new File(".").getCanonicalPath();
@@ -1747,6 +1889,16 @@ public class U {
 			g2.setColor(new Color(random.nextInt(cs)));
 			g2.drawLine(x, y, x + 1, y);
 		}
+	}
+
+	public static int parseInt(String s) {
+		int v;
+		if (s.startsWith("0x")) {
+			v = Integer.parseInt(s.substring(2), 16);
+		} else {
+			v = Integer.parseInt(s);
+		}
+		return v;
 	}
 
 	public static int randomID() {
