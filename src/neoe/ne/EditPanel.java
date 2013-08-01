@@ -3,8 +3,6 @@ package neoe.ne;
 import java.awt.Cursor;
 import java.awt.Font;
 import java.awt.Graphics;
-import java.awt.event.ComponentEvent;
-import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -24,8 +22,7 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.WindowConstants;
 
-public class EditPanel extends JPanel implements MouseMotionListener,
-		MouseListener, MouseWheelListener, KeyListener {
+public class EditPanel extends JPanel implements MouseMotionListener, MouseListener, MouseWheelListener, KeyListener {
 
 	private static final long serialVersionUID = -1667283144475200365L;
 
@@ -41,6 +38,7 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 	List<PlainPage> pageSet = new ArrayList<PlainPage>();
 
 	public EditPanel() throws Exception {
+		setBackground(U.Config.getDefaultBgColor());
 		setFocusable(true);
 		addMouseMotionListener(this);
 		addMouseListener(this);
@@ -49,8 +47,7 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 		setOpaque(false);
 		setCursor(new Cursor(Cursor.TEXT_CURSOR));
 		setFocusTraversalKeysEnabled(false);
-		PlainPage pp = new PlainPage(this, PageData.newEmpty("UNTITLED #"
-				+ U.randomID()));
+		PlainPage pp = new PlainPage(this, PageData.newEmpty("UNTITLED #" + U.randomID()));
 		pp.ptSelection.selectAll();
 	}
 
@@ -59,12 +56,9 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 			return;
 		String fn = page.pageData.getFn();
 		if (fn != null) {
-			frame.setTitle(new File(fn).getName() + " "
-					+ new File(fn).getParent() + " - (" + pageSet.size()
-					+ ") - " + PlainPage.WINDOW_NAME + suNotice());
+			frame.setTitle(new File(fn).getName() + " " + new File(fn).getParent() + " - (" + pageSet.size() + ") - " + PlainPage.WINDOW_NAME + suNotice());
 		} else {
-			frame.setTitle(page.pageData.getTitle() + " - (" + pageSet.size()
-					+ ") - " + PlainPage.WINDOW_NAME + suNotice());
+			frame.setTitle(page.pageData.getTitle() + " - (" + pageSet.size() + ") - " + PlainPage.WINDOW_NAME + suNotice());
 		}
 	}
 
@@ -164,8 +158,7 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 		if (frame != null)
 			return;
 		frame = new JFrame(PlainPage.WINDOW_NAME);
-		frame.setIconImage(ImageIO.read(EditPanel.class
-				.getResourceAsStream("/Alien.png")));
+		frame.setIconImage(ImageIO.read(EditPanel.class.getResourceAsStream("/Alien.png")));
 		frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 		U.setFrameSize(frame, 800, 600);
 		frame.getContentPane().add(this);
@@ -173,6 +166,35 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 		frame.setVisible(true);
 		frame.addWindowListener(new WindowAdapter() {
 			private long lastWarning;
+
+			@Override
+			public void windowActivated(WindowEvent e) {
+				for (PlainPage pp : pageSet) {
+					if (U.changedOutside(pp)) {
+						long t = new File(pp.pageData.getFn()).lastModified();
+						if (t > lastWarning) {
+							lastWarning = t;
+							if (!pp.changedOutside) {
+								pp.changedOutside = true;
+								if (pp.pageData.history.size() == 0) {
+									U.readFile(pp.pageData, pp.pageData.getFn());// reload
+									U.showSelfDispMessage(pp, "File changed outside.(reloaded)", 4000);
+									pp.changedOutside = false;
+								} else {
+									U.showSelfDispMessage(pp, "File changed outside.", 4000);
+								}
+								// break;
+							}
+						}
+
+					}
+				}
+				// EditPanel.this.requestFocus();
+			}
+
+			public void windowClosed(WindowEvent e) {
+				System.out.println("closed");
+			}
 
 			@Override
 			public void windowClosing(WindowEvent e) {
@@ -186,38 +208,6 @@ public class EditPanel extends JPanel implements MouseMotionListener,
 					}
 				}
 				System.out.println("exit");
-			}
-
-			public void windowClosed(WindowEvent e) {
-				System.out.println("closed");
-			}
-
-			@Override
-			public void windowActivated(WindowEvent e) {
-				for (PlainPage pp : pageSet) {
-					if (U.changedOutside(pp)) {
-						long t = new File(pp.pageData.getFn()).lastModified();
-						if (t > lastWarning) {
-							lastWarning = t;
-							if (!pp.changedOutside) {
-								pp.changedOutside = true;
-								if (pp.pageData.history.size() == 0) {
-									U.readFile(pp.pageData, pp.pageData.getFn());// reload
-									U.showSelfDispMessage(pp,
-											"File changed outside.(reloaded)",
-											4000);
-									pp.changedOutside = false;
-								} else {
-									U.showSelfDispMessage(pp,
-											"File changed outside.", 4000);
-								}
-								// break;
-							}
-						}
-
-					}
-				}
-				// EditPanel.this.requestFocus();
 			}
 		});
 		// frame.addWindowFocusListener(new WindowAdapter() {

@@ -1,12 +1,5 @@
 package neoe.ne;
 
-import static java.awt.Color.BLACK;
-import static java.awt.Color.BLUE;
-import static java.awt.Color.GREEN;
-import static java.awt.Color.LIGHT_GRAY;
-import static java.awt.Color.RED;
-import static java.awt.Color.YELLOW;
-
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -17,13 +10,14 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JOptionPane;
 
-import neoe.ne.Ime.Param;
 import neoe.ne.CommandPanel.CommandPanelPaint;
+import neoe.ne.Ime.Param;
 import neoe.ne.U.RoSb;
 
 public class PlainPage {
@@ -137,8 +131,7 @@ public class PlainPage {
 				if (cx > pageData.roLines.getline(cy).length()) {
 					ptEdit.setLength(cy, cx);
 				}
-			} else if (cx > pageData.roLines.getline(cy).length()
-					&& cy < pageData.roLines.getLinesize() - 1) {
+			} else if (cx > pageData.roLines.getline(cy).length() && cy < pageData.roLines.getLinesize() - 1) {
 				cy += 1;
 				cx = 0;
 			}
@@ -163,11 +156,9 @@ public class PlainPage {
 				int p1 = pair.indexOf(c);
 				if (p1 >= 0) {
 					if (p1 % 2 == 0) {
-						PlainPage.this.ui.commentor.moveToPairMark(cx - 1, cy,
-								pair.charAt(p1 + 1), c, 1);
+						PlainPage.this.ui.commentor.moveToPairMark(cx - 1, cy, pair.charAt(p1 + 1), c, 1);
 					} else {
-						PlainPage.this.ui.commentor.moveToPairMark(cx - 1, cy,
-								pair.charAt(p1 - 1), c, -1);
+						PlainPage.this.ui.commentor.moveToPairMark(cx - 1, cy, pair.charAt(p1 - 1), c, -1);
 					}
 				}
 			}
@@ -200,8 +191,7 @@ public class PlainPage {
 
 		void setSafePos(int x, int y) {
 			cy = Math.max(0, Math.min(pageData.roLines.getLinesize() - 1, y));
-			cx = Math
-					.max(0, Math.min(pageData.roLines.getline(cy).length(), x));
+			cx = Math.max(0, Math.min(pageData.roLines.getline(cy).length(), x));
 		}
 	}
 
@@ -261,8 +251,7 @@ public class PlainPage {
 				String indent = U.getIndent(sb.toString());
 				String s = sb.substring(cx, sb.length());
 				pageData.editRec.insertEmptyLine(cy + 1);
-				pageData.editRec
-						.insertInLine(cy + 1, 0, indent + U.trimLeft(s));
+				pageData.editRec.insertInLine(cy + 1, 0, indent + U.trimLeft(s));
 				pageData.editRec.deleteInLine(cy, cx, Integer.MAX_VALUE);
 				cy += 1;
 				cx = indent.length();
@@ -367,8 +356,7 @@ public class PlainPage {
 					pageData.editRec.insertInLine(cy, cx, ss[0]);
 					cx += ss[0].length();
 				} else {
-					String rem = pageData.roLines.getInLine(cy, cx,
-							Integer.MAX_VALUE);
+					String rem = pageData.roLines.getInLine(cy, cx, Integer.MAX_VALUE);
 					pageData.editRec.deleteInLine(cy, cx, Integer.MAX_VALUE);
 					pageData.editRec.insertInLine(cy, cx, ss[0]);
 					for (int i = 1; i < ss.length; i++) {
@@ -422,8 +410,7 @@ public class PlainPage {
 		void setLength(int cy, int cx) {
 			int oldLen = pageData.roLines.getline(cy).length();
 			if (cx - oldLen > 0)
-				pageData.editRec
-						.insertInLine(cy, oldLen, U.spaces(cx - oldLen));
+				pageData.editRec.insertInLine(cy, oldLen, U.spaces(cx - oldLen));
 		}
 
 		void wrapLines(int cx) throws Exception {
@@ -449,8 +436,7 @@ public class PlainPage {
 					for (int i = 0; i < sb.length(); i++) {
 						len += (sb.charAt(i) > 255) ? 2 : 1;
 						if (len >= lineLen) {
-							newtext.add(new StringBuffer(sb.substring(start,
-									i + 1)));
+							newtext.add(new StringBuffer(sb.substring(start, i + 1)));
 							start = i + 1;
 							len = 0;
 						}
@@ -462,8 +448,7 @@ public class PlainPage {
 					newtext.add(new StringBuffer(pageData.lines.get(y)));
 				}
 			}
-			String title = "wrapped " + pageData.getTitle() + " #"
-					+ U.randomID();
+			String title = "wrapped " + pageData.getTitle() + " #" + U.randomID();
 			PlainPage p2 = new PlainPage(uiComp, PageData.newEmpty(title));
 			p2.pageData.setLines(newtext);
 		}
@@ -474,18 +459,14 @@ public class PlainPage {
 			void markBox(Graphics2D g2, int x, int y) {
 				if (y >= sy && y <= sy + showLineCnt && x >= sx) {
 					RoSb sb = pageData.roLines.getline(y);
-					int w1 = x > 0 ? U.strWidth(g2, sb.substring(sx, x),
-							TABWIDTH) : 0;
+					int w1 = x > 0 ? U.strWidth(g2, sb.substring(sx, x), TABWIDTH) : 0;
 					String c = sb.substring(x, x + 1);
 					int w2 = U.strWidth(g2, c, TABWIDTH);
 					g2.setColor(Color.WHITE);
-					g2.drawRect(w1 - 1, (y - sy) * (lineHeight + lineGap) - 4,
-							w2, 16);
+					g2.drawRect(w1 - 1, (y - sy) * (lineHeight + lineGap) - 4, w2, 16);
 					g2.setColor(colorNormal);
-					g2.drawRect(w1, (y - sy) * (lineHeight + lineGap) - 3, w2,
-							16);
-					g2.drawString(c, w1, lineHeight + (y - sy)
-							* (lineHeight + lineGap));
+					g2.drawRect(w1, (y - sy) * (lineHeight + lineGap) - 3, w2, 16);
+					g2.drawString(c, w1, lineHeight + (y - sy) * (lineHeight + lineGap));
 				}
 			}
 
@@ -500,24 +481,24 @@ public class PlainPage {
 				y2 = Math.min(Math.max(y2, sy), sy + showLineCnt);
 				int scy1 = 5 + (y1 - sy) * (lineHeight + lineGap);
 				int scy2 = -8 + (y2 + 1 - sy) * (lineHeight + lineGap);
-				g2.setColor(Color.WHITE);
+				g2.setColor(colorGutMark1);
 				g2.drawLine(-6, scy1 - 1, -6, scy2 - 1);
 				if (o1 == y1) {
-					g2.setColor(Color.WHITE);
+					g2.setColor(colorGutMark1);
 					g2.drawLine(-6, scy1 - 1, -1, scy1 - 1);
 				}
 				if (o2 == y2) {
-					g2.setColor(Color.WHITE);
+					g2.setColor(colorGutMark1);
 					g2.drawLine(-6, scy2 - 1, -1, scy2 - 1);
 				}
-				g2.setColor(Color.BLUE);
+				g2.setColor(colorGutMark2);
 				g2.drawLine(-5, scy1, -5, scy2);
 				if (o1 == y1) {
-					g2.setColor(Color.BLUE);
+					g2.setColor(colorGutMark2);
 					g2.drawLine(-5, scy1, 0, scy1);
 				}
 				if (o2 == y2) {
-					g2.setColor(Color.BLUE);
+					g2.setColor(colorGutMark2);
 					g2.drawLine(-5, scy2, 0, scy2);
 				}
 			}
@@ -532,8 +513,7 @@ public class PlainPage {
 				}
 			}
 
-			void pairMark(Graphics2D g2, int cx2, int cy2, char ch, char ch2,
-					int inc) {
+			void pairMark(Graphics2D g2, int cx2, int cy2, char ch, char ch2, int inc) {
 				int[] c1 = new int[] { cx2, cy2 };
 				U.findchar(PlainPage.this, ch, inc, c1, ch2);
 				if (c1[0] >= 0) {// found
@@ -546,53 +526,53 @@ public class PlainPage {
 			}
 		}
 
-		static final int TABWIDTH = 40;
 		BufferedImage aboutImg;
 		boolean aboutOn;
-
 		int aboutY;
+
 		boolean closed = false;
-		Color colorBg, colorComment, colorComment2, colorCurrentLineBg,
-				colorDigit, colorGutLine, colorGutNumber, colorKeyword;
+		Color colorBg, colorComment, colorComment2, colorCurrentLineBg, colorDigit, colorGutLine, colorGutNumber, colorKeyword, colorGutMark1, colorGutMark2, colorReturnMark;
 		int colorMode;
 		/**
 		 * 0:white mode 1: black mode 2: blue mode * 1 bg, 2 normal, 3 keyword,
 		 * 4 digit, 5 comment, 6 gutNumber, 7 gutLine, 8 currentLineBg, 9
 		 * comment2
 		 */
-		final int[][] ColorModes = new int[][] {
-				{ 0xdddddd, BLACK.getRGB(), BLUE.getRGB(), RED.getRGB(),
-						0xC85032, 0x115511, 0xffffff, 0xF0F0F0, 0xffffff },
-				{ 0x0, LIGHT_GRAY.getRGB(), YELLOW.darker().getRGB(),
-						GREEN.getRGB(), BLUE.brighter().getRGB(), 0xC85032,
-						LIGHT_GRAY.getRGB(), 0x222222, 0x404040 },
-				{ BLUE.darker().getRGB(), LIGHT_GRAY.getRGB(), YELLOW.getRGB(),
-						GREEN.getRGB(), RED.getRGB(), 0x008800,
-						LIGHT_GRAY.getRGB(), 0x2222ff, 0x0 } };
+		int[][] ColorModes = null;
 		Color colorNormal = Color.BLACK;
 		String[] comment = null;
 		Comment commentor = new Comment();
 		CommandPanelPaint cp = new CommandPanelPaint();
 		Dimension dim;
-		Font font = new Font("Monospaced", Font.PLAIN, 12);
-		Font FONT_BIG = new Font("Monospaced", Font.PLAIN, 24);
+		Font font = U.Config.getFont("default", new Font("Monospaced", Font.PLAIN, 12));
+		Font FONT_BIG = U.Config.getFont("defaultBig", new Font("Monospaced", Font.PLAIN, 24));
 		int gutterWidth = 40;
 		int lineGap = 5;
 		int lineHeight = 10;
 		long MSG_VANISH_TIME = 3000;
 		List<Object[]> msgs = new ArrayList<Object[]>();
-
 		boolean noise = false;
 
 		int noisesleep = 500;
 
 		float scalev = 1;
 
+		int TABWIDTH = 40;
+
 		Paint() {
-			applyColorMode(0);
+			try {
+				TABWIDTH = U.Config.readTabWidth();
+				applyColorMode(0);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 
-		void applyColorMode(int i) {
+		void applyColorMode(int i) throws IOException {
+			if (ColorModes == null || U.Config.configChanged()) {
+				ColorModes = U.Config.loadColorModes();
+			}
+
 			if (i >= ColorModes.length)
 				i = 0;
 			colorMode = i;
@@ -606,6 +586,9 @@ public class PlainPage {
 			colorGutLine = new Color(cm[6]);
 			colorCurrentLineBg = new Color(cm[7]);
 			colorComment2 = new Color(cm[8]);
+			colorGutMark1 = new Color(cm[9]);
+			colorGutMark2 = new Color(cm[10]);
+			colorReturnMark = new Color(cm[11]);
 		}
 
 		void drawGutter(Graphics2D g2) {
@@ -614,15 +597,13 @@ public class PlainPage {
 				if (sy + i + 1 > pageData.roLines.getLinesize()) {
 					break;
 				}
-				g2.drawString("" + (sy + i + 1), 0, lineHeight
-						+ (lineHeight + lineGap) * i);
+				g2.drawString("" + (sy + i + 1), 0, lineHeight + (lineHeight + lineGap) * i);
 			}
 		}
 
 		void drawReturn(Graphics2D g2, int w, int py) {
-			g2.setColor(Color.red);
-			g2.drawLine(w, py - lineHeight + font.getSize(), w + 3, py
-					- lineHeight + font.getSize());
+			g2.setColor(colorReturnMark);
+			g2.drawLine(w, py - lineHeight + font.getSize(), w + 3, py - lineHeight + font.getSize());
 		}
 
 		void drawSelect(Graphics2D g2, int y1, int x1, int x2) {
@@ -649,13 +630,11 @@ public class PlainPage {
 				}
 				if (x1 == x2) {
 					int w1 = U.strWidth(g2, s.substring(0, x1), TABWIDTH);
-					g2.fillRect(w1, scry * (lineHeight + lineGap), 3,
-							lineHeight + lineGap);
+					g2.fillRect(w1, scry * (lineHeight + lineGap), 3, lineHeight + lineGap);
 				} else {
 					int w1 = U.strWidth(g2, s.substring(0, x1), TABWIDTH);
 					int w2 = U.strWidth(g2, s.substring(0, x2), TABWIDTH);
-					g2.fillRect(w1, scry * (lineHeight + lineGap), (w2 - w1),
-							lineHeight + lineGap);
+					g2.fillRect(w1, scry * (lineHeight + lineGap), (w2 - w1), lineHeight + lineGap);
 				}
 			}
 		}
@@ -678,14 +657,12 @@ public class PlainPage {
 				g.setXORMode(Color.BLACK);
 				g.setPaintMode();
 				g.setColor(Color.decode("0xFFCCFF"));
-				g.fillRoundRect((dim.width - w) / 2, (dim.height - h) / 2, w,
-						h, 3, 3);
+				g.fillRoundRect((dim.width - w) / 2, (dim.height - h) / 2, w, h, 3, 3);
 				g.setColor(Color.BLACK);
 				for (int i = 0; i < msgs.size(); i++) {
 					Object[] row = msgs.get(i);
 					int w1 = (Integer) row[2];
-					g.drawString(row[0].toString(), (dim.width - w1) / 2,
-							(10 + dim.height / 2 + 30 * (i - msgs.size() / 2)));
+					g.drawString(row[0].toString(), (dim.width - w1) / 2, (10 + dim.height / 2 + 30 * (i - msgs.size() / 2)));
 				}
 			}
 
@@ -715,8 +692,7 @@ public class PlainPage {
 						g2.drawImage(U.tabImg, x + w, y - lineHeight, null);
 						w += TABWIDTH;
 					}
-					w += U.drawTwoColor(g2, s1, x + w, y, colorComment,
-							colorComment2, 1);
+					w += U.drawTwoColor(g2, s1, x + w, y, colorComment, colorComment2, 1);
 					if (w > dim.width - gutterWidth) {
 						break;
 					}
@@ -729,8 +705,7 @@ public class PlainPage {
 						w += TABWIDTH;
 					} else {
 						// int highlightid =
-						U.getHighLightID(s1, g2, colorKeyword, colorDigit,
-								colorNormal);
+						U.getHighLightID(s1, g2, colorKeyword, colorDigit, colorNormal);
 						g2.drawString(s1, x + w, y);
 						w += g2.getFontMetrics().stringWidth(s1);
 					}
@@ -766,22 +741,12 @@ public class PlainPage {
 		}
 
 		void drawToolbar(Graphics2D g2) {
-			String s1 = "<F1>:Help, "
-					+ (pageData.encoding == null ? "-" : pageData.encoding)
-					+ (pageData.lineSep.equals("\n") ? ", U" : ", W")
-					+ ", Line:"
-					+ pageData.roLines.getLinesize()
-					+ ", X:"
-					+ (cx + 1)
-					+ ", undo:"
-					+ pageData.history.size()
-					+ ", "
-					+ (rectSelectMode ? "R, " : "")
-					+ (pageData.getFn() == null ? "-" : pageData.getFn()
-							+ (changedOutside ? " [ChangedOutside!]" : ""));
-			g2.setColor(Color.WHITE);
+			String s1 = "<F1>:Help, " + (pageData.encoding == null ? "-" : pageData.encoding) + (pageData.lineSep.equals("\n") ? ", U" : ", W") + ", Line:"
+					+ pageData.roLines.getLinesize() + ", X:" + (cx + 1) + ", undo:" + pageData.history.size() + ", " + (rectSelectMode ? "R, " : "")
+					+ (pageData.getFn() == null ? "-" : pageData.getFn() + (changedOutside ? " [ChangedOutside!]" : ""));
+			g2.setColor(colorGutMark1);
 			g2.drawString(s1, 2, lineHeight + 2);
-			g2.setColor(Color.BLACK);
+			g2.setColor(colorGutMark2);
 			g2.drawString(s1, 1, lineHeight + 1);
 			if (msg != null) {
 				if (System.currentTimeMillis() - msgtime > MSG_VANISH_TIME) {
@@ -789,8 +754,7 @@ public class PlainPage {
 				} else {
 					int w = g2.getFontMetrics().stringWidth(msg);
 					g2.setColor(new Color(0xee6666));
-					g2.fillRect(dim.width - w, 0, dim.width, lineHeight
-							+ lineGap);
+					g2.fillRect(dim.width - w, 0, dim.width, lineHeight + lineGap);
 					g2.setColor(Color.YELLOW);
 					g2.drawString(msg, dim.width - w, lineHeight);
 				}
@@ -842,10 +806,8 @@ public class PlainPage {
 				}
 				Graphics2D g2 = (Graphics2D) g;
 				g2.setFont(font);
-				showLineCnt = (int) ((size.height - toolbarHeight)
-						/ (lineHeight + lineGap) / scalev);
-				int charCntInLine = (int) ((size.width - gutterWidth)
-						/ (lineHeight) * 2 / scalev);
+				showLineCnt = (int) ((size.height - toolbarHeight) / (lineHeight + lineGap) / scalev);
+				int charCntInLine = (int) ((size.width - gutterWidth) / (lineHeight) * 2 / scalev);
 
 				{ // change cy if needed
 					if (cy >= pageData.roLines.getLinesize()) {
@@ -861,15 +823,10 @@ public class PlainPage {
 				if (cx < sx) {
 					sx = Math.max(0, cx - charCntInLine / 2);
 				} else {
-					if (U.strWidth(g2,
-							U.subs(pageData.roLines.getline(cy), sx, cx),
-							TABWIDTH) > size.width - lineHeight * 3) {
+					if (U.strWidth(g2, U.subs(pageData.roLines.getline(cy), sx, cx), TABWIDTH) > size.width - lineHeight * 3) {
 						sx = Math.max(0, cx - charCntInLine / 2);
 						int xx = charCntInLine / 4;
-						while (xx > 0
-								&& U.strWidth(g2, U.subs(
-										pageData.roLines.getline(cy), sx, cx),
-										TABWIDTH) > size.width - lineHeight * 3) {
+						while (xx > 0 && U.strWidth(g2, U.subs(pageData.roLines.getline(cy), sx, cx), TABWIDTH) > size.width - lineHeight * 3) {
 							sx = Math.max(0, cx - xx - 1);
 							xx /= 2; // quick guess
 						}
@@ -879,8 +836,7 @@ public class PlainPage {
 					// uiComp.grabFocus(); // bug: get focus when dont need
 					// apply mouse click position
 					if (my > 0 && my < toolbarHeight) {
-					} else if (my > 0 && mx >= gutterWidth
-							&& my >= toolbarHeight) {
+					} else if (my > 0 && mx >= gutterWidth && my >= toolbarHeight) {
 						mx -= gutterWidth;
 						my -= toolbarHeight;
 						mx = (int) (mx / scalev);
@@ -891,9 +847,7 @@ public class PlainPage {
 						}
 						RoSb sb = pageData.roLines.getline(cy);
 						sx = Math.min(sx, sb.length());
-						cx = sx
-								+ U.computeShowIndex(sb.substring(sx), mx, g2,
-										TABWIDTH);
+						cx = sx + U.computeShowIndex(sb.substring(sx), mx, g2, TABWIDTH);
 						my = 0;
 						ptSelection.mouseSelection(sb);
 					}
@@ -908,8 +862,7 @@ public class PlainPage {
 				// draw gutter
 				g2.translate(0, toolbarHeight);
 				g2.setColor(colorGutLine);
-				g2.drawRect(gutterWidth, -1, dim.width - gutterWidth,
-						dim.height - toolbarHeight);
+				g2.drawRect(gutterWidth, -1, dim.width - gutterWidth, dim.height - toolbarHeight);
 
 				g2.scale(scalev, scalev);
 				drawGutter(g2);
@@ -921,8 +874,7 @@ public class PlainPage {
 					int l1 = cy - sy;
 					if (l1 >= 0 && l1 < showLineCnt) {
 						g2.setColor(colorCurrentLineBg);
-						g2.fillRect(0, l1 * (lineHeight + lineGap), size.width,
-								lineHeight + lineGap - 1);
+						g2.fillRect(0, l1 * (lineHeight + lineGap), size.width, lineHeight + lineGap - 1);
 					}
 				}
 				g2.setColor(colorNormal);
@@ -961,18 +913,15 @@ public class PlainPage {
 					}
 				}
 				if (true) {// (){}[]<> pair marking
-					if (cx - 1 < pageData.roLines.getline(cy).length()
-							&& cx - 1 >= 0) {
+					if (cx - 1 < pageData.roLines.getline(cy).length() && cx - 1 >= 0) {
 						char c = pageData.roLines.getline(cy).charAt(cx - 1);
 						String pair = "(){}[]<>";
 						int p1 = pair.indexOf(c);
 						if (p1 >= 0) {
 							if (p1 % 2 == 0) {
-								commentor.pairMark(g2, cx - 1, cy,
-										pair.charAt(p1 + 1), c, 1);
+								commentor.pairMark(g2, cx - 1, cy, pair.charAt(p1 + 1), c, 1);
 							} else {
-								commentor.pairMark(g2, cx - 1, cy,
-										pair.charAt(p1 - 1), c, -1);
+								commentor.pairMark(g2, cx - 1, cy, pair.charAt(p1 - 1), c, -1);
 							}
 						}
 					}
@@ -982,8 +931,7 @@ public class PlainPage {
 					g2.setXORMode(new Color(0x30f0f0));
 					String s = U.subs(pageData.roLines.getline(cy), sx, cx);
 					int w = U.strWidth(g2, s, TABWIDTH);
-					g2.fillRect(w, (cy - sy) * (lineHeight + lineGap), 2,
-							lineHeight);
+					g2.fillRect(w, (cy - sy) * (lineHeight + lineGap), 2, lineHeight);
 				}
 
 				if (aboutOn) {// about info
@@ -1023,8 +971,7 @@ public class PlainPage {
 		}
 
 		String getSelected() {
-			return pageData.roLines.getTextInRect(getSelectRect(),
-					rectSelectMode);
+			return pageData.roLines.getTextInRect(getSelectRect(), rectSelectMode);
 		}
 
 		Rectangle getSelectRect() {
@@ -1090,18 +1037,12 @@ public class PlainPage {
 			if (mcount == 2) {
 				int x1 = cx;
 				int x2 = cx;
-				if (sb.length() > x1
-						&& Character.isJavaIdentifierPart(sb.charAt(x1)))
-					while (x1 > 0
-							&& Character
-									.isJavaIdentifierPart(sb.charAt(x1 - 1))) {
+				if (sb.length() > x1 && Character.isJavaIdentifierPart(sb.charAt(x1)))
+					while (x1 > 0 && Character.isJavaIdentifierPart(sb.charAt(x1 - 1))) {
 						x1 -= 1;
 					}
-				if (sb.length() > x2
-						&& Character.isJavaIdentifierPart(sb.charAt(x2)))
-					while (x2 < sb.length() - 1
-							&& Character
-									.isJavaIdentifierPart(sb.charAt(x2 + 1))) {
+				if (sb.length() > x2 && Character.isJavaIdentifierPart(sb.charAt(x2)))
+					while (x2 < sb.length() - 1 && Character.isJavaIdentifierPart(sb.charAt(x2 + 1))) {
 						x2 += 1;
 					}
 				selectstartx = x1;
@@ -1149,29 +1090,31 @@ public class PlainPage {
 	int cy;
 	boolean ignoreCase = true;
 	boolean isCommentChecked = false;
+	Dimension lastSize = new Dimension();
 	int mcount;
 	String msg;
 	long msgtime;
-	boolean mshift;
 
 	//
 
+	boolean mshift;
 	int mx, my;
+
 	PageData pageData;
 
 	EasyEdit ptEdit = new EasyEdit();
-
 	U.FindAndReplace ptFind = new U.FindAndReplace(this);
 	Selection ptSelection = new Selection();
 	boolean rectSelectMode = false;
-	boolean saveSelectionCancel;
 
+	boolean saveSelectionCancel;
 	String searchResultOf;
 	int selectstartx, selectstarty, selectstopx, selectstopy;
 	int showLineCnt;
-	int sy, sx;
 
+	int sy, sx;
 	int toolbarHeight = 25;
+
 	Paint ui = new Paint();
 
 	EditPanel uiComp;
@@ -1201,8 +1144,7 @@ public class PlainPage {
 					Thread.sleep(lag);
 					// System.out.println("checkControlLater");
 					long now = System.currentTimeMillis();
-					if (ui.cp.controlDownMs > 0
-							&& now - ui.cp.controlDownMs >= lag) {
+					if (ui.cp.controlDownMs > 0 && now - ui.cp.controlDownMs >= lag) {
 						ui.cp.showCommandPanel = true;
 						uiComp.repaint();
 					}
@@ -1284,8 +1226,7 @@ public class PlainPage {
 			Commands cmd = U.mappingToCommand(env);
 			if (cmd == null) {
 				int kc = env.getKeyCode();
-				if (!Character.isIdentifierIgnorable(kc)
-						&& (env.isAltDown() || env.isControlDown())) {
+				if (!Character.isIdentifierIgnorable(kc) && (env.isAltDown() || env.isControlDown())) {
 					unknownCommand(env);
 				}
 			} else {
@@ -1337,8 +1278,7 @@ public class PlainPage {
 				} else {
 					ptEdit.moveLineLeft(cy);
 				}
-			} else if (kc == KeyEvent.VK_TAB && !env.isShiftDown()
-					&& selectstarty != selectstopy && !rectSelectMode) {
+			} else if (kc == KeyEvent.VK_TAB && !env.isShiftDown() && selectstarty != selectstopy && !rectSelectMode) {
 				Rectangle r = ptSelection.getSelectRect();
 				ptEdit.moveRectRight(r.y, r.height);
 			} else {
@@ -1577,8 +1517,7 @@ public class PlainPage {
 			U.openFile(this);
 			break;
 		case newPage:
-			PlainPage pp = new PlainPage(uiComp, PageData.newEmpty("UNTITLED #"
-					+ U.randomID()));
+			PlainPage pp = new PlainPage(uiComp, PageData.newEmpty("UNTITLED #" + U.randomID()));
 			pp.pageData.workPath = this.pageData.workPath;
 			pp.ptSelection.selectAll();
 			break;
@@ -1645,10 +1584,8 @@ public class PlainPage {
 				if (line.startsWith("set-font:")) {
 					U.setFont(this, line.substring("set-font:".length()).trim());
 				} else {
-					if (searchResultOf == null
-							|| !U.gotoFileLine2(uiComp, line, searchResultOf)) {
-						if (!U.gotoFileLine(line, uiComp, pageData.getTitle()
-								.equals(U.titleOfPages(uiComp)))) {
+					if (searchResultOf == null || !U.gotoFileLine2(uiComp, line, searchResultOf)) {
+						if (!U.gotoFileLine(line, uiComp, pageData.getTitle().equals(U.titleOfPages(uiComp)))) {
 							U.listDir(PlainPage.this, cy);
 						}
 					}
@@ -1697,11 +1634,11 @@ public class PlainPage {
 		sb.append((char) env.getKeyCode());
 		ui.message("Unknow Command:" + sb);
 	}
-	Dimension lastSize=new Dimension();
+
 	public void xpaint(Graphics g, Dimension size) {
-		if (!lastSize.equals(size)){		//resized
-			lastSize=size;	
-			ui.cp.inited=false;
+		if (!lastSize.equals(size)) { // resized
+			lastSize = size;
+			ui.cp.inited = false;
 		}
 		ui.xpaint(g, size);
 	}

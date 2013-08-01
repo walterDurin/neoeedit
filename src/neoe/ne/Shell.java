@@ -14,80 +14,18 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-public class Shell {
-
-	private PlainPage pp;
-	private StringBuffer ret = new StringBuffer("#");
-
-	public Shell(PlainPage pp) {
-		this.pp = pp;
-	}
-
-	public static void run(PlainPage pp, int cy) {
-		if (cy < pp.pageData.lines.size() && cy >= 0) {
-			String s = pp.pageData.lines.get(cy).toString();
-			String r;
-			try {
-				r = new Shell(pp).run(s);
-			} catch (Exception e) {
-				e.printStackTrace();
-				r = e.toString();
-			}
-			if (cy == pp.pageData.lines.size() - 1) {
-				pp.pageData.editRec.insertEmptyLine(cy + 1);
-			}
-			pp.cursor.moveDown();
-			pp.cursor.moveHome();
-			pp.ptEdit.insertString(r);
-		}
-	}
-
-	private String run(String s) throws Exception {
-		s = s.trim();
-		list(s);
-		return ret.toString() + "\n";
-	}
-
-	private void list(String name) throws Exception {
-		if (name.equals("this")) {
-			list(pp);
-		} else {
-			Object o = getObj(pp, name);
-			list(o);
-		}
-
-	}
-
-	private Object getObj(Object o, String name) {
-		try {
-			Field field = o.getClass().getDeclaredField(name);
-			Object value = field.get(o);
-			return value;
-		} catch (Exception e) {
-			Method[] methods = o.getClass().getDeclaredMethods();
-			for (Method m : methods) {
-				if (m.getName().equals(name)) {
-
-					return m;
-				}
-			}
-		}
-		return null;
-	}
-
-	private void list(Object o) throws Exception {
-		if (o instanceof Method) {
-			ret.append(" method:" + o);
-			return;
-		}
-		ret.append(" " + DumpToString.dump(o, 0));
-	}
-
-}
-
 class DumpToString {
 
 	private static final int MAX_DUMP_ARR = 99;
+
+	private static boolean definedToString(Class oClass) {
+		try {
+			Method m = oClass.getDeclaredMethod("toString", new Class[] {});
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
+	}
 
 	public static String dump(Object o, int maxLevel) throws Exception {
 		ByteArrayOutputStream ba = new ByteArrayOutputStream();
@@ -99,8 +37,7 @@ class DumpToString {
 		return ba.toString();
 	}
 
-	public static void dump(Object o, Writer out, int indent, int maxLevel,
-			Set objSet) throws Exception {
+	public static void dump(Object o, Writer out, int indent, int maxLevel, Set objSet) throws Exception {
 		if (o == null)
 			return;
 
@@ -109,7 +46,7 @@ class DumpToString {
 			out.write(o.toString());
 		} else {
 			if (objSet.contains(o)) {
-				out.write(o.getClass().getName() + "@" +  Integer.toHexString(o.hashCode())+ "...");
+				out.write(o.getClass().getName() + "@" + Integer.toHexString(o.hashCode()) + "...");
 				return;
 			}
 			objSet.add(o);
@@ -119,11 +56,10 @@ class DumpToString {
 			if (o.getClass().isArray()) {
 				out.write("arr[");
 				for (int i = 0; i < Array.getLength(o); i++) {
-					if(i>MAX_DUMP_ARR){
+					if (i > MAX_DUMP_ARR) {
 						out.write("\n");
 						indent(indent + 1, out);
-						out.write(",...(more as " +Array.getLength(o)+
-								")");
+						out.write(",...(more as " + Array.getLength(o) + ")");
 						break;
 					}
 					if (i > 0) {
@@ -132,7 +68,7 @@ class DumpToString {
 						out.write(",");
 					}
 					dump(Array.get(o, i), out, indent + 1, maxLevel, objSet);
-					
+
 				}
 				out.write("]");
 			} else if (o instanceof Iterable) {
@@ -174,8 +110,7 @@ class DumpToString {
 				Class oClass = o.getClass();
 				int i2 = 0;
 				while (oClass != null) {
-					if (isPrimitive(oClass.getName(), o)
-							|| definedToString(oClass)) {
+					if (isPrimitive(oClass.getName(), o) || definedToString(oClass)) {
 						if (i2 > 0) {
 							out.write("\n");
 							indent(indent + 1, out);
@@ -217,15 +152,6 @@ class DumpToString {
 
 	}
 
-	private static boolean definedToString(Class oClass) {
-		try {
-			Method m = oClass.getDeclaredMethod("toString", new Class[] {});
-			return true;
-		} catch (Exception e) {
-			return false;
-		}
-	}
-
 	private static void indent(int i, Writer out) throws IOException {
 		for (; i > 0; i--)
 			out.write("\t");
@@ -234,9 +160,81 @@ class DumpToString {
 	private static boolean isPrimitive(String name, Object o) {
 		if (o.getClass().isArray() || o instanceof Iterable || o instanceof Map)
 			return false;
-		return 
-				// name.startsWith("java.") || name.startsWith("javax.")|| name.startsWith("sun.")	||
-				name.startsWith("java.lang.") ||
-				name.indexOf(".") < 0;
+		return
+		// name.startsWith("java.") || name.startsWith("javax.")||
+		// name.startsWith("sun.") ||
+		name.startsWith("java.lang.") || name.indexOf(".") < 0;
 	}
+}
+
+public class Shell {
+
+	public static void run(PlainPage pp, int cy) {
+		if (cy < pp.pageData.lines.size() && cy >= 0) {
+			String s = pp.pageData.lines.get(cy).toString();
+			String r;
+			try {
+				r = new Shell(pp).run(s);
+			} catch (Exception e) {
+				e.printStackTrace();
+				r = e.toString();
+			}
+			if (cy == pp.pageData.lines.size() - 1) {
+				pp.pageData.editRec.insertEmptyLine(cy + 1);
+			}
+			pp.cursor.moveDown();
+			pp.cursor.moveHome();
+			pp.ptEdit.insertString(r);
+		}
+	}
+
+	private PlainPage pp;
+
+	private StringBuffer ret = new StringBuffer("#");
+
+	public Shell(PlainPage pp) {
+		this.pp = pp;
+	}
+
+	private Object getObj(Object o, String name) {
+		try {
+			Field field = o.getClass().getDeclaredField(name);
+			Object value = field.get(o);
+			return value;
+		} catch (Exception e) {
+			Method[] methods = o.getClass().getDeclaredMethods();
+			for (Method m : methods) {
+				if (m.getName().equals(name)) {
+
+					return m;
+				}
+			}
+		}
+		return null;
+	}
+
+	private void list(Object o) throws Exception {
+		if (o instanceof Method) {
+			ret.append(" method:" + o);
+			return;
+		}
+		ret.append(" " + DumpToString.dump(o, 0));
+	}
+
+	private void list(String name) throws Exception {
+		if (name.equals("this")) {
+			list(pp);
+		} else {
+			Object o = getObj(pp, name);
+			list(o);
+		}
+
+	}
+
+	private String run(String s) throws Exception {
+		s = s.trim();
+		list(s);
+		return ret.toString() + "\n";
+	}
+
 }
