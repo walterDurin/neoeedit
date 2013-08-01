@@ -1,4 +1,5 @@
 #summary javascript macro on text.
+#labels Featured
 
 = Introduction =
 
