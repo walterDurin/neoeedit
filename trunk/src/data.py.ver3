@@ -73,4 +73,5 @@ font:{
 },
 tabWidthInPixel:40,
 lookAndFeel:"",
+frameSize:[1024,768],
 }
