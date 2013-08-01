@@ -1,4 +1,4 @@
-#summary How to use neoeedit on linux
+>#summary How to use neoeedit on linux
 
 = Introduction =
 
@@ -18,4 +18,4 @@ java -Xmx1024M -jar /home/xxx/Downloads/neoeedit.jar $1 &
   * press ctrl-s to save it to /usr/bin/neoeedit.sh
   * close neoeedit
   * $ chmod +x /usr/bin/neoeedit.sh
-  * now you could use neoeedit.sh your-file on command line or select it on GUI.
+  * now you could use "neoeedit.sh your-file" on command line or via GUI.
