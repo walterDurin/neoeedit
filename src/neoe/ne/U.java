@@ -321,6 +321,19 @@ public class U {
 			}
 
 		}
+
+		public static Point readFrameSize() {
+			try {
+				Map config = getConfig();
+				List l = (List) config.get("frameSize");
+				if (l != null) {
+					return new Point(U.parseInt(l.get(0)), U.parseInt(l.get(1)));
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			return new Point(800, 600);
+		}
 	}
 
 	static class FindAndReplace {
@@ -1891,8 +1904,13 @@ public class U {
 		}
 	}
 
-	public static int parseInt(String s) {
+	public static int parseInt(Object o) {
 		int v;
+		if (o == null)
+			throw new RuntimeException("expect int but get null");
+		if (o instanceof BigDecimal)
+			return ((BigDecimal) o).intValue();
+		String s = o.toString();
 		if (s.startsWith("0x")) {
 			v = Integer.parseInt(s.substring(2), 16);
 		} else {
@@ -2131,7 +2149,9 @@ public class U {
 				sf.dispose();
 			}
 		});
-		setFrameSize(sf, 800, 600);
+		Point fp = U.Config.readFrameSize();
+		setFrameSize(sf, fp.x, fp.y);
+		sf.setLocationRelativeTo(null);
 		sf.setVisible(true);
 	}
 
@@ -2245,7 +2265,8 @@ public class U {
 
 	static void setFrameSize(JFrame f, int w, int h) {
 		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
-		f.setSize(Math.min(800, Math.min(dim.width, w)), Math.min(600, Math.min(dim.height, h)));
+		Point p = U.Config.readFrameSize();
+		f.setSize(Math.min(p.x, Math.min(dim.width, w)), Math.min(p.y, Math.min(dim.height, h)));
 	}
 
 	static void showHelp(final Paint ui, final EditPanel uiComp) {
