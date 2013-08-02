@@ -562,7 +562,8 @@ public class PlainPage {
 		Paint() {
 			try {
 				TABWIDTH = U.Config.readTabWidth();
-				applyColorMode(0);
+				int cm = U.Config.getDefaultColorMode();
+				applyColorMode(cm);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

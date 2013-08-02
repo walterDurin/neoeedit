@@ -334,6 +334,21 @@ public class U {
 			}
 			return new Point(800, 600);
 		}
+
+		public static int getDefaultColorMode() {
+
+			try {
+				Map config = getConfig();
+				BigDecimal v = (BigDecimal) ((Map) config.get("color")).get("defaultMode");
+				if (v == null)
+					return 0;
+				else
+					return v.intValue();
+			} catch (IOException e) {
+				e.printStackTrace();
+				return 0;
+			}
+		}
 	}
 
 	static class FindAndReplace {
