@@ -161,7 +161,7 @@ public class U {
 	static class Config {
 		public static boolean configChanged() {
 			if (configFileLoadTime > 0) {
-				File installed = new File(getMyDir(), CONFIG_FN);
+				File installed = new File(getMyDir(), Version.CONFIG_FN);
 				long time = installed.lastModified();
 				if (time <= configFileLoadTime) {
 					return false;
@@ -174,16 +174,16 @@ public class U {
 			if (!configChanged())
 				return conf;
 
-			BufferedReader in = new BufferedReader(U.getInstalledReader(CONFIG_FN));
+			BufferedReader in = new BufferedReader(U.getInstalledReader(Version.CONFIG_FN));
 			Map o = null;
 			try {
 				o = (Map) new PyData().parseAll(in);
 				conf = o;
-				File installed = new File(getMyDir(), CONFIG_FN);
+				File installed = new File(getMyDir(), Version.CONFIG_FN);
 				configFileLoadTime = installed.lastModified() + 500;
 			} catch (Exception e) {
 				System.err.println("cannot parse config file:" + e + ", pls fix it. use orginal config.");
-				in = new BufferedReader(U.getResourceReader(CONFIG_FN));
+				in = new BufferedReader(U.getResourceReader(Version.CONFIG_FN));
 				try {
 					o = (Map) new PyData().parseAll(in);
 					configFileLoadTime = 0;
@@ -205,6 +205,21 @@ public class U {
 				c = Color.getColor(value, c);
 			}
 			return c;
+		}
+
+		public static int getDefaultColorMode() {
+
+			try {
+				Map config = getConfig();
+				BigDecimal v = (BigDecimal) ((Map) config.get("color")).get("defaultMode");
+				if (v == null)
+					return 0;
+				else
+					return v.intValue();
+			} catch (IOException e) {
+				e.printStackTrace();
+				return 0;
+			}
 		}
 
 		public static Font getFont(String key, Font defaultIfFail) {
@@ -277,6 +292,19 @@ public class U {
 			return modes;
 		}
 
+		public static Point readFrameSize() {
+			try {
+				Map config = getConfig();
+				List l = (List) config.get("frameSize");
+				if (l != null) {
+					return new Point(U.parseInt(l.get(0)), U.parseInt(l.get(1)));
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			return new Point(800, 600);
+		}
+
 		public static int readTabWidth() {
 			try {
 				Map config = getConfig();
@@ -320,34 +348,6 @@ public class U {
 				System.out.println("not found lookAndFeel:" + e);
 			}
 
-		}
-
-		public static Point readFrameSize() {
-			try {
-				Map config = getConfig();
-				List l = (List) config.get("frameSize");
-				if (l != null) {
-					return new Point(U.parseInt(l.get(0)), U.parseInt(l.get(1)));
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			return new Point(800, 600);
-		}
-
-		public static int getDefaultColorMode() {
-
-			try {
-				Map config = getConfig();
-				BigDecimal v = (BigDecimal) ((Map) config.get("color")).get("defaultMode");
-				if (v == null)
-					return 0;
-				else
-					return v.intValue();
-			} catch (IOException e) {
-				e.printStackTrace();
-				return 0;
-			}
 		}
 	}
 
@@ -556,28 +556,29 @@ public class U {
 		public void redo(PlainPage page) {
 			BasicEdit editNoRec = page.pageData.editNoRec;
 			ReadonlyLines roLines = page.pageData.roLines;
+			boolean recCh = false;
 			switch (action) {
 			case Delete:
 				s1 = roLines.getInLine(y1, x1, x2);
 				editNoRec.deleteInLine(y1, x1, x2);
-				page.cursor.setSafePos(x1, y1);
+				page.cursor.setSafePos(x1, y1, recCh);
 				break;
 			case DeleteEmtpyLine:
 				editNoRec.deleteEmptyLine(y1);
-				page.cursor.setSafePos(0, y1);
+				page.cursor.setSafePos(0, y1, recCh);
 				break;
 			case Insert:
 				editNoRec.insertInLine(y1, x1, s1);
-				page.cursor.setSafePos(x1 + s1.length(), y1);
+				page.cursor.setSafePos(x1 + s1.length(), y1, recCh);
 				s1 = null;
 				break;
 			case InsertEmptyLine:
 				editNoRec.insertEmptyLine(y1);
-				page.cursor.setSafePos(0, y1 + 1);
+				page.cursor.setSafePos(0, y1 + 1, recCh);
 				break;
 			case MergeLine:
 				editNoRec.mergeLine(y1);
-				page.cursor.setSafePos(x1, y1);
+				page.cursor.setSafePos(x1, y1, recCh);
 				break;
 			default:
 				throw new RuntimeException("unkown action " + action);
@@ -592,31 +593,32 @@ public class U {
 		public void undo(PlainPage page) {
 			BasicEdit editNoRec = page.pageData.editNoRec;
 			ReadonlyLines roLines = page.pageData.roLines;
+			boolean recCh = false;
 			switch (action) {
 			case Delete:
 				editNoRec.insertInLine(y1, x1, s1);
-				page.cursor.setSafePos(x1 + s1.length(), y1);
+				page.cursor.setSafePos(x1 + s1.length(), y1, recCh);
 				s1 = null;
 				break;
 			case DeleteEmtpyLine:
 				editNoRec.insertEmptyLine(y1);
-				page.cursor.setSafePos(0, y1 + 1);
+				page.cursor.setSafePos(0, y1 + 1, recCh);
 				break;
 			case Insert:
 				s1 = roLines.getInLine(y1, x1, x2);
 				editNoRec.deleteInLine(y1, x1, x2);
-				page.cursor.setSafePos(0, y1);
+				page.cursor.setSafePos(0, y1, recCh);
 				break;
 			case InsertEmptyLine:
 				editNoRec.deleteEmptyLine(y1);
-				page.cursor.setSafePos(0, y1);
+				page.cursor.setSafePos(0, y1, recCh);
 				break;
 			case MergeLine:
 				String s2 = roLines.getInLine(y1, x1, Integer.MAX_VALUE);
 				editNoRec.deleteInLine(y1, x1, Integer.MAX_VALUE);
 				editNoRec.insertEmptyLine(y1 + 1);
 				editNoRec.insertInLine(y1 + 1, 0, s2);
-				page.cursor.setSafePos(0, y1 + 1);
+				page.cursor.setSafePos(0, y1 + 1, recCh);
 				break;
 			default:
 				throw new RuntimeException("unkown action " + action);
@@ -1000,8 +1002,6 @@ public class U {
 			new Object[] { new int[] { 0xFF, 0xFE, 0, 0 }, "UTF-32LE" }, };;
 
 	static private Map conf;
-	public static final String CONFIG_FN = "/data.py.ver3";
-
 	private static long configFileLoadTime;
 
 	static Map<String, Commands> keys;
@@ -1292,38 +1292,26 @@ public class U {
 		return null;
 	}
 
-	static boolean findAndShowPageListPage(EditPanel ep, String title) {
-		return findAndShowPageListPage(ep, title, true);
-	}
-
-	static boolean findAndShowPageListPage(EditPanel ep, String title, boolean show) {
+	static boolean findAndShowPageListPage(EditPanel ep, String title, boolean recCh) {
+		boolean show = true;
 		PlainPage pp = findPage(ep, title);
 		if (pp == null)
 			return false;
 		else {
 			if (show)
-				ep.setPage(pp);
+				ep.setPage(pp, recCh);
 			return true;
 		}
 	}
 
-	static boolean findAndShowPageListPage(EditPanel ep, String title, int lineNo) {
-		boolean b = findAndShowPageListPage(ep, title);
+	static boolean findAndShowPageListPage(EditPanel ep, String title, int lineNo, int x, boolean recCh) {
+		boolean b = findAndShowPageListPage(ep, title, false);
 		if (b) {
-			ep.getPage().cursor.setSafePos(0, lineNo - 1);
+			ep.getPage().cursor.setSafePos(x, lineNo - 1, recCh);
 			ep.getPage().focusCursor();
-			ep.repaint();
+			ep.repaint();		
 		}
 		return b;
-		// boolean isPLP = title.equals(titleOfPages(ep));
-		// for (PlainPage pp : ep.pageSet) {
-		// if (pp.pageData.getTitle().equals(title)
-		// && (pp.cy + 1 == lineNo || isPLP)) {
-		// ep.setPage(pp);
-		// return true;
-		// }
-		// }
-		// return false;
 	}
 
 	static void findchar(PlainPage page, char ch, int inc, int[] c1, char chx) {
@@ -1556,9 +1544,7 @@ public class U {
 				} catch (Exception e) {
 				}
 				if (line >= 0) {
-					if (!U.findAndShowPageListPage(ep, fn, line)) {
-						openFile(fn, line, ep);
-					}
+					gotoFileLinePos(ep, fn, line, -1, true);
 					return true;
 				}
 			}
@@ -1575,13 +1561,21 @@ public class U {
 			} catch (Exception e) {
 			}
 			if (line >= 0) {
-				if (!U.findAndShowPageListPage(ep, title, line)) {
-					openFile(title, line, ep);
+				if (!U.findAndShowPageListPage(ep, title, line, 0, true)) {
+					return openFile(title, line, ep, true);
 				}
-				return true;
 			}
 		}
 		return false;
+	}
+
+	public static boolean gotoFileLinePos(EditPanel ep, String fn, int line, int x, boolean recCh) throws Exception {
+		if (!U.findAndShowPageListPage(ep, fn, line, x, recCh)) {
+			return openFile(fn, line, ep, recCh);
+		} else {
+			return true;
+		}
+
 	}
 
 	private static String guessByBOM(byte[] src) {
@@ -1776,7 +1770,7 @@ public class U {
 			fn = fn.substring(0, p1).trim();
 		File f = new File(fn);
 		if (f.isFile() && f.exists()) {
-			openFile(fn, 0, page.uiComp);
+			openFile(fn, 0, page.uiComp, true);
 		} else if (f.isDirectory()) {
 			File[] fs = f.listFiles();
 			page.cx = line.length();
@@ -1849,7 +1843,7 @@ public class U {
 		} else {
 			if (ep == null)
 				return null;// ignore
-			if (findAndShowPageListPage(ep, f.getCanonicalPath()))
+			if (findAndShowPageListPage(ep, f.getCanonicalPath(), false))
 				return ep.getPage();
 			return new PlainPage(ep, PageData.newFromFile(f.getCanonicalPath()));
 		}
@@ -1869,21 +1863,21 @@ public class U {
 			U.listDir(pp, 0);
 		} else {
 			EditPanel ep = page.uiComp;
-			if (!U.findAndShowPageListPage(ep, title)) {
+			if (!U.findAndShowPageListPage(ep, title, false)) {
 				new PlainPage(page.uiComp, pd);
 			}
 		}
 
 	}
 
-	static void openFile(String title, int line, EditPanel ep) throws Exception {
+	static boolean openFile(String title, int line, EditPanel ep, boolean recCh) throws Exception {
 		File f = new File(title);
 		if (isImageFile(f)) {
 			new PicView().show(f);
-			return;
+			return true;
 		}
-		if (findAndShowPageListPage(ep, title))
-			return;
+		if (findAndShowPageListPage(ep, title, false))
+			return true;
 		PageData pd = PageData.dataPool.get(title);
 		// including titles not saved
 		if (pd == null)
@@ -1895,7 +1889,11 @@ public class U {
 			page.cy = Math.max(0, Math.min(line, page.pageData.lines.size() - 1));
 			page.sy = Math.max(0, page.cy - 3);
 			page.uiComp.repaint();
+			if (recCh) {
+				ep.ptCh.record(page.pageData.getTitle(), page.cx, page.cy);
+			}
 		}
+		return true;
 	}
 
 	static void openFileHistory(EditPanel ep) throws Exception {
@@ -1904,6 +1902,7 @@ public class U {
 		page.cy = Math.max(0, page.pageData.lines.size() - 1);
 		page.sy = Math.max(0, page.cy - 5);
 		page.uiComp.repaint();
+		page.uiComp.ptCh.recordCurrent(page);
 	}
 
 	static void paintNoise(Graphics2D g2, Dimension dim) {
@@ -2343,7 +2342,7 @@ public class U {
 	}
 
 	public static void showPageListPage(EditPanel ep) throws Exception {
-		if (findAndShowPageListPage(ep, titleOfPages(ep))) {
+		if (findAndShowPageListPage(ep, titleOfPages(ep), true)) {
 			ep.getPage().pageData.setLines(getPageListStrings(ep));// refresh
 			ep.repaint();
 			return;
@@ -2519,7 +2518,7 @@ public class U {
 		if (pps.size() <= 1)
 			return;
 		int i = (1 + pps.indexOf(pp)) % pps.size();
-		pp.uiComp.setPage(pps.get(i));
+		pp.uiComp.setPage(pps.get(i), true);
 		pp.uiComp.repaint();
 	}
 
@@ -2527,7 +2526,7 @@ public class U {
 		EditPanel uiComp = pp.uiComp;
 		if (pp.pageData.getTitle().equals(U.titleOfPages(uiComp)) && uiComp.lastPage != null) {
 			if (uiComp.pageSet.contains(uiComp.lastPage)) {
-				uiComp.setPage(uiComp.lastPage);
+				uiComp.setPage(uiComp.lastPage, true);
 			} else {
 				uiComp.lastPage = null;
 			}
