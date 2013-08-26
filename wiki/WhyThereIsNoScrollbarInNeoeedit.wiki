@@ -1,5 +1,4 @@
 #summary Think it over, you don't need it.
-#labels Featured
 
 The total line number is shown on the top,
 and the current line number is shown on the left.
