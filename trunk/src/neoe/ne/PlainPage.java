@@ -21,6 +21,7 @@ import neoe.ne.Ime.Param;
 import neoe.ne.U.RoSb;
 
 public class PlainPage {
+
 	class Cursor {
 		void gotoLine() {
 			String s = JOptionPane.showInputDialog(uiComp, "Goto Line");
@@ -189,9 +190,12 @@ public class PlainPage {
 			uiComp.repaint();
 		}
 
-		void setSafePos(int x, int y) {
+		void setSafePos(int x, int y, boolean record) {
 			cy = Math.max(0, Math.min(pageData.roLines.getLinesize() - 1, y));
 			cx = Math.max(0, Math.min(pageData.roLines.getline(cy).length(), x));
+			if (record) {
+				uiComp.ptCh.record(pageData.getTitle(), cx, cy);
+			}
 		}
 	}
 
@@ -851,6 +855,7 @@ public class PlainPage {
 						cx = sx + U.computeShowIndex(sb.substring(sx), mx, g2, TABWIDTH);
 						my = 0;
 						ptSelection.mouseSelection(sb);
+						uiComp.ptCh.record(pageData.getTitle(), cx, cy);
 					}
 				g2.setColor(colorBg);
 				g2.fillRect(0, 0, size.width, size.height);
@@ -1131,8 +1136,9 @@ public class PlainPage {
 		if (index >= editor.pageSet.size() || index < 0)
 			index = 0;
 		editor.pageSet.add(index, this);
-		editor.setPage(this);
+		editor.setPage(this, false);
 		editor.changeTitle();
+		// uiComp.ptCh.record(data.getTitle(), cx, cy);
 		data.ref++;
 	}
 
@@ -1173,7 +1179,7 @@ public class PlainPage {
 			index = uiComp.pageSet.size() - 1;
 		}
 		if (index >= 0) {
-			uiComp.setPage(uiComp.pageSet.get(index));
+			uiComp.setPage(uiComp.pageSet.get(index), false);
 		} else {
 			// nothing to show
 			uiComp.frame.dispose();
@@ -1294,6 +1300,7 @@ public class PlainPage {
 				} else {
 					ptEdit.insert(kc);
 				}
+				uiComp.ptCh.recordInput(PlainPage.this);
 			}
 			pageData.history.endAtom();
 		}
@@ -1469,6 +1476,12 @@ public class PlainPage {
 		case switchColorMode:
 			ui.setNextColorMode();
 			ui.applyColorMode(ui.colorMode);
+			break;
+		case moveBack:
+			uiComp.ptCh.back(pageData.getTitle(), cx,cy);
+			break;
+		case moveForward:
+			uiComp.ptCh.forward();
 			break;
 		case moveBetweenPair:
 			cursor.moveToPair();
