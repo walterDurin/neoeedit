@@ -1,3 +1,4 @@
+#labels Featured
 #How to config shortcut keys, Fonts ant Colors.
 
 = Introduction =
