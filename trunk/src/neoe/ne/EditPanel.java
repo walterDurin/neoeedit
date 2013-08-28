@@ -253,7 +253,10 @@ public class EditPanel extends JPanel implements MouseMotionListener, MouseListe
 		}
 	}
 
+	static int openedWindows;
+
 	public void openWindow() throws IOException {
+		openedWindows++;
 		if (frame != null)
 			return;
 		frame = new JFrame(PlainPage.WINDOW_NAME);
@@ -295,6 +298,7 @@ public class EditPanel extends JPanel implements MouseMotionListener, MouseListe
 
 			public void windowClosed(WindowEvent e) {
 				System.out.println("closed");
+				openedWindows--;
 			}
 
 			@Override

@@ -2,6 +2,8 @@ package neoe.ne;
 
 import java.io.File;
 
+import javax.swing.SwingUtilities;
+
 public class Main {
 
 	public static void main(String[] args) throws Exception {
@@ -19,6 +21,27 @@ public class Main {
 			}
 		} else {
 			editor.openWindow();
+		}
+
+		SwingJniJvmPatch();
+	}
+
+	/**
+	 * something like said in https://forums.oracle.com/thread/1542114 , however
+	 * the thread is locked by a fucking bitch?
+	 * 
+	 */
+	private static void SwingJniJvmPatch() {
+		while (true) {
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			if (EditPanel.openedWindows <= 0) {
+				System.out.println("SwingJniJvmPatch exiting...");
+				break;
+			}
 		}
 	}
 }
