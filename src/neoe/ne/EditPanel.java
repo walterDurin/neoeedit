@@ -1,9 +1,13 @@
 package neoe.ne;
 
+import java.awt.AWTEvent;
 import java.awt.Cursor;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.event.InputMethodEvent;
+import java.awt.event.InputMethodListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -13,9 +17,15 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.font.TextHitInfo;
+import java.awt.im.InputMethodRequests;
 import java.io.File;
 import java.io.IOException;
+import java.text.AttributedCharacterIterator;
+import java.text.CharacterIterator;
+import java.text.AttributedCharacterIterator.Attribute;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 
@@ -24,7 +34,8 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.WindowConstants;
 
-public class EditPanel extends JPanel implements MouseMotionListener, MouseListener, MouseWheelListener, KeyListener {
+public class EditPanel extends JPanel implements MouseMotionListener,
+		MouseListener, MouseWheelListener, KeyListener {
 
 	class CursorHistory {
 		Vector<CursorHistoryItem> items = new Vector<CursorHistoryItem>();
@@ -35,7 +46,8 @@ public class EditPanel extends JPanel implements MouseMotionListener, MouseListe
 				if (p >= items.size())
 					p = items.size() - 1;// bug auto fix
 				CursorHistoryItem item = items.get(p--);
-				if (item.pageName.equals(curTitle) && item.y == curY && item.x == curX) {
+				if (item.pageName.equals(curTitle) && item.y == curY
+						&& item.x == curX) {
 					back(curTitle, curX, curY);
 					return;
 				}
@@ -61,12 +73,9 @@ public class EditPanel extends JPanel implements MouseMotionListener, MouseListe
 			}
 		}
 
-		private boolean move(CursorHistoryItem item) throws Exception {
-			return U.gotoFileLinePos(EditPanel.this, item.pageName, item.y + 1, item.x, false);
-		}
-
-		void record(String pageName, int x, int y) {
-			record(new CursorHistoryItem(pageName, x, y));
+		private CursorHistoryItem getCurrentItem(PlainPage page) {
+			return new CursorHistoryItem(page.pageData.getTitle(), page.cx,
+					page.cy);
 		}
 
 		private CursorHistoryItem getLastItem() {
@@ -75,8 +84,14 @@ public class EditPanel extends JPanel implements MouseMotionListener, MouseListe
 			return null;
 		}
 
-		public void recordCurrent(PlainPage page) {
-			record(getCurrentItem(page));
+		private boolean isSameLine(CursorHistoryItem last,
+				CursorHistoryItem item) {
+			return (last != null && last.pageName.equals(item.pageName) && last.y == item.y);
+		}
+
+		private boolean move(CursorHistoryItem item) throws Exception {
+			return U.gotoFileLinePos(EditPanel.this, item.pageName, item.y + 1,
+					item.x, false);
 		}
 
 		void record(CursorHistoryItem item) {
@@ -91,6 +106,14 @@ public class EditPanel extends JPanel implements MouseMotionListener, MouseListe
 			p++;
 		}
 
+		void record(String pageName, int x, int y) {
+			record(new CursorHistoryItem(pageName, x, y));
+		}
+
+		public void recordCurrent(PlainPage page) {
+			record(getCurrentItem(page));
+		}
+
 		public void recordInput(PlainPage page) {
 			CursorHistoryItem last = getLastItem();
 			CursorHistoryItem item = getCurrentItem(page);
@@ -98,14 +121,6 @@ public class EditPanel extends JPanel implements MouseMotionListener, MouseListe
 				return;
 			}
 			record(item);
-		}
-
-		private boolean isSameLine(CursorHistoryItem last, CursorHistoryItem item) {
-			return (last != null && last.pageName.equals(item.pageName) && last.y == item.y);
-		}
-
-		private CursorHistoryItem getCurrentItem(PlainPage page) {
-			return new CursorHistoryItem(page.pageData.getTitle(), page.cx, page.cy);
 		}
 
 	}
@@ -121,12 +136,71 @@ public class EditPanel extends JPanel implements MouseMotionListener, MouseListe
 		}
 	}
 
+	/** It's only need to be not-null and not actually called? */
+	public class MyInputMethodRequestsHandler implements InputMethodRequests {
+		Rectangle rect = new Rectangle(200, 200, 0, 10);
+
+		@Override
+		public AttributedCharacterIterator cancelLatestCommittedText(
+				Attribute[] attributes) {
+			System.out.println("cancelLatestCommittedText="
+					+ Arrays.deepToString(attributes));
+			return null;
+		}
+
+		@Override
+		public AttributedCharacterIterator getCommittedText(int beginIndex,
+				int endIndex, Attribute[] attributes) {
+			System.out.printf("getCommittedText %d, %d, %s\n", beginIndex,
+					endIndex, Arrays.deepToString(attributes));
+			return null;
+		}
+
+		@Override
+		public int getCommittedTextLength() {
+			System.out.println("getCommittedTextLength");
+			return 0;
+		}
+
+		@Override
+		public int getInsertPositionOffset() {
+			System.out.println("getInsertPositionOffset");
+			return 0;
+		}
+
+		@Override
+		public TextHitInfo getLocationOffset(int x, int y) {
+			System.out.println("getLocationOffset");
+			return null;
+		}
+
+		@Override
+		public AttributedCharacterIterator getSelectedText(
+				Attribute[] attributes) {
+			System.out.println("getSelectedText="
+					+ Arrays.deepToString(attributes));
+			return null;
+		}
+
+		@Override
+		public Rectangle getTextLocation(TextHitInfo offset) {
+			System.out.println("getTextLocation");
+			// return rect;
+			return null;
+		}
+
+	}
+
+	static int openedWindows;
+
 	private static final long serialVersionUID = -1667283144475200365L;
 
 	public Font _font;
-
 	private boolean debugFPS = false;
+
 	JFrame frame;
+
+	private InputMethodRequests inputMethodRequestsHandler;
 
 	PlainPage lastPage;
 
@@ -137,16 +211,52 @@ public class EditPanel extends JPanel implements MouseMotionListener, MouseListe
 	CursorHistory ptCh = new CursorHistory();
 
 	public EditPanel() throws Exception {
+		enableEvents(AWTEvent.KEY_EVENT_MASK | AWTEvent.INPUT_METHOD_EVENT_MASK);
 		setBackground(U.Config.getDefaultBgColor());
 		setFocusable(true);
 		addMouseMotionListener(this);
 		addMouseListener(this);
 		addMouseWheelListener(this);
 		addKeyListener(this);
+		addInputMethodListener(new InputMethodListener() {
+
+			@Override
+			public void caretPositionChanged(InputMethodEvent event) {
+				System.out
+						.println("if you see this, tell neoeedit's author what system you are in pls. caretPositionChanged="
+								+ event.paramString());
+
+			}
+
+			@Override
+			public void inputMethodTextChanged(InputMethodEvent event) {
+				// System.out.println("getInputContext0=" + getInputContext());
+				// System.out.println("inputMethodTextChanged="
+				// + event.paramString());
+				if (page == null)
+					return;
+				AttributedCharacterIterator text = event.getText();
+				if (text == null) {
+					page.preedit("", 0);
+					return;
+				}
+				StringBuilder textBuffer = new StringBuilder();
+				int committedCharacterCount = event
+						.getCommittedCharacterCount();
+				char c = text.first();
+				while (c != CharacterIterator.DONE) {
+					textBuffer.append(c);
+					c = text.next();
+				}
+				String textString = textBuffer.toString();
+				page.preedit(textString, committedCharacterCount);
+			}
+		});
 		setOpaque(false);
 		setCursor(new Cursor(Cursor.TEXT_CURSOR));
 		setFocusTraversalKeysEnabled(false);
-		PlainPage pp = new PlainPage(this, PageData.newEmpty("UNTITLED #" + U.randomID()));
+		PlainPage pp = new PlainPage(this, PageData.newEmpty("UNTITLED #"
+				+ U.randomID()));
 		pp.ptSelection.selectAll();
 	}
 
@@ -155,10 +265,21 @@ public class EditPanel extends JPanel implements MouseMotionListener, MouseListe
 			return;
 		String fn = page.pageData.getFn();
 		if (fn != null) {
-			frame.setTitle(new File(fn).getName() + " " + new File(fn).getParent() + " - (" + pageSet.size() + ") - " + PlainPage.WINDOW_NAME + suNotice());
+			frame.setTitle(new File(fn).getName() + " "
+					+ new File(fn).getParent() + " - (" + pageSet.size()
+					+ ") - " + PlainPage.WINDOW_NAME + suNotice());
 		} else {
-			frame.setTitle(page.pageData.getTitle() + " - (" + pageSet.size() + ") - " + PlainPage.WINDOW_NAME + suNotice());
+			frame.setTitle(page.pageData.getTitle() + " - (" + pageSet.size()
+					+ ") - " + PlainPage.WINDOW_NAME + suNotice());
 		}
+	}
+
+	public InputMethodRequests getInputMethodRequests() {
+		// System.out.println("getInputMethodRequests()");
+		if (inputMethodRequestsHandler == null) {
+			inputMethodRequestsHandler = new MyInputMethodRequestsHandler();
+		}
+		return inputMethodRequestsHandler;
 	}
 
 	PlainPage getPage() {
@@ -253,14 +374,13 @@ public class EditPanel extends JPanel implements MouseMotionListener, MouseListe
 		}
 	}
 
-	static int openedWindows;
-
 	public void openWindow() throws IOException {
 		openedWindows++;
 		if (frame != null)
 			return;
 		frame = new JFrame(PlainPage.WINDOW_NAME);
-		frame.setIconImage(ImageIO.read(EditPanel.class.getResourceAsStream("/Alien.png")));
+		frame.setIconImage(ImageIO.read(EditPanel.class
+				.getResourceAsStream("/Alien.png")));
 		frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 		Point p = U.Config.readFrameSize();
 		U.setFrameSize(frame, p.x, p.y);
@@ -282,10 +402,13 @@ public class EditPanel extends JPanel implements MouseMotionListener, MouseListe
 								pp.changedOutside = true;
 								if (pp.pageData.history.size() == 0) {
 									U.readFile(pp.pageData, pp.pageData.getFn());// reload
-									U.showSelfDispMessage(pp, "File changed outside.(reloaded)", 4000);
+									U.showSelfDispMessage(pp,
+											"File changed outside.(reloaded)",
+											4000);
 									pp.changedOutside = false;
 								} else {
-									U.showSelfDispMessage(pp, "File changed outside.", 4000);
+									U.showSelfDispMessage(pp,
+											"File changed outside.", 4000);
 								}
 								// break;
 							}
@@ -344,6 +467,7 @@ public class EditPanel extends JPanel implements MouseMotionListener, MouseListe
 	}
 
 	public void setPage(PlainPage pp, boolean recCh) {
+		lastPage=page;
 		page = pp;
 		changeTitle();
 		if (recCh) {

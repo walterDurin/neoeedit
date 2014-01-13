@@ -2524,16 +2524,16 @@ public class U {
 
 	public static void switchToPageListPage(PlainPage pp) throws Exception {
 		EditPanel uiComp = pp.uiComp;
-		if (pp.pageData.getTitle().equals(U.titleOfPages(uiComp)) && uiComp.lastPage != null) {
-			if (uiComp.pageSet.contains(uiComp.lastPage)) {
-				uiComp.setPage(uiComp.lastPage, true);
-			} else {
-				uiComp.lastPage = null;
-			}
-		} else {
-			uiComp.lastPage = uiComp.getPage();
+//		if (pp.pageData.getTitle().equals(U.titleOfPages(uiComp)) && uiComp.lastPage != null) {
+//			if (uiComp.pageSet.contains(uiComp.lastPage)) {
+//				uiComp.setPage(uiComp.lastPage, true);
+//			} else {
+//				uiComp.lastPage = null;
+//			}
+//		} else {
+//			uiComp.lastPage = uiComp.getPage();
 			showPageListPage(uiComp);
-		}
+		//		}
 	}
 
 	static String titleOfPages(EditPanel ep) {
@@ -2545,5 +2545,13 @@ public class U {
 		while (i < s.length() && (s.charAt(i) == ' ' || s.charAt(i) == '\t'))
 			i++;
 		return i > 0 ? s.substring(i) : s;
+	}
+
+	public static void switchToLastPage(PlainPage pp) {
+		EditPanel uiComp = pp.uiComp;
+		PlainPage lastPage = uiComp.lastPage;
+		if (lastPage!=null){
+			uiComp.setPage(lastPage, true);
+		}		
 	}
 }

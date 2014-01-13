@@ -34,7 +34,7 @@ bool loadJVM(){
 	else jvmdll=pPath;
 	//Util::Logger::globalLog->log("java home=%s", jvmdll.c_str());
 	if (file_exists((jvmdll + "\\bin\\client\\jvm.dll").c_str())) {
-		jvmdll += "\\bin\\client\\jvm.dll";
+		jvmdll += "\\bin\\client\\ .dll";
 	} else if (file_exists((jvmdll + "\\jre\\bin\\client\\jvm.dll").c_str())) {
 		//prolly a JDK
 		jvmdll += "\\jre\\bin\\client\\jvm.dll";
@@ -97,13 +97,13 @@ bool runJava(){
 	//entry class
 	x_cls =  x_env ->FindClass("neoe/ne/Main");
 	if (x_cls == 0) {
-		error(TEXT("not found target class"));
+		error(TEXT("not found: target class"));
 		goto destroy;
 	}
 
 	jmethodID mid = x_env->GetStaticMethodID(x_cls, "main", "([Ljava/lang/String;)V");
 	if (mid == 0) {
-		error(TEXT("not found main method"));
+		error(TEXT("not found: main method"));
 		goto destroy;
 	}
 	
@@ -126,7 +126,10 @@ bool runJava(){
 
 	x_env->CallStaticVoidMethod(x_cls, mid, applicationArgs);
 	//Util::Logger::globalLog->log("JVM inited %x",x_env);	
-	
+	if (x_env->ExceptionOccurred()) {
+		x_env->ExceptionDescribe();
+	}
+	x_jvm->DestroyJavaVM();
 	return true;
 destroy:
 
@@ -148,7 +151,7 @@ TCHAR* writeToTempFileName(LPVOID data, DWORD dataSize){
                            FILE_SHARE_READ,       
                            NULL,                 // default security 
                            CREATE_ALWAYS,        // overwrite existing
-                           FILE_ATTRIBUTE_NORMAL,// normal file 
+                           FILE_ATTRIBUTE_TEMPORARY ,
                            NULL); 
 	if (hTempFile == INVALID_HANDLE_VALUE){
 		error(TEXT("temp file create fail"));
@@ -165,10 +168,12 @@ TCHAR* writeToTempFileName(LPVOID data, DWORD dataSize){
         error(TEXT("WriteFile failed"));
         exit(11);
     }
+	CloseHandle(hTempFile);
+	//DeleteFile(szTempFileName);
 	
 	return szTempFileName;	
 }
-
+static std::wstring file2delete;
 bool extractResource(){
 	HRSRC hRes = FindResource(0, MAKEINTRESOURCE(THE_JAR), MAKEINTRESOURCE(256));
 	HGLOBAL hData = LoadResource(0, hRes);
@@ -176,7 +181,8 @@ bool extractResource(){
 	DWORD dataSize = SizeofResource(0, hRes);
 	TCHAR* filename = writeToTempFileName(data,dataSize);	
 	std::wstring w1 = filename;
-	std::string s1 (w1.begin(),w1.end());
+	file2delete = w1;
+	std::string s1 (w1.begin(),w1.end());	
 	int len = s1.length();
 	filename1 = (char*)malloc((len + 1) * sizeof(char));
 	strcpy_s(filename1,len+1,s1.c_str());
@@ -189,6 +195,6 @@ int WINAPI WinMain(HINSTANCE hInstance,
     if (!extractResource()) return 3;
 	if (!loadJVM()) return 1;
 	if (!runJava()) return 2;
-	//error(TEXT("wait"));
+		
 	return 0;
 }
