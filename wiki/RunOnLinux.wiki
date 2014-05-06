@@ -1,4 +1,4 @@
->#summary How to use neoeedit on linux
+>#summary How to use neoeedit on linux/BSD
 
 = Introduction =
 
