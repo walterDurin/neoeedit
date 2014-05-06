@@ -17,5 +17,5 @@ java -Xmx1024M -jar /home/xxx/Downloads/neoeedit.jar $1 &
 }}}
   * press ctrl-s to save it to /usr/bin/neoeedit.sh
   * close neoeedit
-  * $ chmod +x /usr/bin/neoeedit.sh
+  * $ chmod a+x /usr/bin/neoeedit.sh
   * now you could use "neoeedit.sh your-file" on command line or via GUI.
