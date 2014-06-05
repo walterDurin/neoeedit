@@ -19,3 +19,17 @@ java -Xmx1024M -jar /home/xxx/Downloads/neoeedit.jar $1 &
   * close neoeedit
   * $ chmod a+x /usr/bin/neoeedit.sh
   * now you could use "neoeedit.sh your-file" on command line or via GUI.
+
+also you can write a /usr/local/share/applications/neoeedit.desktop file like that:
+{{{
+[Desktop Entry]
+Name=Neoeedit
+Exec=neoeedit.sh %f
+Terminal=false
+Type=Application
+Encoding=UTF-8
+Icon=accessories-text-editor
+StartupNotify=true
+Categories=Utility;TextEditor;
+MimeType=text/plain;*/*;
+}}}
