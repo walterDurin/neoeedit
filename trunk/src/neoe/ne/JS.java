@@ -71,8 +71,7 @@ public class JS {
             funcCls = Plugin.cl.loadClass("org.mozilla.javascript.Function");
             clsScriptable = Plugin.cl.loadClass("org.mozilla.javascript.Scriptable");
         } catch (ClassNotFoundException ex) {
-            System.out.println("error:" + ex + ". maybe should add (Rhino)js.jar into plugins dir.");
-            return null;
+            throw new RuntimeException("Cannot find Rhino(org.mozilla.javascript.*), maybe you should copy js.jar into dir '<home>/.neoeedit/plugins'.");
         }
 
         Object cx = cxCls.getMethod("enter", new Class[]{}).invoke(null, null);
