@@ -5,6 +5,7 @@ import java.io.File;
 public class Main {
 
 	public static void main(String[] args) throws Exception {
+                Plugin.load();
 		U.Config.setDefaultLookAndFeel();
 		U.Config.setDefaultBKColor();
 		U.Config.initKeys();
