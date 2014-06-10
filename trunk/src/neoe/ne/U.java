@@ -2140,12 +2140,12 @@ public class U {
 					ppResult.pageData.workPath = ppTarget.pageData.workPath;
 					ppResult.pageData.setLines(newLines);
 					ppResult.ui.applyColorMode(ppTarget.ui.colorMode);
+                                        ppJs.ptEdit.append("\n//ok.\n");
+					ed.repaint();
 				} catch (Exception e1) {
 					System.out.println(e1);
-					String s1 = "" + e1;
-					String expect = "javax.script.ScriptException: sun.org.mozilla.javascript.internal.EvaluatorException:";
-					if (s1.startsWith(expect))
-						s1 = s1.substring(expect.length());
+                                        //e1.printStackTrace();
+					String s1 = "" + e1;					
 					ppJs.ptEdit.append("\n//Error:" + s1 + "\n");
 					ed.repaint();
 				}
