@@ -73,6 +73,19 @@ import neoe.util.PyData;
  * util
  */
 public class U {
+    
+    static void drawStringShrink(Graphics2D g2, Font[] fontList, String s, int x, int y, float maxWidth) {
+        int width = stringWidth(g2, fontList, s);
+        int max = Math.round(maxWidth);
+        if (width<=max){
+            drawString(g2,fontList,s,x,y);
+        }else{
+            Graphics2D g3 = (Graphics2D)g2.create();
+            g3.scale((maxWidth-3)/(float)width, 1);
+            drawString(g3,fontList,s,x,y);
+            g3.dispose();
+        }
+    }
 
     public static int drawString(Graphics2D g2, Font[] fonts, String s0, int x, int y) {
         if (s0 == null || s0.length() <= 0) {
@@ -170,6 +183,8 @@ public class U {
         return w;
 
     }
+
+ 
 
     static enum BasicAction {
 
