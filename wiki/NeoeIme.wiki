@@ -13,4 +13,4 @@ Though the NeoeIme itself need to be improved, it should learn things from other
 For in some environment, the IME is not exists, or not deals good with java swing, even they are good with GTK/KDE components.
 
 
-To use it copy [https://neoeedit.googlecode.com/svn/trunk/plugins/neoeime/neoeime/dist/neoeime.jar file] into plugin directory.
+To use it copy [https://neoeedit.googlecode.com/svn/plugins/neoeime/dist/neoeime.jar file] into plugin directory.
