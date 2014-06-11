@@ -485,11 +485,11 @@ public class PlainPage {
                     String c = sb.substring(x, x + 1);
                     int w2 = U.strWidth(g2, fontList, c, TABWIDTH);
                     g2.setColor(Color.WHITE);
-                    g2.drawRect(w1 - 1, (y - sy) * (lineHeight + lineGap) - 4,
-                            w2, 16);
+                    g2.drawRect(w1 - 1, (y - sy) * (lineHeight + lineGap) - 1,
+                            w2, lineHeight);
                     g2.setColor(colorNormal);
-                    g2.drawRect(w1, (y - sy) * (lineHeight + lineGap) - 3, w2,
-                            16);
+                    g2.drawRect(w1, (y - sy) * (lineHeight + lineGap) , w2,
+                            lineHeight);
                     U.drawString(g2, fontList, c, w1, lineHeight + (y - sy)
                             * (lineHeight + lineGap));
                 }
@@ -629,8 +629,8 @@ public class PlainPage {
                 if (sy + i + 1 > pageData.roLines.getLinesize()) {
                     break;
                 }
-                U.drawString(g2, fontList, "" + (sy + i + 1), 0, lineHeight
-                        + (lineHeight + lineGap) * i);
+                U.drawStringShrink(g2, fontList, "" + (sy + i + 1), 0, lineHeight
+                        + (lineHeight + lineGap) * i, gutterWidth/scalev);
             }
         }
 
@@ -863,8 +863,9 @@ public class PlainPage {
                 }
 
                 //g2.setFont(font);
-                showLineCnt = (int) ((size.height - toolbarHeight)
-                        / (lineHeight + lineGap) / scalev);
+                showLineCnt = Math.round((size.height - toolbarHeight)
+                        / ((lineHeight + lineGap) * scalev));
+                
                 int charCntInLine = (int) ((size.width - gutterWidth)
                         / (lineHeight) * 2 / scalev);
 
@@ -937,7 +938,7 @@ public class PlainPage {
                 g2.scale(scalev, scalev);
                 drawGutter(g2);
                 // draw text
-                g2.setClip(0, 0, dim.width, dim.height - toolbarHeight);
+                g2.setClip(0, 0, (int)(dim.width/scalev), (int)((dim.height - toolbarHeight)/scalev));
                 g2.translate(gutterWidth / scalev, 0);
 
                 { // highlight current line
@@ -1470,6 +1471,7 @@ public class PlainPage {
     public void mouseWheelMoved(MouseWheelEvent env) {
         int amount = env.getWheelRotation() * env.getScrollAmount();
         if (env.isControlDown()) {// scale
+            ui.cp.controlDownMs = 0;
             U.scale(amount, ui);
             this.uiComp.repaint();
         } else if (env.isAltDown()) {// horizon scroll
@@ -1477,7 +1479,7 @@ public class PlainPage {
         } else {// scroll
             cursor.scroll(amount);
         }
-
+        
     }
 
     /**
