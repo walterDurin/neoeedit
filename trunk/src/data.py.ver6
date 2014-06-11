@@ -78,6 +78,11 @@ font:{
             ["/usr/local/lib/X11/fonts/wqy/wqy-microhei.ttc", 14, ],
         ]
 },
+ime:[
+    "neoe.ime.neoeedit.Pinyin",
+    "neoe.ime.neoeedit.Jp",
+],
+
 tabWidthInPixel:40,
 lookAndFeel:"",
 frameSize:[1024,768],

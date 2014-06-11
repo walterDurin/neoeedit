@@ -126,7 +126,7 @@ public class U {
         return w;
     }
 
-    private static int drawChar(Graphics2D g2, Font[] fonts, char c, int x, int y) {
+    public static int drawChar(Graphics2D g2, Font[] fonts, char c, int x, int y) {
         for (Font font : fonts) {
             if (font.canDisplay(c)) {
                 g2.setFont(font);
@@ -139,7 +139,7 @@ public class U {
         return g2.getFontMetrics(fonts[0]).charWidth(c);
     }
 
-    private static int charWidth(Graphics2D g2, Font[] fonts, char c) {
+    public static int charWidth(Graphics2D g2, Font[] fonts, char c) {
         for (Font font : fonts) {
             if (font.canDisplay(c)) {
                 return g2.getFontMetrics(font).charWidth(c);

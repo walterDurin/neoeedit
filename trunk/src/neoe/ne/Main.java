@@ -9,6 +9,7 @@ public class Main {
 		U.Config.setDefaultLookAndFeel();
 		U.Config.setDefaultBKColor();
 		U.Config.initKeys();
+                Ime.loadImes();
 		EditPanel editor = new EditPanel();
 		if (args.length > 0) {
 			File f = new File(args[0]);
@@ -26,9 +27,7 @@ public class Main {
 	}
 
 	/**
-	 * something like said in https://forums.oracle.com/thread/1542114 , however
-	 * the thread is locked by a fucking bitch?
-	 * 
+	 * something like said in https://forums.oracle.com/thread/1542114 
 	 */
 	private static void SwingJniJvmPatch() {
 		while (true) {
@@ -38,7 +37,7 @@ public class Main {
 				e.printStackTrace();
 			}
 			if (EditPanel.openedWindows <= 0) {
-				System.out.println("SwingJniJvmPatch exiting...");
+				System.out.println("SwingJniJvmPatch exit");
 				break;
 			}
 		}
