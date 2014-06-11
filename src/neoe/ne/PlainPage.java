@@ -18,7 +18,7 @@ import java.util.List;
 import javax.swing.JOptionPane;
 
 import neoe.ne.CommandPanel.CommandPanelPaint;
-import neoe.ne.Ime.Param;
+import neoe.ne.Ime.Out;
 import neoe.ne.U.RoSb;
 
 public class PlainPage {
@@ -488,7 +488,7 @@ public class PlainPage {
                     g2.drawRect(w1 - 1, (y - sy) * (lineHeight + lineGap) - 1,
                             w2, lineHeight);
                     g2.setColor(colorNormal);
-                    g2.drawRect(w1, (y - sy) * (lineHeight + lineGap) , w2,
+                    g2.drawRect(w1, (y - sy) * (lineHeight + lineGap), w2,
                             lineHeight);
                     U.drawString(g2, fontList, c, w1, lineHeight + (y - sy)
                             * (lineHeight + lineGap));
@@ -630,7 +630,7 @@ public class PlainPage {
                     break;
                 }
                 U.drawStringShrink(g2, fontList, "" + (sy + i + 1), 0, lineHeight
-                        + (lineHeight + lineGap) * i, gutterWidth/scalev);
+                        + (lineHeight + lineGap) * i, gutterWidth / scalev);
             }
         }
 
@@ -781,6 +781,7 @@ public class PlainPage {
         }
 
         void drawToolbar(Graphics2D g2) {
+            Ime.ImeInterface ime = Ime.getCurrentIme();
             String s1 = "<F1>:Help, "
                     + (pageData.encoding == null ? "-" : pageData.encoding)
                     + (pageData.lineSep.equals("\n") ? ", U" : ", W")
@@ -792,6 +793,7 @@ public class PlainPage {
                     + pageData.history.size()
                     + ", "
                     + (rectSelectMode ? "R, " : "")
+                    + (ime == null ? "" : ime.getImeName() + ", ")
                     + (pageData.getFn() == null ? "-" : pageData.getFn()
                     + (changedOutside ? " [ChangedOutside!]" : ""));
             g2.setColor(colorGutMark1);
@@ -865,7 +867,7 @@ public class PlainPage {
                 //g2.setFont(font);
                 showLineCnt = Math.round((size.height - toolbarHeight)
                         / ((lineHeight + lineGap) * scalev));
-                
+
                 int charCntInLine = (int) ((size.width - gutterWidth)
                         / (lineHeight) * 2 / scalev);
 
@@ -938,7 +940,7 @@ public class PlainPage {
                 g2.scale(scalev, scalev);
                 drawGutter(g2);
                 // draw text
-                g2.setClip(0, 0, (int)(dim.width/scalev), (int)((dim.height - toolbarHeight)/scalev));
+                g2.setClip(0, 0, (int) (dim.width / scalev), (int) ((dim.height - toolbarHeight) / scalev));
                 g2.translate(gutterWidth / scalev, 0);
 
                 { // highlight current line
@@ -1007,7 +1009,7 @@ public class PlainPage {
                     String s = U.subs(pageData.roLines.getline(cy), sx, cx);
                     int w = U.strWidth(g2, fontList, s, TABWIDTH);
                     int y0 = (cy - sy) * (lineHeight + lineGap);
-                    g2.fillRect(w, y0, 2, lineHeight);
+                    g2.fillRect(w, y0, 2, lineHeight + 3);
                     // draw preedit
                     if (preeditText != null && preeditText.length() > 0) {
                         g2.setPaintMode();
@@ -1016,6 +1018,12 @@ public class PlainPage {
                         g2.fillRect(w, y0, w0 + 4, lineHeight + lineGap);
                         g2.setColor(new Color(0x0000aa));
                         U.drawString(g2, fontList, preeditText, w + 2, y0 + lineHeight);
+                    }
+
+                    // ime 
+                    Ime.ImeInterface ime = Ime.getCurrentIme();
+                    if (ime != null) {
+                        ime.paint(g2, fontList, w, y0 + lineHeight + lineGap, g2.getClipBounds());
                     }
 
                 }
@@ -1291,15 +1299,19 @@ public class PlainPage {
     }
 
     public void keyPressed(KeyEvent evt) {
-        if (Ime.enabled && Ime.instance != null) {
-            Param param = new Param();
-            Ime.instance.keyPressed(evt, param);
+        Ime.ImeInterface ime = Ime.getCurrentIme();
+        if (ime != null) {
+            Out param = new Out();
+            ime.keyPressed(evt, param);
+
             if (param.yield != null) {
                 pageData.history.beginAtom();
                 ptEdit.insertString(param.yield);
                 pageData.history.endAtom();
             }
+            preeditText = param.preedit;
             if (param.consumed) {
+                uiComp.repaint();
                 return;
             }
         }
@@ -1384,12 +1396,16 @@ public class PlainPage {
                 Rectangle r = ptSelection.getSelectRect();
                 ptEdit.moveRectRight(r.y, r.height);
             } else {
-                if (Ime.enabled && Ime.instance != null) {
-                    Param param = new Param();
-                    Ime.instance.keyPressed(env, param);
+                Ime.ImeInterface ime = Ime.getCurrentIme();
+                if (ime != null) {
+                    Out param = new Out();
+                    ime.keyTyped(env, param);
+
                     if (param.yield != null) {
                         ptEdit.insertString(param.yield);
                     }
+                    preeditText = param.preedit;
+
                     if (!param.consumed) {
                         ptEdit.insert(kc);
                     }
@@ -1479,7 +1495,7 @@ public class PlainPage {
         } else {// scroll
             cursor.scroll(amount);
         }
-        
+
     }
 
     /**
@@ -1744,11 +1760,10 @@ public class PlainPage {
                 U.switchToLastPage(this);
                 break;
             case toggleIME:
-                if (Ime.instance == null) {
-                    ui.message("IME plugin not exists.");
-                } else {
-                    Ime.enabled = !Ime.enabled;
-                    Ime.instance.setEnabled(Ime.enabled);
+                Ime.nextIme();
+                Ime.ImeInterface ime = Ime.getCurrentIme();
+                if (ime != null) {
+                    ime.setEnabled(true);
                 }
                 break;
             case ShellCommand:

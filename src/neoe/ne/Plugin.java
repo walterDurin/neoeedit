@@ -35,7 +35,7 @@ class Plugin {
                 jars.add(f.toURI().toURL());
             }
         }
-        System.out.println("add plugin count:" + jars.size());
+        System.out.println("added plugin count:" + jars.size());
         cl = new URLClassLoader(jars.toArray(new URL[jars.size()]), Plugin.class
                 .getClassLoader());        
         
