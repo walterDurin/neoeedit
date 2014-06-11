@@ -9,10 +9,10 @@ neoeedit introduced plugin since rev.229
 
 
 neoeedit's plugin provides optional functions.
-  * plugin dir: <home>/.neoeedit/plugins
+  * plugin dir: $home/.neoeedit/plugins
   * plugins should be normal .jar files.
-  * plugins can be configured in file <home>/.neoeedit/data.py.verX
+  * plugins can be configured in file $home/.neoeedit/data.py.verX
   * plugins can use neoeedit functions by referring it's java classes.
   * currently we have 2 plugins, they are
-  ** [https://neoeedit.googlecode.com/svn/trunk/plugins/rhino/js.jar   rhino javascript engine]
-  ** NeoeIme, a Chinese and Japanese input method.
+    # [https://neoeedit.googlecode.com/svn/plugins/rhino/js.jar   rhino javascript engine]
+    # NeoeIme, a Chinese and Japanese input method.
