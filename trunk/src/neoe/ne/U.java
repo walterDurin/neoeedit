@@ -1843,6 +1843,7 @@ public class U {
             }
             for (String enc : encodings) {
                 String s = new String(buf, enc);
+                if (s.length()>3)s = s.substring(0,s.length()-3);//multi bytes string, so tail may be mistaken
                 if (new String(s.getBytes(enc), enc).equals(s) && s.indexOf("�") < 0) {
                     return enc;
                 }
