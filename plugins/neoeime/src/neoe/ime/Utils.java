@@ -106,7 +106,7 @@ public class Utils {
 
 	private static Reader getJarReader(String fn)
 			throws UnsupportedEncodingException {
-		return new InputStreamReader(ClassLoader.getSystemResourceAsStream(fn),
-				"utf8");
+            if (!fn.startsWith("/"))fn = "/"+fn;
+            return new InputStreamReader(Utils.class.getResourceAsStream(fn),"utf8");
 	}
 }
