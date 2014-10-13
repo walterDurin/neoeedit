@@ -79,9 +79,9 @@ public class PicView {
 					if (kc == KeyEvent.VK_F1 || kc == KeyEvent.VK_TAB) {
 						small = !small;
 						repaint();
-					} else if (kc == KeyEvent.VK_LEFT) {
+					} else if (kc == KeyEvent.VK_LEFT||kc == KeyEvent.VK_BACK_SPACE) {
 						viewFile(-1);
-					} else if (kc == KeyEvent.VK_RIGHT) {
+					} else if (kc == KeyEvent.VK_RIGHT||kc == KeyEvent.VK_SPACE) {
 						viewFile(1);
 					} else if (kc == KeyEvent.VK_UP) {
 						rotate(1);
